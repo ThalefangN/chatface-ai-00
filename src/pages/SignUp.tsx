@@ -1,17 +1,29 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { ArrowLeft, UserPlus, User, Mail, Lock, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
+import { useToast } from "@/hooks/use-toast";
+import SubscriptionNotification from '@/components/SubscriptionNotification';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [showSubscription, setShowSubscription] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, you would handle registration here
+    toast({
+      title: "Account created successfully",
+      description: "Welcome to SpeakAI!",
+    });
+    setShowSubscription(true);
+  };
+  
+  const handleSubscriptionClose = () => {
+    setShowSubscription(false);
     navigate('/home');
   };
   
@@ -132,6 +144,11 @@ const SignUp = () => {
           </AnimatedContainer>
         </div>
       </main>
+      
+      <SubscriptionNotification 
+        open={showSubscription} 
+        onClose={handleSubscriptionClose} 
+      />
     </div>
   );
 };

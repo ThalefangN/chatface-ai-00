@@ -1,17 +1,29 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { ArrowLeft, LogIn, Mail, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
+import { useToast } from "@/hooks/use-toast";
+import SubscriptionNotification from '@/components/SubscriptionNotification';
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [showSubscription, setShowSubscription] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, you would handle authentication here
+    toast({
+      title: "Logged in successfully",
+      description: "Welcome back to SpeakAI!",
+    });
+    setShowSubscription(true);
+  };
+  
+  const handleSubscriptionClose = () => {
+    setShowSubscription(false);
     navigate('/home');
   };
   
@@ -88,6 +100,11 @@ const SignIn = () => {
           </AnimatedContainer>
         </div>
       </main>
+      
+      <SubscriptionNotification 
+        open={showSubscription} 
+        onClose={handleSubscriptionClose} 
+      />
     </div>
   );
 };
