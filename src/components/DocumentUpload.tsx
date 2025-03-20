@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, FilePdf, FileImage, FileAudio, FileVideo, Upload, X, Check } from 'lucide-react';
+import { FileText, File, FileImage, FileAudio, FileVideo, Upload, X, Check } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface FileWithPreview extends File {
@@ -19,7 +19,7 @@ const DocumentUpload = () => {
     const fileType = file.type;
     
     if (fileType.includes('pdf')) {
-      return <FilePdf className="h-10 w-10 text-red-500" />;
+      return <FileText className="h-10 w-10 text-red-500" />; // Changed from FilePdf to FileText
     } else if (fileType.includes('image')) {
       return <FileImage className="h-10 w-10 text-blue-500" />;
     } else if (fileType.includes('audio')) {
@@ -27,7 +27,7 @@ const DocumentUpload = () => {
     } else if (fileType.includes('video')) {
       return <FileVideo className="h-10 w-10 text-purple-500" />;
     } else {
-      return <FileText className="h-10 w-10 text-green-500" />;
+      return <File className="h-10 w-10 text-green-500" />; // Changed from FileText to File for differentiation
     }
   };
 
@@ -113,8 +113,8 @@ const DocumentUpload = () => {
       >
         <div className="flex flex-col items-center space-y-4">
           <div className="flex items-center justify-center space-x-2">
-            <FileText className="h-8 w-8 text-green-500" />
-            <FilePdf className="h-8 w-8 text-red-500" />
+            <FileText className="h-8 w-8 text-red-500" /> {/* Changed from FileImage to FileText for PDF */}
+            <File className="h-8 w-8 text-green-500" /> {/* Changed from FilePdf to File */}
             <FileImage className="h-8 w-8 text-blue-500" />
           </div>
           
