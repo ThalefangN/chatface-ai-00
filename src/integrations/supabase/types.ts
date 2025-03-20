@@ -38,6 +38,9 @@ export type Database = {
           created_at: string | null
           duration: number | null
           id: string
+          interview_count: number | null
+          presentation_count: number | null
+          public_speaking_count: number | null
           title: string
           type: string
           updated_at: string | null
@@ -47,6 +50,9 @@ export type Database = {
           created_at?: string | null
           duration?: number | null
           id?: string
+          interview_count?: number | null
+          presentation_count?: number | null
+          public_speaking_count?: number | null
           title: string
           type: string
           updated_at?: string | null
@@ -56,6 +62,9 @@ export type Database = {
           created_at?: string | null
           duration?: number | null
           id?: string
+          interview_count?: number | null
+          presentation_count?: number | null
+          public_speaking_count?: number | null
           title?: string
           type?: string
           updated_at?: string | null
@@ -67,21 +76,36 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
+          member_since: string | null
+          subscription_type: string | null
           updated_at: string
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
+          first_name?: string | null
           id: string
+          last_name?: string | null
+          member_since?: string | null
+          subscription_type?: string | null
           updated_at?: string
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
+          member_since?: string | null
+          subscription_type?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -149,6 +173,66 @@ export type Database = {
           target_language?: string
           translated_text?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_alerts: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_skills: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+          value?: number
         }
         Relationships: []
       }

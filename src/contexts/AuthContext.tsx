@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signUp({ 
+      const { data: { user }, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
@@ -93,6 +93,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) throw error;
+      
+      // Update profile with first name and last name
+      if (user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            first_name: firstName,
+            last_name: lastName,
+            email: email
+          })
+          .eq('id', user.id);
+          
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+      }
       
       toast({
         title: "Account created",
@@ -137,6 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for instructions to reset your password"
+      });
     } catch (error: any) {
       toast({
         title: "Password reset failed",
