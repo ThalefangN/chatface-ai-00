@@ -1,6 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -11,334 +10,100 @@ export interface Message {
   created_at?: string;
 }
 
+interface UseAIChatProps {
+  sessionId: string | null;
+}
+
 export const useAIChat = (sessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const { user } = useAuth();
-  
-  // Speech recognition
-  const recognitionRef = useRef<any>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const [isListening, setIsListening] = useState(false);
-
-  // Initialize speech recognition
-  useEffect(() => {
-    // Check if the browser supports the Web Speech API
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognitionAPI();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          sendMessage(transcript);
-        }
-      };
-      
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        toast.error('Speech recognition error. Please try again.');
-      };
-      
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
-    
-    // Initialize audio context for playing responses
-    audioContextRef.current = new AudioContext();
-    
-    // Create audio element for playing responses
-    audioElementRef.current = new Audio();
-    audioElementRef.current.onended = () => {
-      setIsSpeaking(false);
-    };
-    
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
-
-  // Set up real-time subscription for session messages
-  useEffect(() => {
-    if (sessionId) {
-      const messagesChannel = supabase
-        .channel(`messages_${sessionId}`)
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'session_messages',
-            filter: `session_id=eq.${sessionId}`
-          }, 
-          (payload) => {
-            console.log('Message changed:', payload);
-            initializeChat();
-          }
-        )
-        .subscribe();
-        
-      return () => {
-        supabase.removeChannel(messagesChannel);
-      };
-    }
-  }, [sessionId]);
-
-  // Start voice recognition
-  const startListening = () => {
-    if (!recognitionRef.current) {
-      toast.error('Speech recognition is not supported in your browser');
-      return;
-    }
-    
-    try {
-      recognitionRef.current.start();
-      setIsListening(true);
-      toast.info('Listening... Speak now');
-    } catch (error) {
-      console.error('Error starting speech recognition:', error);
-      setIsListening(false);
-      toast.error('Failed to start speech recognition');
-    }
-  };
-
-  // Stop voice recognition
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  // Play audio from base64 string
-  const playAudio = async (base64Audio: string) => {
-    if (!base64Audio || !audioElementRef.current) return;
-    
-    try {
-      setIsSpeaking(true);
-      
-      // Convert base64 to blob URL
-      const byteCharacters = atob(base64Audio);
-      const byteArrays = [];
-      
-      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-        const slice = byteCharacters.slice(offset, offset + 512);
-        
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-        
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-      }
-      
-      const blob = new Blob(byteArrays, { type: 'audio/mp3' });
-      const url = URL.createObjectURL(blob);
-      
-      // Play the audio
-      audioElementRef.current.src = url;
-      audioElementRef.current.onloadedmetadata = () => {
-        audioElementRef.current?.play();
-      };
-      
-      audioElementRef.current.onerror = () => {
-        setIsSpeaking(false);
-        fallbackToTextToSpeech();
-      };
-      
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      setIsSpeaking(false);
-      fallbackToTextToSpeech();
-    }
-  };
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   
-  // Fallback to browser's text-to-speech
-  const fallbackToTextToSpeech = () => {
-    if ('speechSynthesis' in window) {
-      const lastAIMessage = messages.filter(m => m.is_ai).pop();
-      if (lastAIMessage) {
-        const utterance = new SpeechSynthesisUtterance(lastAIMessage.content);
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
-      }
-    }
-  };
-
-  // Initialize chat with greeting messages
-  const initializeChat = async () => {
-    if (!sessionId || !user) return;
+  // Initialize SpeechRecognition API
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  // Fetch messages for the current session
+  const initializeChat = useCallback(async () => {
+    if (!sessionId) return;
     
     try {
-      // Check if we already have messages for this session
       const { data, error } = await supabase
         .from('session_messages')
         .select('*')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: true });
+        
+      if (error) throw error;
+      if (data) setMessages(data);
+      
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast.error('Failed to load messages');
+    }
+  }, [sessionId]);
+  
+  // Initialize audio element for playing AI responses
+  useEffect(() => {
+    audioElementRef.current = new Audio();
+    audioElementRef.current.addEventListener('ended', () => {
+      setIsSpeaking(false);
+    });
+    
+    audioElementRef.current.addEventListener('error', (e) => {
+      console.error('Audio playback error:', e);
+      setIsSpeaking(false);
+    });
+    
+    return () => {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current = null;
+      }
+    };
+  }, []);
+  
+  // Send message to the AI
+  const sendMessage = async (message: string) => {
+    if (!sessionId) {
+      toast.error('No active session');
+      return;
+    }
+    
+    if (!message.trim()) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Add user message to the UI immediately
+      const userMessage: Message = {
+        content: message,
+        is_ai: false
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Send message to the Edge Function
+      const { data, error } = await supabase.functions.invoke('ai-coach', {
+        body: { 
+          message,
+          sessionId,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
       
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        // Use existing messages
-        setMessages(data);
-      } else {
-        // Create initial messages if this is a new session
-        const initialMessages: Omit<Message, 'id' | 'created_at'>[] = [
-          {
-            content: "Hello! I'm your AI interview coach. I'll be guiding you through this session.",
-            is_ai: true
-          },
-          {
-            content: "Let's begin with a simple question: Could you introduce yourself and tell me about your background?",
-            is_ai: true
-          }
-        ];
-        
-        // Save initial messages to database
-        const promises = initialMessages.map(msg => 
-          supabase.from('session_messages').insert({
-            session_id: sessionId,
-            content: msg.content,
-            is_ai: msg.is_ai
-          })
-        );
-        
-        await Promise.all(promises);
-        
-        // Fetch the inserted messages to get their IDs
-        const { data: updatedData } = await supabase
-          .from('session_messages')
-          .select('*')
-          .eq('session_id', sessionId)
-          .order('created_at', { ascending: true });
-          
-        if (updatedData) {
-          setMessages(updatedData);
-          
-          // Use built-in browser TTS for the welcome message
-          if ('speechSynthesis' in window) {
-            setIsSpeaking(true);
-            const utterance = new SpeechSynthesisUtterance(initialMessages[0].content + ' ' + initialMessages[1].content);
-            utterance.onend = () => setIsSpeaking(false);
-            speechSynthesis.speak(utterance);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error initializing chat:', error);
-      toast.error('Failed to load conversation');
-    }
-  };
-
-  // Send audio data to the server
-  const sendAudio = async (audioData: string) => {
-    if (!audioData || !sessionId || !user) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // Add a temporary user message for better UX
-      const tempMessage: Message = {
-        content: "Processing your voice message...",
-        is_ai: false,
-        created_at: new Date().toISOString()
-      };
-      
-      setMessages(prev => [...prev, tempMessage]);
-      
-      // Call the edge function with audio data
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('ai-coach', {
-        body: {
-          sessionId,
-          userId: user.id,
-          audioData
-        }
-      });
-      
-      if (functionError) throw functionError;
-      
-      // Remove the temporary message and let the real-time subscription update the messages
-      setMessages(prev => prev.filter(msg => msg !== tempMessage));
-      
-      // If there's audio in the response, play it
-      if (functionData.audioResponse) {
-        playAudio(functionData.audioResponse);
-      } else if ('speechSynthesis' in window) {
-        // Fall back to browser's text-to-speech
-        setIsSpeaking(true);
-        const utterance = new SpeechSynthesisUtterance(functionData.message);
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
+      // If there's a speech response, play it
+      if (data.audioResponse) {
+        playAudioResponse(data.audioResponse);
       }
       
-    } catch (error) {
-      console.error('Error sending audio:', error);
-      toast.error('Failed to process speech');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Send text message to the server
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !sessionId || !user) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // Add user message to UI immediately for better UX
-      const tempUserMessage: Message = {
-        content,
-        is_ai: false,
-        created_at: new Date().toISOString()
-      };
-      
-      setMessages(prev => [...prev, tempUserMessage]);
-      
-      // Call the edge function with text
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('ai-coach', {
-        body: {
-          message: content,
-          sessionId,
-          userId: user.id
-        }
-      });
-      
-      if (functionError) throw functionError;
-      
-      // Update messages from the database to get the correct IDs
-      const { data: updatedData } = await supabase
-        .from('session_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
-        
-      if (updatedData) {
-        setMessages(updatedData);
-      }
-      
-      // If there's audio in the response, play it
-      if (functionData.audioResponse) {
-        playAudio(functionData.audioResponse);
-      } else if ('speechSynthesis' in window) {
-        // Fall back to browser's text-to-speech
-        setIsSpeaking(true);
-        const utterance = new SpeechSynthesisUtterance(functionData.message);
-        utterance.onend = () => setIsSpeaking(false);
-        speechSynthesis.speak(utterance);
-      }
+      // The message will be added through the realtime subscription
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -347,50 +112,180 @@ export const useAIChat = (sessionId: string | null) => {
       setIsLoading(false);
     }
   };
-
-  // Record audio and send it
-  const recordAudio = async () => {
-    if (!sessionId || !user) return;
+  
+  // Process and send audio to the AI
+  const sendAudioMessage = async (audioBlob: Blob) => {
+    if (!sessionId) {
+      toast.error('No active session');
+      return;
+    }
     
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const audioChunks: Blob[] = [];
+      setIsLoading(true);
       
-      mediaRecorder.addEventListener("dataavailable", (event) => {
-        audioChunks.push(event.data);
-      });
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
       
-      mediaRecorder.addEventListener("stop", async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-          const base64data = reader.result as string;
-          // Remove the data URL prefix
-          const audioBase64 = base64data.split(',')[1];
-          await sendAudio(audioBase64);
-        };
-        
-        stream.getTracks().forEach(track => track.stop());
-      });
-      
-      mediaRecorder.start();
-      
-      // Record for 5 seconds
-      setTimeout(() => {
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
+      reader.onloadend = async () => {
+        try {
+          // Extract base64 data (remove data URL prefix)
+          const base64data = reader.result?.toString().split(',')[1];
+          
+          if (!base64data) {
+            throw new Error('Failed to convert audio to base64');
+          }
+          
+          // Send audio to the Edge Function
+          const { data, error } = await supabase.functions.invoke('ai-coach', {
+            body: { 
+              audioData: base64data,
+              sessionId,
+              userId: (await supabase.auth.getUser()).data.user?.id
+            }
+          });
+          
+          if (error) throw error;
+          
+          // If there's a speech response, play it
+          if (data.audioResponse) {
+            playAudioResponse(data.audioResponse);
+          }
+          
+          // The message will be added through the realtime subscription
+          
+        } catch (error) {
+          console.error('Error processing audio:', error);
+          toast.error('Failed to process audio');
+        } finally {
+          setIsLoading(false);
         }
-      }, 5000);
+      };
       
     } catch (error) {
-      console.error('Error recording audio:', error);
-      toast.error('Failed to access microphone');
+      console.error('Error sending audio message:', error);
+      toast.error('Failed to send audio message');
+      setIsLoading(false);
     }
   };
-
+  
+  // Play audio response from the AI
+  const playAudioResponse = (base64Audio: string) => {
+    try {
+      // Convert base64 to blob
+      const byteCharacters = atob(base64Audio);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'audio/mp3' });
+      
+      // Create URL and play audio
+      const url = URL.createObjectURL(blob);
+      
+      if (audioElementRef.current) {
+        audioElementRef.current.src = url;
+        
+        audioElementRef.current.onplay = () => {
+          setIsSpeaking(true);
+        };
+        
+        audioElementRef.current.play()
+          .catch(e => {
+            console.error('Failed to play audio:', e);
+            setIsSpeaking(false);
+          });
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsSpeaking(false);
+    }
+  };
+  
+  // Start voice recognition
+  const startListening = async () => {
+    try {
+      if (!SpeechRecognition) {
+        toast.error('Speech recognition is not supported in your browser');
+        return;
+      }
+      
+      // Start recording audio for sending to Whisper API
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        sendAudioMessage(audioBlob);
+        audioChunksRef.current = [];
+      };
+      
+      mediaRecorderRef.current.start();
+      
+      // Also start browser's speech recognition for interim results (optional)
+      /*
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+      
+      recognitionRef.current.onresult = (event: any) => {
+        // This is just for showing interim results, we'll send the final audio to Whisper
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join('');
+          
+        console.log('Interim transcript:', transcript);
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Recognition error:', event.error);
+      };
+      
+      recognitionRef.current.onend = () => {
+        // Don't set isListening to false here, as we want to continue recording
+        // until stopListening is called explicitly
+      };
+      
+      recognitionRef.current.start();
+      */
+      
+      setIsListening(true);
+      
+    } catch (error) {
+      console.error('Error starting voice recognition:', error);
+      toast.error('Failed to start voice recognition');
+    }
+  };
+  
+  // Stop voice recognition
+  const stopListening = () => {
+    setIsListening(false);
+    
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      
+      if (mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+    }
+  };
+  
   return {
     messages,
     isLoading,
@@ -399,7 +294,6 @@ export const useAIChat = (sessionId: string | null) => {
     startListening,
     stopListening,
     isListening,
-    isSpeaking,
-    recordAudio
+    isSpeaking
   };
 };
