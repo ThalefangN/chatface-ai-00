@@ -21,7 +21,7 @@ const SubscriptionNotification: React.FC<SubscriptionNotificationProps> = ({
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <CheckCircle className="h-6 w-6 text-green-500" />
-            Dumela! Free Trial Activated
+            Hello! Free Trial Activated
           </DialogTitle>
           <DialogDescription className="pt-2 text-base">
             Welcome to SpeakAI! You have unlocked your 14-day free trial.
@@ -33,8 +33,8 @@ const SubscriptionNotification: React.FC<SubscriptionNotificationProps> = ({
             <h3 className="font-semibold mb-2 text-lg text-center">After your trial ends, choose a plan</h3>
             
             <div className="grid gap-4 mt-4">
-              <div className="border border-primary/30 p-4 rounded-lg bg-primary/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-bl-md">
+              <div className="border border-green-500/30 p-4 rounded-lg bg-green-500/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-green-500 text-primary-foreground text-xs px-2 py-1 rounded-bl-md">
                   Recommended
                 </div>
                 <h4 className="font-bold text-lg">Pro Plan</h4>
@@ -61,7 +61,7 @@ const SubscriptionNotification: React.FC<SubscriptionNotificationProps> = ({
                     <span>Priority customer support</span>
                   </li>
                 </ul>
-                <Button className="w-full">
+                <Button className="w-full bg-green-500 hover:bg-green-600">
                   Subscribe Now
                 </Button>
               </div>

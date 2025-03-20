@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
@@ -40,7 +41,7 @@ const SignIn = () => {
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Dumela, Welcome Back</h1>
+            <h1 className="text-2xl font-bold mb-2">Hello, Welcome Back</h1>
             <p className="text-muted-foreground">Sign in to your account to continue</p>
           </div>
           
@@ -55,7 +56,7 @@ const SignIn = () => {
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                   required
                 />
               </div>
@@ -66,7 +67,7 @@ const SignIn = () => {
                     <Lock className="h-4 w-4 text-muted-foreground" />
                     Password
                   </label>
-                  <a href="#" className="text-xs text-primary hover:underline flex items-center gap-1">
+                  <a href="#" className="text-xs text-green-500 hover:underline flex items-center gap-1">
                     <ShieldCheck className="h-3 w-3" />
                     Forgot password?
                   </a>
@@ -75,25 +76,25 @@ const SignIn = () => {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                   required
                 />
               </div>
               
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-green-500 hover:bg-green-600"
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                Tsena (Sign In)
+                Sign In
               </Button>
             </form>
             
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
-                Ga o na akhaonto?{' '}
-                <Link to="/sign-up" className="text-primary hover:underline">
-                  Ikwadise (Sign up)
+                Don't have an account?{' '}
+                <Link to="/sign-up" className="text-green-500 hover:underline">
+                  Sign up
                 </Link>
               </p>
             </div>

@@ -10,28 +10,28 @@ const MobileNavigation = () => {
   const navItems = [
     { 
       path: '/home', 
-      label: 'Gae', 
+      label: 'Home', 
       icon: Home 
     },
     { 
       path: '/ai-chat', 
-      label: 'Potso', 
+      label: 'Chat', 
       icon: Plus,
       isPrimary: true
     },
     { 
       path: '/notes', 
-      label: 'Dintlha', 
+      label: 'Notes', 
       icon: FileText 
     },
     { 
       path: '/alerts', 
-      label: 'Dikitsiso', 
+      label: 'Alerts', 
       icon: Bell 
     },
     { 
       path: '/profile', 
-      label: 'Profaele', 
+      label: 'Profile', 
       icon: User 
     }
   ];
@@ -50,7 +50,7 @@ const MobileNavigation = () => {
                 to={item.path}
                 className="relative flex flex-col items-center"
               >
-                <div className="absolute -top-8 bg-primary text-primary-foreground p-4 rounded-full shadow-lg transform transition-transform hover:scale-110 animate-pulse-soft">
+                <div className="absolute -top-8 bg-green-500 text-white p-4 rounded-full shadow-lg transform transition-transform hover:scale-110 animate-pulse-soft">
                   <Icon className="h-6 w-6" />
                 </div>
                 <span className="text-xs font-bold mt-7 text-muted-foreground">{item.label}</span>
@@ -65,7 +65,7 @@ const MobileNavigation = () => {
               className={cn(
                 "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-300",
                 isActive 
-                  ? "text-primary scale-110" 
+                  ? "text-green-500 scale-110 font-bold" 
                   : "text-muted-foreground hover:text-foreground hover:scale-105"
               )}
             >
