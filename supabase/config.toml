@@ -1,7 +1,7 @@
 
 project_id = "znaextoidbxrhedufxpc"
-api.url = "https://znaextoidbxrhedufxpc.supabase.co"
-db.url = "postgresql://postgres:postgres@db.znaextoidbxrhedufxpc.supabase.co:5432/postgres"
+api_url = "https://znaextoidbxrhedufxpc.supabase.co"
+db_url = "postgresql://postgres:postgres@db.znaextoidbxrhedufxpc.supabase.co:5432/postgres"
 
 [functions.ai-coach]
 verify_jwt = true

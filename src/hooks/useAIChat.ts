@@ -26,8 +26,8 @@ export const useAIChat = (sessionId: string | null) => {
   useEffect(() => {
     // Check if the browser supports the Web Speech API
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognitionAPI();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       
@@ -50,7 +50,7 @@ export const useAIChat = (sessionId: string | null) => {
     }
     
     // Initialize audio context for playing responses
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    audioContextRef.current = new (window.AudioContext)();
     
     return () => {
       if (recognitionRef.current) {
@@ -118,7 +118,7 @@ export const useAIChat = (sessionId: string | null) => {
       setIsSpeaking(false);
       // Fall back to text-to-speech API if available
       if ('speechSynthesis' in window) {
-        const lastAIMessage = messages.findLast(m => m.is_ai);
+        const lastAIMessage = messages.filter(m => m.is_ai).pop();
         if (lastAIMessage) {
           const utterance = new SpeechSynthesisUtterance(lastAIMessage.content);
           utterance.onend = () => setIsSpeaking(false);
