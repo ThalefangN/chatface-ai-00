@@ -1,26 +1,41 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { ArrowLeft, LogIn, Mail, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
-import { useToast } from "@/hooks/use-toast";
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 import SubscriptionNotification from '@/components/SubscriptionNotification';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn, user } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (user) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would handle authentication here
-    toast({
-      title: "Logged in successfully",
-      description: "Welcome back to SpeakAI!",
-    });
-    setShowSubscription(true);
+    setIsLoading(true);
+    
+    try {
+      await signIn(email, password);
+      setShowSubscription(true);
+    } catch (error) {
+      console.error('Error during sign in:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleSubscriptionClose = () => {
@@ -52,11 +67,12 @@ const SignIn = () => {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   Email
                 </label>
-                <input
+                <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                   required
                 />
               </div>
@@ -72,11 +88,12 @@ const SignIn = () => {
                     Forgot password?
                   </Link>
                 </div>
-                <input
+                <Input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                   required
                 />
               </div>
@@ -84,9 +101,19 @@ const SignIn = () => {
               <Button
                 type="submit"
                 className="w-full bg-green-500 hover:bg-green-600"
+                disabled={isLoading}
               >
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
+                {isLoading ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                    Signing in...
+                  </span>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </>
+                )}
               </Button>
             </form>
             

@@ -5,23 +5,27 @@ import Logo from '@/components/Logo';
 import { ArrowLeft, Mail, CheckCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
-import { useToast } from "@/hooks/use-toast";
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ForgotPassword = () => {
-  const { toast } = useToast();
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // In a real app, you would handle password reset request here
-    toast({
-      title: "Reset link sent",
-      description: "Check your email for password reset instructions",
-    });
-    
-    setSubmitted(true);
+    try {
+      await resetPassword(email);
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Error during password reset:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
@@ -49,13 +53,12 @@ const ForgotPassword = () => {
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     Email Address
                   </label>
-                  <input
+                  <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                     required
                   />
                 </div>
@@ -63,9 +66,19 @@ const ForgotPassword = () => {
                 <Button
                   type="submit"
                   className="w-full bg-green-500 hover:bg-green-600"
+                  disabled={isLoading}
                 >
-                  <Send className="mr-2 h-4 w-4" />
-                  Send Reset Instructions
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                      Sending...
+                    </span>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Reset Instructions
+                    </>
+                  )}
                 </Button>
               </form>
             ) : (
@@ -91,6 +104,7 @@ const ForgotPassword = () => {
                     <button 
                       onClick={handleSubmit}
                       className="text-green-500 hover:underline"
+                      disabled={isLoading}
                     >
                       click here to resend
                     </button>

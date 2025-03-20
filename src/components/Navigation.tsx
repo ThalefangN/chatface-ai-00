@@ -4,10 +4,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Menu, Home, Plus, Bell, User, ChevronDown, LogOut } from 'lucide-react';
 import Logo from './Logo';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navigation = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   
   const navItems = [
     { 
@@ -33,6 +35,11 @@ const Navigation = () => {
   ];
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await signOut();
+  };
   
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/70 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -104,14 +111,16 @@ const Navigation = () => {
               
               <div className="border-t border-border my-1"></div>
               
-              <Link
-                to="/sign-in"
-                className="flex items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-muted"
-                onClick={() => setIsMenuOpen(false)}
+              <button
+                onClick={(e) => {
+                  handleSignOut(e);
+                  setIsMenuOpen(false);
+                }}
+                className="flex items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-muted w-full text-left"
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out
-              </Link>
+              </button>
             </div>
           )}
         </div>
@@ -123,7 +132,7 @@ const Navigation = () => {
               onClick={toggleMenu}
               className="flex items-center gap-2 text-sm font-medium hover:text-foreground"
             >
-              <span>User</span>
+              <span>{user?.email?.split('@')[0] || 'User'}</span>
               <ChevronDown className="h-4 w-4" />
             </button>
             
@@ -140,14 +149,16 @@ const Navigation = () => {
                 
                 <div className="border-t border-border my-1"></div>
                 
-                <Link
-                  to="/sign-in"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-muted"
-                  onClick={() => setIsMenuOpen(false)}
+                <button
+                  onClick={(e) => {
+                    handleSignOut(e);
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-destructive hover:bg-muted w-full text-left"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign Out
-                </Link>
+                </button>
               </div>
             )}
           </div>
