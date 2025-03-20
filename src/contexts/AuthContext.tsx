@@ -108,6 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (profileError) {
           console.error('Error updating profile:', profileError);
         }
+        
+        // Also create some sample data for new users
+        await createInitialUserData(user.id);
       }
       
       toast({
@@ -125,6 +128,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error signing up:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const createInitialUserData = async (userId: string) => {
+    try {
+      // 1. Create sample skills
+      const skills = [
+        { name: 'Clarity', value: 65 },
+        { name: 'Confidence', value: 70 },
+        { name: 'Pacing', value: 50 },
+        { name: 'Structure', value: 60 }
+      ];
+      
+      await supabase.from('user_skills')
+        .insert(skills.map(skill => ({
+          user_id: userId,
+          name: skill.name,
+          value: skill.value
+        })));
+        
+      // 2. Create sample alerts
+      const alerts = [
+        {
+          type: 'info',
+          title: 'Welcome to SpeakAI!',
+          message: 'Get started by scheduling your first practice session.',
+          icon: 'Info'
+        },
+        {
+          type: 'reminder',
+          title: 'Complete your profile',
+          message: 'Add more details to your profile to personalize your experience.',
+          icon: 'User'
+        }
+      ];
+      
+      await supabase.from('user_alerts')
+        .insert(alerts.map(alert => ({
+          user_id: userId,
+          type: alert.type,
+          title: alert.title,
+          message: alert.message,
+          icon: alert.icon,
+          is_read: false
+        })));
+        
+    } catch (error) {
+      console.error('Error creating initial user data:', error);
     }
   };
 

@@ -11,13 +11,8 @@ import { ArrowLeft, MicIcon, Play, Video, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-
-interface Message {
-  id?: string;
-  content: string;
-  is_ai: boolean;
-  created_at?: string;
-}
+import { useAIChat, Message } from '@/hooks/useAIChat';
+import { Input } from '@/components/ui/input';
 
 interface PracticeSession {
   id: string;
@@ -35,10 +30,6 @@ const AiChat = () => {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
-  const [aiMessages, setAiMessages] = useState<Message[]>([
-    {content: "Hello! I'm your AI interview coach. I'll be guiding you through this session.", is_ai: true},
-    {content: "Let's begin with a simple question: Could you introduce yourself and tell me about your background?", is_ai: true}
-  ]);
   const [practiceHistory, setPracticeHistory] = useState<PracticeSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
@@ -47,6 +38,8 @@ const AiChat = () => {
     enabled: isInterviewStarted,
     audioEnabled,
   });
+  
+  const { messages, isLoading: isMessageLoading, sendMessage, initializeChat } = useAIChat(currentSessionId);
   
   // Fetch practice history from database
   useEffect(() => {
@@ -92,35 +85,10 @@ const AiChat = () => {
     }
   }, [user]);
   
-  // Subscribe to messages for the current session
+  // Initialize chat when session changes
   useEffect(() => {
     if (currentSessionId) {
-      const fetchSessionMessages = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('session_messages')
-            .select('*')
-            .eq('session_id', currentSessionId)
-            .order('created_at', { ascending: true });
-            
-          if (error) throw error;
-          if (data) {
-            // Only replace messages if we got data from the database
-            if (data.length > 0) {
-              setAiMessages(data.map(msg => ({
-                id: msg.id,
-                content: msg.content,
-                is_ai: msg.is_ai,
-                created_at: msg.created_at
-              })));
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching session messages:', error);
-        }
-      };
-      
-      fetchSessionMessages();
+      initializeChat();
       
       // Set up real-time subscription for session messages
       const messagesChannel = supabase
@@ -134,7 +102,7 @@ const AiChat = () => {
           }, 
           (payload) => {
             console.log('Message changed:', payload);
-            fetchSessionMessages();
+            initializeChat();
           }
         )
         .subscribe();
@@ -143,7 +111,7 @@ const AiChat = () => {
         supabase.removeChannel(messagesChannel);
       };
     }
-  }, [currentSessionId]);
+  }, [currentSessionId, initializeChat]);
   
   const handleSelectType = (type: InterviewType) => {
     setSelectedType(type);
@@ -169,21 +137,6 @@ const AiChat = () => {
       
       if (data) {
         setCurrentSessionId(data.id);
-        // Add initial AI messages to the database
-        const initialMessages = [
-          {
-            session_id: data.id,
-            content: "Hello! I'm your AI interview coach. I'll be guiding you through this session.",
-            is_ai: true
-          },
-          {
-            session_id: data.id,
-            content: "Let's begin with a simple question: Could you introduce yourself and tell me about your background?",
-            is_ai: true
-          }
-        ];
-        
-        await supabase.from('session_messages').insert(initialMessages);
       }
       
       setIsInterviewStarted(true);
@@ -229,51 +182,11 @@ const AiChat = () => {
     setVideoEnabled(!videoEnabled);
   };
   
-  const handleSendMessage = async (text: string) => {
-    if (!text.trim() || !currentSessionId) return;
+  const handleSendMessage = () => {
+    if (!messageInput.trim()) return;
     
-    try {
-      // Add user message to the database
-      const { data: userData, error: userError } = await supabase
-        .from('session_messages')
-        .insert({
-          session_id: currentSessionId,
-          content: text,
-          is_ai: false
-        })
-        .select()
-        .single();
-        
-      if (userError) throw userError;
-      
-      setMessageInput('');
-      
-      // Simulate AI response after a short delay
-      setTimeout(async () => {
-        const responses = [
-          "Could you tell me more about that?",
-          "That's interesting. How did you handle that situation?",
-          "Great point. Let's explore that further.",
-          "I see. How does that relate to your goals?",
-          "Thank you for sharing. Let's move on to the next question."
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        
-        // Add AI response to the database
-        const { error: aiError } = await supabase
-          .from('session_messages')
-          .insert({
-            session_id: currentSessionId,
-            content: randomResponse,
-            is_ai: true
-          });
-          
-        if (aiError) throw aiError;
-      }, 1000);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    }
+    sendMessage(messageInput);
+    setMessageInput('');
   };
   
   return (
@@ -377,7 +290,9 @@ const AiChat = () => {
                   </div>
                   <div>
                     <h3 className="font-medium">AI Coach</h3>
-                    <p className="text-xs text-muted-foreground">Listening and analyzing...</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isMessageLoading ? 'Thinking...' : 'Listening and analyzing...'}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -389,7 +304,7 @@ const AiChat = () => {
               </div>
               
               <div className="flex-1 overflow-y-auto mb-4 space-y-4 px-4">
-                {aiMessages.map((message, index) => (
+                {messages.map((message, index) => (
                   <div 
                     key={message.id || index} 
                     className={`p-3 rounded-lg ${message.is_ai 
@@ -403,24 +318,37 @@ const AiChat = () => {
                     <p className="text-sm">{message.content}</p>
                   </div>
                 ))}
+                {isMessageLoading && (
+                  <div className="p-3 rounded-lg bg-blue-500/10 animate-pulse">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center gap-2 mt-auto pt-4 px-4 pb-4 border-t border-border">
-                <input
+                <Input
                   type="text"
                   placeholder="Type your response..."
-                  className="flex-1 px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                  className="flex-1"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      handleSendMessage(messageInput);
+                      handleSendMessage();
                     }
                   }}
+                  disabled={isMessageLoading}
                 />
                 <button 
-                  className="p-2 rounded-full bg-blue-500 text-primary-foreground hover:bg-blue-600 transition-colors"
-                  onClick={() => handleSendMessage(messageInput)}
+                  className={`p-2 rounded-full ${isMessageLoading 
+                    ? 'bg-blue-300 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600'} text-primary-foreground transition-colors`}
+                  onClick={handleSendMessage}
+                  disabled={isMessageLoading}
                 >
                   <MicIcon className="h-5 w-5" />
                 </button>
