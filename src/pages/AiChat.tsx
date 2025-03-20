@@ -25,6 +25,7 @@ interface PracticeSession {
   title: string;
   duration: number | null;
   created_at: string;
+  updated_at?: string;
 }
 
 const AiChat = () => {

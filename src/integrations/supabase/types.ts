@@ -33,6 +33,36 @@ export type Database = {
         }
         Relationships: []
       }
+      practice_sessions: {
+        Row: {
+          created_at: string | null
+          duration: number | null
+          id: string
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -56,6 +86,38 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      session_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_ai: boolean | null
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_ai?: boolean | null
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_ai?: boolean | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "practice_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       translations: {
         Row: {
