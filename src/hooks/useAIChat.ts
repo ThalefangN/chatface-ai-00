@@ -20,6 +20,7 @@ export const useAIChat = (sessionId: string | null) => {
   // Speech recognition
   const recognitionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const [isListening, setIsListening] = useState(false);
 
   // Initialize speech recognition
@@ -50,7 +51,13 @@ export const useAIChat = (sessionId: string | null) => {
     }
     
     // Initialize audio context for playing responses
-    audioContextRef.current = new (window.AudioContext)();
+    audioContextRef.current = new AudioContext();
+    
+    // Create audio element for playing responses
+    audioElementRef.current = new Audio();
+    audioElementRef.current.onended = () => {
+      setIsSpeaking(false);
+    };
     
     return () => {
       if (recognitionRef.current) {
@@ -62,6 +69,31 @@ export const useAIChat = (sessionId: string | null) => {
     };
   }, []);
 
+  // Set up real-time subscription for session messages
+  useEffect(() => {
+    if (sessionId) {
+      const messagesChannel = supabase
+        .channel(`messages_${sessionId}`)
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'session_messages',
+            filter: `session_id=eq.${sessionId}`
+          }, 
+          (payload) => {
+            console.log('Message changed:', payload);
+            initializeChat();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(messagesChannel);
+      };
+    }
+  }, [sessionId]);
+
   // Start voice recognition
   const startListening = () => {
     if (!recognitionRef.current) {
@@ -72,6 +104,7 @@ export const useAIChat = (sessionId: string | null) => {
     try {
       recognitionRef.current.start();
       setIsListening(true);
+      toast.info('Listening... Speak now');
     } catch (error) {
       console.error('Error starting speech recognition:', error);
       setIsListening(false);
@@ -89,41 +122,56 @@ export const useAIChat = (sessionId: string | null) => {
 
   // Play audio from base64 string
   const playAudio = async (base64Audio: string) => {
-    if (!base64Audio || !audioContextRef.current) return;
+    if (!base64Audio || !audioElementRef.current) return;
     
     try {
       setIsSpeaking(true);
       
-      // Convert base64 to ArrayBuffer
-      const binaryString = atob(base64Audio);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      // Convert base64 to blob URL
+      const byteCharacters = atob(base64Audio);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
       }
       
-      // Decode audio data and play it
-      const audioBuffer = await audioContextRef.current.decodeAudioData(bytes.buffer);
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
+      const blob = new Blob(byteArrays, { type: 'audio/mp3' });
+      const url = URL.createObjectURL(blob);
       
-      source.onended = () => {
-        setIsSpeaking(false);
+      // Play the audio
+      audioElementRef.current.src = url;
+      audioElementRef.current.onloadedmetadata = () => {
+        audioElementRef.current?.play();
       };
       
-      source.start(0);
+      audioElementRef.current.onerror = () => {
+        setIsSpeaking(false);
+        fallbackToTextToSpeech();
+      };
+      
     } catch (error) {
       console.error('Error playing audio:', error);
       setIsSpeaking(false);
-      // Fall back to text-to-speech API if available
-      if ('speechSynthesis' in window) {
-        const lastAIMessage = messages.filter(m => m.is_ai).pop();
-        if (lastAIMessage) {
-          const utterance = new SpeechSynthesisUtterance(lastAIMessage.content);
-          utterance.onend = () => setIsSpeaking(false);
-          speechSynthesis.speak(utterance);
-        }
+      fallbackToTextToSpeech();
+    }
+  };
+  
+  // Fallback to browser's text-to-speech
+  const fallbackToTextToSpeech = () => {
+    if ('speechSynthesis' in window) {
+      const lastAIMessage = messages.filter(m => m.is_ai).pop();
+      if (lastAIMessage) {
+        const utterance = new SpeechSynthesisUtterance(lastAIMessage.content);
+        utterance.onend = () => setIsSpeaking(false);
+        speechSynthesis.speak(utterance);
       }
     }
   };
@@ -201,6 +249,15 @@ export const useAIChat = (sessionId: string | null) => {
     try {
       setIsLoading(true);
       
+      // Add a temporary user message for better UX
+      const tempMessage: Message = {
+        content: "Processing your voice message...",
+        is_ai: false,
+        created_at: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
+      
       // Call the edge function with audio data
       const { data: functionData, error: functionError } = await supabase.functions.invoke('ai-coach', {
         body: {
@@ -211,6 +268,9 @@ export const useAIChat = (sessionId: string | null) => {
       });
       
       if (functionError) throw functionError;
+      
+      // Remove the temporary message and let the real-time subscription update the messages
+      setMessages(prev => prev.filter(msg => msg !== tempMessage));
       
       // If there's audio in the response, play it
       if (functionData.audioResponse) {
@@ -288,6 +348,49 @@ export const useAIChat = (sessionId: string | null) => {
     }
   };
 
+  // Record audio and send it
+  const recordAudio = async () => {
+    if (!sessionId || !user) return;
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
+      
+      mediaRecorder.addEventListener("dataavailable", (event) => {
+        audioChunks.push(event.data);
+      });
+      
+      mediaRecorder.addEventListener("stop", async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64data = reader.result as string;
+          // Remove the data URL prefix
+          const audioBase64 = base64data.split(',')[1];
+          await sendAudio(audioBase64);
+        };
+        
+        stream.getTracks().forEach(track => track.stop());
+      });
+      
+      mediaRecorder.start();
+      
+      // Record for 5 seconds
+      setTimeout(() => {
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      }, 5000);
+      
+    } catch (error) {
+      console.error('Error recording audio:', error);
+      toast.error('Failed to access microphone');
+    }
+  };
+
   return {
     messages,
     isLoading,
@@ -296,6 +399,7 @@ export const useAIChat = (sessionId: string | null) => {
     startListening,
     stopListening,
     isListening,
-    isSpeaking
+    isSpeaking,
+    recordAudio
   };
 };
