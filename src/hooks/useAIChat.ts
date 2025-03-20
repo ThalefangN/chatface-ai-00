@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,7 +14,119 @@ export interface Message {
 export const useAIChat = (sessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const { user } = useAuth();
+  
+  // Speech recognition
+  const recognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    // Check if the browser supports the Web Speech API
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          sendMessage(transcript);
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast.error('Speech recognition error. Please try again.');
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+    
+    // Initialize audio context for playing responses
+    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  // Start voice recognition
+  const startListening = () => {
+    if (!recognitionRef.current) {
+      toast.error('Speech recognition is not supported in your browser');
+      return;
+    }
+    
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch (error) {
+      console.error('Error starting speech recognition:', error);
+      setIsListening(false);
+      toast.error('Failed to start speech recognition');
+    }
+  };
+
+  // Stop voice recognition
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  // Play audio from base64 string
+  const playAudio = async (base64Audio: string) => {
+    if (!base64Audio || !audioContextRef.current) return;
+    
+    try {
+      setIsSpeaking(true);
+      
+      // Convert base64 to ArrayBuffer
+      const binaryString = atob(base64Audio);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Decode audio data and play it
+      const audioBuffer = await audioContextRef.current.decodeAudioData(bytes.buffer);
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+      
+      source.onended = () => {
+        setIsSpeaking(false);
+      };
+      
+      source.start(0);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsSpeaking(false);
+      // Fall back to text-to-speech API if available
+      if ('speechSynthesis' in window) {
+        const lastAIMessage = messages.findLast(m => m.is_ai);
+        if (lastAIMessage) {
+          const utterance = new SpeechSynthesisUtterance(lastAIMessage.content);
+          utterance.onend = () => setIsSpeaking(false);
+          speechSynthesis.speak(utterance);
+        }
+      }
+    }
+  };
 
   // Initialize chat with greeting messages
   const initializeChat = async () => {
@@ -66,6 +178,14 @@ export const useAIChat = (sessionId: string | null) => {
           
         if (updatedData) {
           setMessages(updatedData);
+          
+          // Use built-in browser TTS for the welcome message
+          if ('speechSynthesis' in window) {
+            setIsSpeaking(true);
+            const utterance = new SpeechSynthesisUtterance(initialMessages[0].content + ' ' + initialMessages[1].content);
+            utterance.onend = () => setIsSpeaking(false);
+            speechSynthesis.speak(utterance);
+          }
         }
       }
     } catch (error) {
@@ -74,82 +194,96 @@ export const useAIChat = (sessionId: string | null) => {
     }
   };
 
+  // Send audio data to the server
+  const sendAudio = async (audioData: string) => {
+    if (!audioData || !sessionId || !user) return;
+    
+    try {
+      setIsLoading(true);
+      
+      // Call the edge function with audio data
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('ai-coach', {
+        body: {
+          sessionId,
+          userId: user.id,
+          audioData
+        }
+      });
+      
+      if (functionError) throw functionError;
+      
+      // If there's audio in the response, play it
+      if (functionData.audioResponse) {
+        playAudio(functionData.audioResponse);
+      } else if ('speechSynthesis' in window) {
+        // Fall back to browser's text-to-speech
+        setIsSpeaking(true);
+        const utterance = new SpeechSynthesisUtterance(functionData.message);
+        utterance.onend = () => setIsSpeaking(false);
+        speechSynthesis.speak(utterance);
+      }
+      
+    } catch (error) {
+      console.error('Error sending audio:', error);
+      toast.error('Failed to process speech');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Send text message to the server
   const sendMessage = async (content: string) => {
     if (!content.trim() || !sessionId || !user) return;
     
     try {
       setIsLoading(true);
       
-      // Add user message
-      const userMessage: Omit<Message, 'id' | 'created_at'> = {
+      // Add user message to UI immediately for better UX
+      const tempUserMessage: Message = {
         content,
-        is_ai: false
+        is_ai: false,
+        created_at: new Date().toISOString()
       };
       
-      // Save user message to database
-      const { data: userData, error: userError } = await supabase
-        .from('session_messages')
-        .insert({
-          session_id: sessionId,
-          content: userMessage.content,
-          is_ai: userMessage.is_ai
-        })
-        .select()
-        .single();
+      setMessages(prev => [...prev, tempUserMessage]);
       
-      if (userError) throw userError;
-      
-      // Calculate AI response based on user's message
-      // In a real implementation, this would call an AI API like OpenAI
-      setTimeout(async () => {
-        try {
-          // Generate a contextually relevant response
-          let aiResponse = "I'm processing your input...";
-          
-          if (content.toLowerCase().includes("introduce") || content.toLowerCase().includes("background")) {
-            aiResponse = "Thanks for sharing about yourself! Could you tell me about a challenging work situation you've faced and how you handled it?";
-          } else if (content.toLowerCase().includes("challenge") || content.toLowerCase().includes("difficult")) {
-            aiResponse = "That's a good example of problem-solving. What would you say are your greatest strengths?";
-          } else if (content.toLowerCase().includes("strength") || content.toLowerCase().includes("good at")) {
-            aiResponse = "Those are valuable skills! Now, could you share what you consider to be areas for improvement?";
-          } else if (content.toLowerCase().includes("weakness") || content.toLowerCase().includes("improve")) {
-            aiResponse = "Self-awareness is important. How do you plan to address these areas?";
-          } else {
-            // More generic responses
-            const responses = [
-              "Could you elaborate more on that point?",
-              "That's interesting. How does that relate to your career goals?",
-              "Great point. Let's explore that further. Can you give a specific example?",
-              "I understand. What steps have you taken to improve in this area?",
-              "Thanks for sharing. Let's shift focus - where do you see yourself in five years?"
-            ];
-            aiResponse = responses[Math.floor(Math.random() * responses.length)];
-          }
-          
-          // Save AI response to database
-          const { data: aiData, error: aiError } = await supabase
-            .from('session_messages')
-            .insert({
-              session_id: sessionId,
-              content: aiResponse,
-              is_ai: true
-            })
-            .select()
-            .single();
-            
-          if (aiError) throw aiError;
-          
-        } catch (error) {
-          console.error('Error generating AI response:', error);
-          toast.error('Failed to generate AI response');
-        } finally {
-          setIsLoading(false);
+      // Call the edge function with text
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('ai-coach', {
+        body: {
+          message: content,
+          sessionId,
+          userId: user.id
         }
-      }, 1000);
+      });
+      
+      if (functionError) throw functionError;
+      
+      // Update messages from the database to get the correct IDs
+      const { data: updatedData } = await supabase
+        .from('session_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
+        
+      if (updatedData) {
+        setMessages(updatedData);
+      }
+      
+      // If there's audio in the response, play it
+      if (functionData.audioResponse) {
+        playAudio(functionData.audioResponse);
+      } else if ('speechSynthesis' in window) {
+        // Fall back to browser's text-to-speech
+        setIsSpeaking(true);
+        const utterance = new SpeechSynthesisUtterance(functionData.message);
+        utterance.onend = () => setIsSpeaking(false);
+        speechSynthesis.speak(utterance);
+      }
       
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -158,6 +292,10 @@ export const useAIChat = (sessionId: string | null) => {
     messages,
     isLoading,
     sendMessage,
-    initializeChat
+    initializeChat,
+    startListening,
+    stopListening,
+    isListening,
+    isSpeaking
   };
 };

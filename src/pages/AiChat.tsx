@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import MobileNavigation from '@/components/MobileNavigation';
@@ -7,12 +7,13 @@ import VideoContainer from '@/components/VideoContainer';
 import InterviewSelector, { InterviewType } from '@/components/InterviewSelector';
 import AnimatedContainer from '@/components/AnimatedContainer';
 import { useVideoStream } from '@/hooks/useVideoStream';
-import { ArrowLeft, MicIcon, Play, Video, X } from 'lucide-react';
+import { ArrowLeft, MicIcon, Play, Send, Video, X, Mic, MicOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAIChat, Message } from '@/hooks/useAIChat';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface PracticeSession {
   id: string;
@@ -33,13 +34,30 @@ const AiChat = () => {
   const [practiceHistory, setPracticeHistory] = useState<PracticeSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { videoRef, error, isLoading, startStream, stopStream } = useVideoStream({
     enabled: isInterviewStarted,
     audioEnabled,
   });
   
-  const { messages, isLoading: isMessageLoading, sendMessage, initializeChat } = useAIChat(currentSessionId);
+  const { 
+    messages, 
+    isLoading: isMessageLoading, 
+    sendMessage, 
+    initializeChat,
+    startListening,
+    stopListening,
+    isListening,
+    isSpeaking
+  } = useAIChat(currentSessionId);
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
   
   // Fetch practice history from database
   useEffect(() => {
@@ -172,6 +190,9 @@ const AiChat = () => {
     setIsInterviewStarted(false);
     stopStream();
     setCurrentSessionId(null);
+    
+    // Stop voice recognition if active
+    stopListening();
   };
   
   const handleToggleAudio = () => {
@@ -187,6 +208,14 @@ const AiChat = () => {
     
     sendMessage(messageInput);
     setMessageInput('');
+  };
+  
+  const handleVoiceRecognition = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
   };
   
   return (
@@ -285,13 +314,23 @@ const AiChat = () => {
             <AnimatedContainer className="h-full flex flex-col bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
               <div className="flex items-center justify-between mb-4 p-4">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
-                    <MicIcon className="h-5 w-5 text-blue-500 animate-pulse" />
+                  <div className={cn(
+                    "w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mr-3",
+                    isSpeaking && "border-2 border-blue-500 animate-pulse"
+                  )}>
+                    <MicIcon className={cn(
+                      "h-5 w-5 text-blue-500",
+                      isSpeaking && "animate-pulse"
+                    )} />
                   </div>
                   <div>
                     <h3 className="font-medium">AI Coach</h3>
                     <p className="text-xs text-muted-foreground">
-                      {isMessageLoading ? 'Thinking...' : 'Listening and analyzing...'}
+                      {isMessageLoading 
+                        ? 'Thinking...' 
+                        : isSpeaking 
+                          ? 'Speaking...' 
+                          : 'Listening and analyzing...'}
                     </p>
                   </div>
                 </div>
@@ -307,19 +346,21 @@ const AiChat = () => {
                 {messages.map((message, index) => (
                   <div 
                     key={message.id || index} 
-                    className={`p-3 rounded-lg ${message.is_ai 
-                      ? 'bg-blue-500/10 animate-fade-in-left' 
-                      : 'bg-green-500/10 animate-fade-in-right self-end ml-auto'}`}
+                    className={cn(
+                      "p-3 rounded-lg max-w-[80%]",
+                      message.is_ai 
+                        ? "bg-blue-500/10 animate-fade-in-left" 
+                        : "bg-green-500/10 animate-fade-in-right self-end ml-auto"
+                    )}
                     style={{ 
                       animationDelay: `${index * 0.1}s`,
-                      maxWidth: '80%' 
                     }}
                   >
                     <p className="text-sm">{message.content}</p>
                   </div>
                 ))}
                 {isMessageLoading && (
-                  <div className="p-3 rounded-lg bg-blue-500/10 animate-pulse">
+                  <div className="p-3 rounded-lg bg-blue-500/10 animate-pulse max-w-[80%]">
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                       <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -327,12 +368,13 @@ const AiChat = () => {
                     </div>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
               
               <div className="flex items-center gap-2 mt-auto pt-4 px-4 pb-4 border-t border-border">
                 <Input
                   type="text"
-                  placeholder="Type your response..."
+                  placeholder={isListening ? "Listening..." : "Type your response..."}
                   className="flex-1"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
@@ -341,19 +383,34 @@ const AiChat = () => {
                       handleSendMessage();
                     }
                   }}
-                  disabled={isMessageLoading}
+                  disabled={isMessageLoading || isListening}
                 />
                 <button 
-                  className={`p-2 rounded-full ${isMessageLoading 
-                    ? 'bg-blue-300 cursor-not-allowed' 
-                    : 'bg-blue-500 hover:bg-blue-600'} text-primary-foreground transition-colors`}
-                  onClick={handleSendMessage}
+                  className={cn(
+                    "p-2 rounded-full transition-colors",
+                    isListening
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                  )}
+                  onClick={handleVoiceRecognition}
                   disabled={isMessageLoading}
                 >
-                  <MicIcon className="h-5 w-5" />
+                  {isListening ? (
+                    <MicOff className="h-5 w-5 animate-pulse" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
                 </button>
-                <button className="p-2 rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors">
-                  <Video className="h-5 w-5" />
+                <button 
+                  className={`p-2 rounded-full ${
+                    isMessageLoading || !messageInput.trim()
+                      ? 'bg-blue-300 cursor-not-allowed' 
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  } transition-colors`}
+                  onClick={handleSendMessage}
+                  disabled={isMessageLoading || !messageInput.trim()}
+                >
+                  <Send className="h-5 w-5" />
                 </button>
               </div>
             </AnimatedContainer>
