@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
-import { Home, Plus, Bell, User } from 'lucide-react';
+import { Home, Plus, Bell, User, FileText } from 'lucide-react';
 
 const MobileNavigation = () => {
   const location = useLocation();
@@ -10,23 +10,28 @@ const MobileNavigation = () => {
   const navItems = [
     { 
       path: '/home', 
-      label: 'Home', 
+      label: 'Gae', 
       icon: Home 
     },
     { 
       path: '/ai-chat', 
-      label: 'AI Chat', 
+      label: 'Potso', 
       icon: Plus,
       isPrimary: true
     },
     { 
+      path: '/notes', 
+      label: 'Dintlha', 
+      icon: FileText 
+    },
+    { 
       path: '/alerts', 
-      label: 'Alerts', 
+      label: 'Dikitsiso', 
       icon: Bell 
     },
     { 
       path: '/profile', 
-      label: 'Profile', 
+      label: 'Profaele', 
       icon: User 
     }
   ];
@@ -45,10 +50,10 @@ const MobileNavigation = () => {
                 to={item.path}
                 className="relative flex flex-col items-center"
               >
-                <div className="absolute -top-8 bg-primary text-primary-foreground p-4 rounded-full shadow-lg transform transition-transform hover:scale-105">
+                <div className="absolute -top-8 bg-primary text-primary-foreground p-4 rounded-full shadow-lg transform transition-transform hover:scale-110 animate-pulse-soft">
                   <Icon className="h-6 w-6" />
                 </div>
-                <span className="text-xs mt-7 text-muted-foreground">{item.label}</span>
+                <span className="text-xs font-bold mt-7 text-muted-foreground">{item.label}</span>
               </Link>
             );
           }
@@ -58,14 +63,14 @@ const MobileNavigation = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center space-y-1 p-2 rounded-lg",
+                "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-300",
                 isActive 
-                  ? "text-primary" 
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-primary scale-110" 
+                  : "text-muted-foreground hover:text-foreground hover:scale-105"
               )}
             >
               <Icon className={cn("h-6 w-6", isActive && "animate-pulse-soft")} />
-              <span className="text-xs">{item.label}</span>
+              <span className={cn("text-xs font-bold", isActive && "animate-pulse-soft")}>{item.label}</span>
             </Link>
           );
         })}

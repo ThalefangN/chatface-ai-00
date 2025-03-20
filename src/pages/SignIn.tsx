@@ -2,7 +2,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { ArrowLeft, LogIn } from 'lucide-react';
+import { ArrowLeft, LogIn, Mail, Lock, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import AnimatedContainer from '@/components/AnimatedContainer';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -26,14 +28,15 @@ const SignIn = () => {
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
+            <h1 className="text-2xl font-bold mb-2">Dumela, Welcome Back</h1>
             <p className="text-muted-foreground">Sign in to your account to continue</p>
           </div>
           
-          <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <AnimatedContainer className="bg-card p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
+                <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
                   Email
                 </label>
                 <input
@@ -47,10 +50,12 @@ const SignIn = () => {
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium">
+                  <label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
                     Password
                   </label>
-                  <a href="#" className="text-xs text-primary hover:underline">
+                  <a href="#" className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" />
                     Forgot password?
                   </a>
                 </div>
@@ -63,24 +68,24 @@ const SignIn = () => {
                 />
               </div>
               
-              <button
+              <Button
                 type="submit"
-                className="w-full flex items-center justify-center bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
+                className="w-full"
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                Sign In
-              </button>
+                Tsena (Sign In)
+              </Button>
             </form>
             
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
-                Don't have an account?{' '}
+                Ga o na akhaonto?{' '}
                 <Link to="/sign-up" className="text-primary hover:underline">
-                  Sign up
+                  Ikwadise (Sign up)
                 </Link>
               </p>
             </div>
-          </div>
+          </AnimatedContainer>
         </div>
       </main>
     </div>
