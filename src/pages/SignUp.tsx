@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { ArrowLeft, UserPlus, User, Mail, Lock, FileText } from 'lucide-react';
+import { ArrowLeft, UserPlus, User, Mail, Lock, FileText, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +41,7 @@ const SignUp = () => {
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Itirele Akhaonto</h1>
+            <h1 className="text-2xl font-bold mb-2">Create Your Account</h1>
             <p className="text-muted-foreground">Sign up to get started with SpeakAI</p>
           </div>
           
@@ -50,13 +51,13 @@ const SignUp = () => {
                 <div className="space-y-2">
                   <label htmlFor="first-name" className="text-sm font-medium flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    Leina la ntlha
+                    First Name
                   </label>
                   <input
                     id="first-name"
                     type="text"
                     placeholder="First name"
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                    className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                     required
                   />
                 </div>
@@ -64,13 +65,13 @@ const SignUp = () => {
                 <div className="space-y-2">
                   <label htmlFor="last-name" className="text-sm font-medium flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    Sefane
+                    Last Name
                   </label>
                   <input
                     id="last-name"
                     type="text"
                     placeholder="Last name"
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                    className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                     required
                   />
                 </div>
@@ -85,7 +86,7 @@ const SignUp = () => {
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                   required
                 />
               </div>
@@ -99,7 +100,7 @@ const SignUp = () => {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
                   required
                 />
               </div>
@@ -113,31 +114,31 @@ const SignUp = () => {
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground flex items-center gap-1">
                   <FileText className="h-3 w-3" />
-                  Ke dumalana le{' '}
-                  <a href="#" className="text-primary hover:underline">
-                    melawana
+                  I agree to the{' '}
+                  <a href="#" className="text-green-500 hover:underline">
+                    terms
                   </a>{' '}
-                  le{' '}
-                  <a href="#" className="text-primary hover:underline">
-                    polisi ya sephiri
+                  and{' '}
+                  <a href="#" className="text-green-500 hover:underline">
+                    privacy policy
                   </a>
                 </label>
               </div>
               
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-green-500 hover:bg-green-600"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Ikwadise (Create Account)
+                Create Account
               </Button>
             </form>
             
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
-                O setse o na le akhaonto?{' '}
-                <Link to="/sign-in" className="text-primary hover:underline">
-                  Tsena (Sign in)
+                Already have an account?{' '}
+                <Link to="/sign-in" className="text-green-500 hover:underline">
+                  Sign in
                 </Link>
               </p>
             </div>

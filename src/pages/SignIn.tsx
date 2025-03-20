@@ -67,10 +67,10 @@ const SignIn = () => {
                     <Lock className="h-4 w-4 text-muted-foreground" />
                     Password
                   </label>
-                  <a href="#" className="text-xs text-green-500 hover:underline flex items-center gap-1">
+                  <Link to="/forgot-password" className="text-xs text-green-500 hover:underline flex items-center gap-1">
                     <ShieldCheck className="h-3 w-3" />
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
                 <input
                   id="password"

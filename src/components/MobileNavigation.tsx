@@ -50,10 +50,12 @@ const MobileNavigation = () => {
                 to={item.path}
                 className="relative flex flex-col items-center"
               >
-                <div className="absolute -top-8 bg-green-500 text-white p-4 rounded-full shadow-lg transform transition-transform hover:scale-110 animate-pulse-soft">
+                <div className="absolute -top-8 bg-green-500 text-white p-4 rounded-full shadow-lg transform hover:scale-110 hover:bg-green-600 transition-all duration-300">
                   <Icon className="h-6 w-6" />
                 </div>
-                <span className="text-xs font-bold mt-7 text-muted-foreground">{item.label}</span>
+                <span className="text-xs font-bold mt-7 text-muted-foreground">
+                  {item.label}
+                </span>
               </Link>
             );
           }
@@ -69,8 +71,16 @@ const MobileNavigation = () => {
                   : "text-muted-foreground hover:text-foreground hover:scale-105"
               )}
             >
-              <Icon className={cn("h-6 w-6", isActive && "animate-pulse-soft")} />
-              <span className={cn("text-xs font-bold", isActive && "animate-pulse-soft")}>{item.label}</span>
+              <Icon className={cn(
+                "h-6 w-6", 
+                isActive && "animate-pulse-soft"
+              )} />
+              <span className={cn(
+                "text-xs font-bold", 
+                isActive && "animate-pulse-soft"
+              )}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
