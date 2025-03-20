@@ -10,6 +10,22 @@ import { useVideoStream } from '@/hooks/useVideoStream';
 import { ArrowLeft, MicIcon, Play, Video, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+interface Message {
+  id?: string;
+  content: string;
+  is_ai: boolean;
+  created_at?: string;
+}
+
+interface PracticeSession {
+  id: string;
+  type: string;
+  title: string;
+  duration: number | null;
+  created_at: string;
+}
 
 const AiChat = () => {
   const navigate = useNavigate();
@@ -18,11 +34,13 @@ const AiChat = () => {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
-  const [aiMessages, setAiMessages] = useState<{text: string, isAi: boolean}[]>([
-    {text: "Hello! I'm your AI interview coach. I'll be guiding you through this session.", isAi: true},
-    {text: "Let's begin with a simple question: Could you introduce yourself and tell me about your background?", isAi: true}
+  const [aiMessages, setAiMessages] = useState<Message[]>([
+    {content: "Hello! I'm your AI interview coach. I'll be guiding you through this session.", is_ai: true},
+    {content: "Let's begin with a simple question: Could you introduce yourself and tell me about your background?", is_ai: true}
   ]);
-  const [practiceHistory, setPracticeHistory] = useState<any[]>([]);
+  const [practiceHistory, setPracticeHistory] = useState<PracticeSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [messageInput, setMessageInput] = useState('');
   
   const { videoRef, error, isLoading, startStream, stopStream } = useVideoStream({
     enabled: isInterviewStarted,
@@ -34,63 +52,172 @@ const AiChat = () => {
     if (user) {
       const fetchPracticeHistory = async () => {
         try {
-          // This is a placeholder - in a real app, we would fetch from Supabase
-          // Example: const { data, error } = await supabase.from('practice_sessions').select('*').eq('user_id', user.id);
-          // For now, we'll use the simulated data
-          console.log('Would fetch practice history for user:', user.id);
-          
-          // Simulated data - in a real implementation, this would come from the database
-          setPracticeHistory([
-            {
-              id: 1,
-              type: 'presentation',
-              title: 'Product Demo',
-              date: '3 days ago',
-              duration: '15 min',
-            },
-            {
-              id: 2,
-              type: 'interview',
-              title: 'Technical Interview',
-              date: '5 days ago',
-              duration: '25 min',
-            },
-            {
-              id: 3,
-              type: 'public-speaking',
-              title: 'Conference Talk',
-              date: '1 week ago',
-              duration: '10 min',
-            }
-          ]);
+          const { data, error } = await supabase
+            .from('practice_sessions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+            
+          if (error) throw error;
+          if (data) setPracticeHistory(data);
         } catch (error) {
           console.error('Error fetching practice history:', error);
+          toast.error('Failed to load practice history');
         }
       };
       
       fetchPracticeHistory();
+      
+      // Set up real-time subscription for practice sessions
+      const practiceChannel = supabase
+        .channel('practice_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'practice_sessions',
+            filter: `user_id=eq.${user.id}`
+          }, 
+          (payload) => {
+            console.log('Practice session changed:', payload);
+            fetchPracticeHistory();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(practiceChannel);
+      };
     }
   }, [user]);
+  
+  // Subscribe to messages for the current session
+  useEffect(() => {
+    if (currentSessionId) {
+      const fetchSessionMessages = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('session_messages')
+            .select('*')
+            .eq('session_id', currentSessionId)
+            .order('created_at', { ascending: true });
+            
+          if (error) throw error;
+          if (data) {
+            // Only replace messages if we got data from the database
+            if (data.length > 0) {
+              setAiMessages(data.map(msg => ({
+                id: msg.id,
+                content: msg.content,
+                is_ai: msg.is_ai,
+                created_at: msg.created_at
+              })));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching session messages:', error);
+        }
+      };
+      
+      fetchSessionMessages();
+      
+      // Set up real-time subscription for session messages
+      const messagesChannel = supabase
+        .channel('messages_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'session_messages',
+            filter: `session_id=eq.${currentSessionId}`
+          }, 
+          (payload) => {
+            console.log('Message changed:', payload);
+            fetchSessionMessages();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(messagesChannel);
+      };
+    }
+  }, [currentSessionId]);
   
   const handleSelectType = (type: InterviewType) => {
     setSelectedType(type);
   };
   
-  const handleStartInterview = () => {
-    setIsInterviewStarted(true);
-    startStream();
+  const handleStartInterview = async () => {
+    if (!user || !selectedType) return;
     
-    // In a real implementation, we would create a new practice session in the database
-    // Example: await supabase.from('practice_sessions').insert({user_id: user.id, type: selectedType});
-    console.log('Starting practice session:', selectedType);
+    try {
+      // Create a new practice session in the database
+      const { data, error } = await supabase
+        .from('practice_sessions')
+        .insert({
+          user_id: user.id,
+          type: selectedType,
+          title: `${selectedType} Practice`,
+          duration: 0
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setCurrentSessionId(data.id);
+        // Add initial AI messages to the database
+        const initialMessages = [
+          {
+            session_id: data.id,
+            content: "Hello! I'm your AI interview coach. I'll be guiding you through this session.",
+            is_ai: true
+          },
+          {
+            session_id: data.id,
+            content: "Let's begin with a simple question: Could you introduce yourself and tell me about your background?",
+            is_ai: true
+          }
+        ];
+        
+        await supabase.from('session_messages').insert(initialMessages);
+      }
+      
+      setIsInterviewStarted(true);
+      startStream();
+      
+      toast.success('Practice session started!');
+    } catch (error) {
+      console.error('Error starting practice session:', error);
+      toast.error('Failed to start practice session');
+    }
   };
   
-  const handleEndInterview = () => {
+  const handleEndInterview = async () => {
+    if (currentSessionId) {
+      try {
+        // Update the duration of the practice session
+        await supabase
+          .from('practice_sessions')
+          .update({
+            updated_at: new Date().toISOString(),
+            // Calculate duration based on creation time
+            duration: practiceHistory.find(p => p.id === currentSessionId)?.duration || 0
+          })
+          .eq('id', currentSessionId);
+          
+        toast.success('Practice session saved!');
+      } catch (error) {
+        console.error('Error updating practice session:', error);
+        toast.error('Failed to save practice session');
+      }
+    }
+    
     setIsInterviewStarted(false);
     stopStream();
-    
-    // In a real implementation, we would update the practice session in the database
-    console.log('Ending practice session');
+    setCurrentSessionId(null);
   };
   
   const handleToggleAudio = () => {
@@ -101,24 +228,51 @@ const AiChat = () => {
     setVideoEnabled(!videoEnabled);
   };
   
-  const handleSendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim() || !currentSessionId) return;
     
-    // Add user message
-    setAiMessages(prev => [...prev, { text, isAi: false }]);
-    
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-      const responses = [
-        "Could you tell me more about that?",
-        "That's interesting. How did you handle that situation?",
-        "Great point. Let's explore that further.",
-        "I see. How does that relate to your goals?",
-        "Thank you for sharing. Let's move on to the next question."
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      setAiMessages(prev => [...prev, { text: randomResponse, isAi: true }]);
-    }, 1000);
+    try {
+      // Add user message to the database
+      const { data: userData, error: userError } = await supabase
+        .from('session_messages')
+        .insert({
+          session_id: currentSessionId,
+          content: text,
+          is_ai: false
+        })
+        .select()
+        .single();
+        
+      if (userError) throw userError;
+      
+      setMessageInput('');
+      
+      // Simulate AI response after a short delay
+      setTimeout(async () => {
+        const responses = [
+          "Could you tell me more about that?",
+          "That's interesting. How did you handle that situation?",
+          "Great point. Let's explore that further.",
+          "I see. How does that relate to your goals?",
+          "Thank you for sharing. Let's move on to the next question."
+        ];
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        
+        // Add AI response to the database
+        const { error: aiError } = await supabase
+          .from('session_messages')
+          .insert({
+            session_id: currentSessionId,
+            content: randomResponse,
+            is_ai: true
+          });
+          
+        if (aiError) throw aiError;
+      }, 1000);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    }
   };
   
   return (
@@ -158,6 +312,48 @@ const AiChat = () => {
                 </button>
               </div>
             )}
+            
+            {practiceHistory.length > 0 && (
+              <div className="mt-12">
+                <h2 className="text-xl font-semibold mb-4">Your Recent Practice Sessions</h2>
+                <AnimatedContainer className="bg-card overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+                  <div className="p-6">
+                    {practiceHistory.slice(0, 3).map((session) => (
+                      <div 
+                        key={session.id}
+                        className="flex items-center justify-between py-3 border-b last:border-b-0 border-border hover:bg-muted/20 rounded-lg px-2 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <div className="p-2 rounded-lg bg-primary/10 mr-3">
+                            {session.type === 'presentation' && <Play className="h-4 w-4 text-orange-500" />}
+                            {session.type === 'interview' && <Play className="h-4 w-4 text-blue-500" />}
+                            {session.type === 'public-speaking' && <Play className="h-4 w-4 text-green-500" />}
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{session.title}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(session.created_at).toLocaleDateString()} • {session.duration ? `${session.duration} min` : 'In progress'}
+                            </p>
+                          </div>
+                        </div>
+                        <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors group">
+                          <Play className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="bg-muted/30 p-4 text-center">
+                    <button 
+                      onClick={() => navigate('/profile')} 
+                      className="text-sm text-primary hover:underline font-medium"
+                    >
+                      View all sessions
+                    </button>
+                  </div>
+                </AnimatedContainer>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 animate-fade-in">
@@ -194,8 +390,8 @@ const AiChat = () => {
               <div className="flex-1 overflow-y-auto mb-4 space-y-4 px-4">
                 {aiMessages.map((message, index) => (
                   <div 
-                    key={index} 
-                    className={`p-3 rounded-lg ${message.isAi 
+                    key={message.id || index} 
+                    className={`p-3 rounded-lg ${message.is_ai 
                       ? 'bg-blue-500/10 animate-fade-in-left' 
                       : 'bg-green-500/10 animate-fade-in-right self-end ml-auto'}`}
                     style={{ 
@@ -203,7 +399,7 @@ const AiChat = () => {
                       maxWidth: '80%' 
                     }}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-sm">{message.content}</p>
                   </div>
                 ))}
               </div>
@@ -213,22 +409,17 @@ const AiChat = () => {
                   type="text"
                   placeholder="Type your response..."
                   className="flex-1 px-3 py-2 rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-colors"
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      handleSendMessage(e.currentTarget.value);
-                      e.currentTarget.value = '';
+                      handleSendMessage(messageInput);
                     }
                   }}
                 />
                 <button 
                   className="p-2 rounded-full bg-blue-500 text-primary-foreground hover:bg-blue-600 transition-colors"
-                  onClick={() => {
-                    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-                    if (input) {
-                      handleSendMessage(input.value);
-                      input.value = '';
-                    }
-                  }}
+                  onClick={() => handleSendMessage(messageInput)}
                 >
                   <MicIcon className="h-5 w-5" />
                 </button>
