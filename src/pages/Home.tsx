@@ -7,7 +7,8 @@ import AnimatedContainer from '@/components/AnimatedContainer';
 import RecordingIndicator from '@/components/RecordingIndicator';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { BookOpen, ArrowRight, Brain, PenTool, History } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, ArrowRight, Brain, PenTool, History, Users, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Home = () => {
@@ -41,137 +42,168 @@ const Home = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
       <Navigation />
       
-      <main className="flex-1 container mx-auto px-4 py-6 pb-24 md:pb-6">
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">Hello, {user?.user_metadata?.name || "Student"}</h1>
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white font-medium">
-              {user?.user_metadata?.name?.[0] || "S"}
+      <main className="flex-1 container mx-auto px-4 py-8 pb-24 md:pb-6">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back, {user?.user_metadata?.name || "Student"}</h1>
+            <p className="text-muted-foreground mt-1">Your AI study companion is ready to help you learn</p>
+          </div>
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white font-medium shadow-lg">
+            {user?.user_metadata?.name?.[0] || "S"}
+          </div>
+        </div>
+        
+        <AnimatedContainer className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-8 rounded-2xl mb-10 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold mb-3">StudyBuddy Assistant</h2>
+              <p className="text-blue-100 mb-6">
+                Start a study session and speak directly with your AI study assistant. 
+                Get help with any subject, practice for exams, or learn new concepts through natural conversation.
+              </p>
+              
+              {!sessionActive ? (
+                <Button 
+                  onClick={handleStartSession}
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-blue-50 shadow-md"
+                >
+                  <BookOpen className="mr-2" />
+                  Start Study Session
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleEndSession}
+                  variant="outline"
+                  size="lg"
+                  className="border-white text-white hover:bg-blue-700"
+                >
+                  End Current Session
+                </Button>
+              )}
+            </div>
+            <div className="w-32 h-32 bg-blue-500/30 rounded-full flex items-center justify-center">
+              <Users className="h-16 w-16 text-blue-100" />
             </div>
           </div>
-          
-          <AnimatedContainer className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-xl mb-6">
-            <h2 className="text-xl font-semibold mb-4">Your StudyBuddy Assistant</h2>
-            <p className="text-muted-foreground mb-6">
-              Start a study session and speak directly with your AI study assistant. 
-              Get help with any subject, practice for exams, or learn new concepts.
-            </p>
-            
-            {!sessionActive ? (
-              <Button 
-                onClick={handleStartSession}
-                size="lg"
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                <BookOpen className="mr-2" />
-                Start Study Session
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleEndSession}
-                variant="outline"
-                size="lg"
-              >
-                End Current Session
-              </Button>
-            )}
-          </AnimatedContainer>
-        </section>
+        </AnimatedContainer>
         
         {sessionActive && (
           <section className="mb-12">
-            <AnimatedContainer className="bg-card p-8 rounded-xl text-center relative">
-              <h2 className="text-xl font-semibold mb-2">Session Active</h2>
-              <p className="text-muted-foreground mb-6">
-                Click the microphone to start talking to your AI study buddy
-              </p>
-              
-              <div className="flex flex-col items-center gap-8">
-                <div className="bg-blue-500/10 p-6 rounded-full">
-                  <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-blue-500/20">
-                    <div className="absolute inset-0 rounded-full border-2 border-blue-500 animate-pulse"></div>
-                    <BookOpen className="h-8 w-8 text-blue-500" />
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-blue-50/50 dark:from-card dark:to-blue-900/10 p-0 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="grid md:grid-cols-2">
+                  <div className="p-8 flex flex-col items-center justify-center text-center border-r border-border">
+                    <div className="w-28 h-28 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+                      <Sparkles className="h-12 w-12 text-blue-500" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">AI Study Assistant</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-4">
+                      Your AI companion is analyzing your questions and providing intelligent responses
+                    </p>
+                    
+                    <div className="flex space-x-2 mt-2">
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-1"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-2"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-3"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-4"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-5"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-8 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/10 dark:to-transparent">
+                    <h3 className="text-xl font-semibold mb-5">Your Voice Input</h3>
+                    <p className="text-muted-foreground mb-8 text-center">
+                      Click the microphone to start talking to your AI study buddy
+                    </p>
+                    
+                    <RecordingIndicator 
+                      isRecording={isRecording}
+                      onClick={handleToggleRecording}
+                      className="transform hover:scale-105 transition-all duration-300 w-24 h-24 mb-4"
+                    />
+                    
+                    <p className="text-sm text-muted-foreground mt-4">
+                      {isRecording 
+                        ? "Listening to your voice... Click again to stop." 
+                        : "Click to start speaking"}
+                    </p>
                   </div>
                 </div>
-                
-                <RecordingIndicator 
-                  isRecording={isRecording}
-                  onClick={handleToggleRecording}
-                  className="transform hover:scale-105 transition-all duration-300"
-                />
-                
-                <p className="text-sm text-muted-foreground">
-                  {isRecording 
-                    ? "Listening to your voice... Click again to stop." 
-                    : "Click to start speaking"}
-                </p>
-              </div>
-            </AnimatedContainer>
+              </CardContent>
+            </Card>
           </section>
         )}
         
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Study Options</h2>
-          
-          <div className="grid gap-4 md:grid-cols-3">
-            <Link 
-              to="/ai-chat"
-              className="group bg-card hover:bg-card/80 p-6 rounded-xl border border-border shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20"
-            >
+        <h2 className="text-2xl font-semibold mb-5">Study Resources</h2>
+        
+        <div className="grid gap-5 md:grid-cols-3 mb-12">
+          <Link 
+            to="/ai-chat"
+            className="group relative overflow-hidden rounded-xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center mb-4">
                 <div className="p-3 rounded-lg bg-blue-500/10 mr-3 group-hover:bg-blue-500/20 transition-colors">
                   <Brain className="h-5 w-5 text-blue-500" />
                 </div>
-                <h3 className="font-medium">Study Assistant</h3>
+                <h3 className="font-medium">AI Assistant</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">Get help with any subject and ask questions.</p>
+              <p className="text-sm text-muted-foreground mb-4 flex-grow">Get help with any subject and ask questions about complex topics.</p>
               <div className="flex justify-end">
                 <div className="p-2 rounded-full bg-muted group-hover:bg-blue-500/10 transition-colors">
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 </div>
               </div>
-            </Link>
-            
-            <Link 
-              to="/ai-chat"
-              className="group bg-card hover:bg-card/80 p-6 rounded-xl border border-border shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20"
-            >
+            </div>
+          </Link>
+          
+          <Link 
+            to="/ai-chat"
+            className="group relative overflow-hidden rounded-xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center mb-4">
                 <div className="p-3 rounded-lg bg-blue-500/10 mr-3 group-hover:bg-blue-500/20 transition-colors">
                   <PenTool className="h-5 w-5 text-blue-500" />
                 </div>
                 <h3 className="font-medium">Practice Sessions</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">Test your knowledge with interactive questions.</p>
+              <p className="text-sm text-muted-foreground mb-4 flex-grow">Test your knowledge with interactive questions and improve your understanding.</p>
               <div className="flex justify-end">
                 <div className="p-2 rounded-full bg-muted group-hover:bg-blue-500/10 transition-colors">
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 </div>
               </div>
-            </Link>
-            
-            <Link 
-              to="/notes"
-              className="group bg-card hover:bg-card/80 p-6 rounded-xl border border-border shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20"
-            >
+            </div>
+          </Link>
+          
+          <Link 
+            to="/notes"
+            className="group relative overflow-hidden rounded-xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6 h-full flex flex-col">
               <div className="flex items-center mb-4">
                 <div className="p-3 rounded-lg bg-blue-500/10 mr-3 group-hover:bg-blue-500/20 transition-colors">
                   <History className="h-5 w-5 text-blue-500" />
                 </div>
-                <h3 className="font-medium">Past Sessions</h3>
+                <h3 className="font-medium">Study History</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">View your study history and notes.</p>
+              <p className="text-sm text-muted-foreground mb-4 flex-grow">View your past study sessions and access your saved notes.</p>
               <div className="flex justify-end">
                 <div className="p-2 rounded-full bg-muted group-hover:bg-blue-500/10 transition-colors">
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 </div>
               </div>
-            </Link>
-          </div>
-        </section>
+            </div>
+          </Link>
+        </div>
       </main>
       
       <MobileNavigation />
