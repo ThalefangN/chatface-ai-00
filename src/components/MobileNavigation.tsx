@@ -37,7 +37,7 @@ const MobileNavigation = () => {
   ];
   
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/80 border-t border-gray-800 backdrop-blur-lg z-50">
       <div className="flex items-center justify-around px-2 py-3">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -50,10 +50,10 @@ const MobileNavigation = () => {
                 to={item.path}
                 className="relative flex flex-col items-center"
               >
-                <div className="absolute -top-8 bg-blue-500 text-white p-4 rounded-full shadow-lg transform hover:scale-110 hover:bg-blue-600 transition-all duration-300">
+                <div className="absolute -top-8 bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 rounded-full shadow-lg transform hover:scale-110 transition-all duration-300">
                   <Icon className="h-6 w-6" />
                 </div>
-                <span className="text-xs font-bold mt-7 text-muted-foreground">
+                <span className="text-xs font-bold mt-7 text-gray-400">
                   {item.label}
                 </span>
               </Link>
@@ -67,8 +67,8 @@ const MobileNavigation = () => {
               className={cn(
                 "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-300",
                 isActive 
-                  ? "text-blue-500 scale-110 font-bold" 
-                  : "text-muted-foreground hover:text-foreground hover:scale-105"
+                  ? "text-purple-400 scale-110 font-bold" 
+                  : "text-gray-500 hover:text-gray-300 hover:scale-105"
               )}
             >
               <Icon className={cn(
