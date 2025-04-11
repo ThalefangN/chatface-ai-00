@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
-import { Home, Plus, Bell, User, FileText } from 'lucide-react';
+import { Home, Mic, Bell, User, FileText } from 'lucide-react';
 
 const MobileNavigation = () => {
   const location = useLocation();
@@ -16,7 +16,7 @@ const MobileNavigation = () => {
     { 
       path: '/ai-chat', 
       label: 'Study', 
-      icon: Plus,
+      icon: Mic,
       isPrimary: true
     },
     { 
