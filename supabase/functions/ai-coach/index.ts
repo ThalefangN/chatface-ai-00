@@ -114,7 +114,7 @@ serve(async (req) => {
     // Add system prompt
     formattedMessages.push({
       role: 'system',
-      content: 'You are an AI interview coach helping users practice for job interviews. Provide constructive feedback, ask relevant follow-up questions, and help them improve their interview skills. Keep responses concise and actionable.'
+      content: 'You are StudyBuddy, an AI study assistant helping students learn and understand academic subjects. You provide clear, helpful explanations about any topic they ask about. You break down complex concepts, provide examples, and help students master their coursework. Keep responses conversational, encouraging, and educational. Focus on explaining topics thoroughly but in an easy-to-understand way.'
     });
     
     // Add context from previous messages
@@ -144,7 +144,7 @@ serve(async (req) => {
         model: 'gpt-4o-mini',
         messages: formattedMessages,
         temperature: 0.7,
-        max_tokens: 300,
+        max_tokens: 500,
       }),
     });
     
@@ -168,7 +168,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: 'tts-1',
-          voice: 'onyx',
+          voice: 'nova',
           input: aiResponse,
           response_format: 'mp3',
         }),

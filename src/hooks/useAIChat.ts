@@ -14,18 +14,41 @@ interface UseAIChatProps {
   sessionId: string | null;
 }
 
+// TypeScript declaration for the SpeechRecognition API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface Window {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: Event) => void;
+  onend: () => void;
+  onstart: () => void;
+}
+
 export const useAIChat = (sessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   
   // Initialize SpeechRecognition API
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
   
   // Fetch messages for the current session
   const initializeChat = useCallback(async () => {
@@ -45,6 +68,30 @@ export const useAIChat = (sessionId: string | null) => {
       console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
     }
+  }, [sessionId]);
+  
+  // Set up real-time subscription for new messages
+  useEffect(() => {
+    if (!sessionId) return;
+    
+    const subscription = supabase
+      .channel(`session_messages:${sessionId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'session_messages',
+          filter: `session_id=eq.${sessionId}`
+        }, 
+        (payload) => {
+          setMessages(prev => [...prev, payload.new as Message]);
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [sessionId]);
   
   // Initialize audio element for playing AI responses
@@ -189,6 +236,7 @@ export const useAIChat = (sessionId: string | null) => {
         
         audioElementRef.current.onplay = () => {
           setIsSpeaking(true);
+          toast.info('StudyBuddy is speaking...', { duration: 2000 });
         };
         
         audioElementRef.current.play()
@@ -206,7 +254,7 @@ export const useAIChat = (sessionId: string | null) => {
   // Start voice recognition
   const startListening = async () => {
     try {
-      if (!SpeechRecognition) {
+      if (!SpeechRecognitionAPI) {
         toast.error('Speech recognition is not supported in your browser');
         return;
       }
@@ -231,35 +279,30 @@ export const useAIChat = (sessionId: string | null) => {
       mediaRecorderRef.current.start();
       
       // Also start browser's speech recognition for interim results (optional)
-      /*
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      
-      recognitionRef.current.onstart = () => {
-        setIsListening(true);
-      };
-      
-      recognitionRef.current.onresult = (event: any) => {
-        // This is just for showing interim results, we'll send the final audio to Whisper
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join('');
-          
-        console.log('Interim transcript:', transcript);
-      };
-      
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Recognition error:', event.error);
-      };
-      
-      recognitionRef.current.onend = () => {
-        // Don't set isListening to false here, as we want to continue recording
-        // until stopListening is called explicitly
-      };
-      
-      recognitionRef.current.start();
-      */
+      if (SpeechRecognitionAPI) {
+        recognitionRef.current = new SpeechRecognitionAPI();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        
+        recognitionRef.current.onstart = () => {
+          toast.success('Listening...', { duration: 2000 });
+        };
+        
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+          // This is just for showing interim results, we'll send the final audio to Whisper
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0].transcript)
+            .join('');
+            
+          console.log('Interim transcript:', transcript);
+        };
+        
+        recognitionRef.current.onerror = (event: Event) => {
+          console.error('Recognition error:', event);
+        };
+        
+        recognitionRef.current.start();
+      }
       
       setIsListening(true);
       
@@ -272,6 +315,7 @@ export const useAIChat = (sessionId: string | null) => {
   // Stop voice recognition
   const stopListening = () => {
     setIsListening(false);
+    toast.info('Processing your voice input...', { duration: 2000 });
     
     if (recognitionRef.current) {
       recognitionRef.current.stop();

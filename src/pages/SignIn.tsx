@@ -44,9 +44,9 @@ const SignIn = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
       <div className="container mx-auto px-4 py-6">
-        <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/" className="inline-flex items-center text-sm text-blue-500 hover:text-blue-700">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to home
         </Link>
@@ -56,15 +56,15 @@ const SignIn = () => {
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Hello, Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your account to continue</p>
+            <h1 className="text-2xl font-bold mb-2 text-blue-900">Welcome Back to StudyBuddy</h1>
+            <p className="text-blue-700">Sign in to continue your learning journey</p>
           </div>
           
-          <AnimatedContainer className="bg-card p-6">
+          <AnimatedContainer className="bg-white p-6 border border-blue-100 rounded-xl shadow-sm">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
+                <label htmlFor="email" className="text-sm font-medium flex items-center gap-2 text-blue-900">
+                  <Mail className="h-4 w-4 text-blue-500" />
                   Email
                 </label>
                 <Input
@@ -74,16 +74,17 @@ const SignIn = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
+                  className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  <label htmlFor="password" className="text-sm font-medium flex items-center gap-2 text-blue-900">
+                    <Lock className="h-4 w-4 text-blue-500" />
                     Password
                   </label>
-                  <Link to="/forgot-password" className="text-xs text-green-500 hover:underline flex items-center gap-1">
+                  <Link to="/forgot-password" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
                     <ShieldCheck className="h-3 w-3" />
                     Forgot password?
                   </Link>
@@ -95,12 +96,13 @@ const SignIn = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               
               <Button
                 type="submit"
-                className="w-full bg-green-500 hover:bg-green-600"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -118,9 +120,9 @@ const SignIn = () => {
             </form>
             
             <div className="mt-6 text-center text-sm">
-              <p className="text-muted-foreground">
+              <p className="text-blue-700">
                 Don't have an account?{' '}
-                <Link to="/sign-up" className="text-green-500 hover:underline">
+                <Link to="/sign-up" className="text-blue-500 hover:underline">
                   Sign up
                 </Link>
               </p>
