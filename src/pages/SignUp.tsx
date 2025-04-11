@@ -59,8 +59,8 @@ const SignUp = () => {
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Create Your Account</h1>
-            <p className="text-muted-foreground">Sign up to get started with SpeakAI</p>
+            <h1 className="text-2xl font-bold mb-2">Join StudyBuddy</h1>
+            <p className="text-muted-foreground">Create your account and start learning today</p>
           </div>
           
           <AnimatedContainer className="bg-card p-6">
@@ -133,17 +133,17 @@ const SignUp = () => {
                   type="checkbox"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                  className="h-4 w-4 rounded border-border text-blue-500 focus:ring-blue-500/30"
                   required
                 />
                 <label htmlFor="terms" className="text-sm text-muted-foreground flex items-center gap-1">
                   <FileText className="h-3 w-3" />
                   I agree to the{' '}
-                  <a href="#" className="text-green-500 hover:underline">
+                  <a href="#" className="text-blue-500 hover:underline">
                     terms
                   </a>{' '}
                   and{' '}
-                  <a href="#" className="text-green-500 hover:underline">
+                  <a href="#" className="text-blue-500 hover:underline">
                     privacy policy
                   </a>
                 </label>
@@ -151,7 +151,7 @@ const SignUp = () => {
               
               <Button
                 type="submit"
-                className="w-full bg-green-500 hover:bg-green-600"
+                className="w-full bg-blue-500 hover:bg-blue-600"
                 disabled={isLoading || !termsAccepted}
               >
                 {isLoading ? (
@@ -171,7 +171,7 @@ const SignUp = () => {
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
                 Already have an account?{' '}
-                <Link to="/sign-in" className="text-green-500 hover:underline">
+                <Link to="/sign-in" className="text-blue-500 hover:underline">
                   Sign in
                 </Link>
               </p>

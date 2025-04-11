@@ -56,8 +56,8 @@ const SignIn = () => {
         <div className="w-full max-w-md animate-fade-in">
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Hello, Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your account to continue</p>
+            <h1 className="text-2xl font-bold mb-2">Welcome Back, Student</h1>
+            <p className="text-muted-foreground">Sign in to continue your learning journey</p>
           </div>
           
           <AnimatedContainer className="bg-card p-6">
@@ -83,7 +83,7 @@ const SignIn = () => {
                     <Lock className="h-4 w-4 text-muted-foreground" />
                     Password
                   </label>
-                  <Link to="/forgot-password" className="text-xs text-green-500 hover:underline flex items-center gap-1">
+                  <Link to="/forgot-password" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
                     <ShieldCheck className="h-3 w-3" />
                     Forgot password?
                   </Link>
@@ -100,7 +100,7 @@ const SignIn = () => {
               
               <Button
                 type="submit"
-                className="w-full bg-green-500 hover:bg-green-600"
+                className="w-full bg-blue-500 hover:bg-blue-600"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -120,7 +120,7 @@ const SignIn = () => {
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
                 Don't have an account?{' '}
-                <Link to="/sign-up" className="text-green-500 hover:underline">
+                <Link to="/sign-up" className="text-blue-500 hover:underline">
                   Sign up
                 </Link>
               </p>

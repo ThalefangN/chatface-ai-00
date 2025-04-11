@@ -15,7 +15,7 @@ const MobileNavigation = () => {
     },
     { 
       path: '/ai-chat', 
-      label: 'Chat', 
+      label: 'Study', 
       icon: Plus,
       isPrimary: true
     },
@@ -50,7 +50,7 @@ const MobileNavigation = () => {
                 to={item.path}
                 className="relative flex flex-col items-center"
               >
-                <div className="absolute -top-8 bg-green-500 text-white p-4 rounded-full shadow-lg transform hover:scale-110 hover:bg-green-600 transition-all duration-300">
+                <div className="absolute -top-8 bg-blue-500 text-white p-4 rounded-full shadow-lg transform hover:scale-110 hover:bg-blue-600 transition-all duration-300">
                   <Icon className="h-6 w-6" />
                 </div>
                 <span className="text-xs font-bold mt-7 text-muted-foreground">
@@ -67,7 +67,7 @@ const MobileNavigation = () => {
               className={cn(
                 "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-300",
                 isActive 
-                  ? "text-green-500 scale-110 font-bold" 
+                  ? "text-blue-500 scale-110 font-bold" 
                   : "text-muted-foreground hover:text-foreground hover:scale-105"
               )}
             >

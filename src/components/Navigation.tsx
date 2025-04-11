@@ -19,7 +19,7 @@ const Navigation = () => {
     },
     { 
       path: '/ai-chat', 
-      label: 'AI Chat', 
+      label: 'Study Chat', 
       icon: Plus
     },
     { 
@@ -63,7 +63,7 @@ const Navigation = () => {
                 className={cn(
                   "flex items-center gap-2 text-sm font-medium transition-colors",
                   isActive 
-                    ? "text-primary" 
+                    ? "text-blue-500" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -98,7 +98,7 @@ const Navigation = () => {
                     className={cn(
                       "flex items-center gap-3 px-4 py-2 text-sm",
                       isActive 
-                        ? "text-primary bg-primary/5" 
+                        ? "text-blue-500 bg-blue-500/5" 
                         : "text-foreground hover:bg-muted"
                     )}
                     onClick={() => setIsMenuOpen(false)}
@@ -132,7 +132,7 @@ const Navigation = () => {
               onClick={toggleMenu}
               className="flex items-center gap-2 text-sm font-medium hover:text-foreground"
             >
-              <span>{user?.email?.split('@')[0] || 'User'}</span>
+              <span>{user?.email?.split('@')[0] || 'Student'}</span>
               <ChevronDown className="h-4 w-4" />
             </button>
             
