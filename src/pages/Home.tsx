@@ -1,166 +1,212 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import MobileNavigation from '@/components/MobileNavigation';
+import AnimatedContainer from '@/components/AnimatedContainer';
+import RecordingIndicator from '@/components/RecordingIndicator';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, Mic, X, MessageSquare } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { BookOpen, ArrowRight, Brain, PenTool, History, Users, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Home = () => {
   const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
-  const [userMessage, setUserMessage] = useState<string | null>(null);
-  const [pulseSize, setPulseSize] = useState(1);
-  
-  // Animate the pulse effect
-  useEffect(() => {
-    if (isRecording) {
-      const interval = setInterval(() => {
-        setPulseSize(size => (size === 1 ? 1.2 : 1));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isRecording]);
   
   const handleToggleRecording = () => {
+    if (!sessionActive) {
+      toast.error("Please start a study session first");
+      return;
+    }
+    
     setIsRecording(!isRecording);
     if (!isRecording) {
-      toast.success("I'm listening...");
-      // Simulate user typing a message after a delay
-      setTimeout(() => {
-        setUserMessage("I'm having anxiety about my career, can you help me dealing with it?");
-      }, 2000);
+      toast.success("Listening to your voice...");
     } else {
-      setUserMessage(null);
       toast.info("Stopped recording");
     }
   };
   
   const handleStartSession = () => {
     setSessionActive(true);
-    toast.success("Session started! Click the microphone to start talking.");
+    toast.success("Session started! Click the microphone to start talking to your AI study buddy.");
   };
   
   const handleEndSession = () => {
     setSessionActive(false);
     setIsRecording(false);
-    setUserMessage(null);
     toast.info("Study session ended");
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0c15] text-white">
-      <div className="px-4 py-6 flex items-center">
-        <Link to="/home" className="flex items-center text-gray-300 hover:text-white">
-          <ArrowLeft className="mr-2" />
-          <span className="font-medium">StudyBuddy AI</span>
-        </Link>
-        <div className="ml-auto w-8 h-8 rounded-full bg-gray-800 overflow-hidden">
-          {user?.user_metadata?.avatar_url ? (
-            <img 
-              src={user.user_metadata.avatar_url}
-              alt={user?.user_metadata?.name || "User"} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-purple-700 text-white">
-              {user?.user_metadata?.name?.[0] || "S"}
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
+      <Navigation />
       
-      <main className="flex-1 flex flex-col items-center px-4 pb-24">
-        {!sessionActive ? (
-          <div className="w-full max-w-md mt-12 text-center">
-            <h1 className="text-2xl font-bold mb-6">Welcome to StudyBuddy AI</h1>
-            <p className="text-gray-400 mb-8">Your AI study companion is ready to help you learn through voice conversations</p>
-            <Button 
-              onClick={handleStartSession}
-              size="lg"
-              className="bg-purple-600 hover:bg-purple-700 text-white w-full py-6"
-            >
-              Start Voice Study Session
-            </Button>
+      <main className="flex-1 container mx-auto px-4 py-8 pb-24 md:pb-6">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back, {user?.user_metadata?.name || "Student"}</h1>
+            <p className="text-muted-foreground mt-1">Your AI study companion is ready to help you learn</p>
           </div>
-        ) : (
-          <>
-            <div className="text-center my-8">
-              {isRecording ? (
-                <p className="text-xl">I'm listening</p>
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white font-medium shadow-lg">
+            {user?.user_metadata?.name?.[0] || "S"}
+          </div>
+        </div>
+        
+        <AnimatedContainer className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-8 rounded-2xl mb-10 shadow-xl">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold mb-3">StudyBuddy Assistant</h2>
+              <p className="text-blue-100 mb-6">
+                Start a study session and speak directly with your AI study assistant. 
+                Get help with any subject, practice for exams, or learn new concepts through natural conversation.
+              </p>
+              
+              {!sessionActive ? (
+                <Button 
+                  onClick={handleStartSession}
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-blue-50 shadow-md"
+                >
+                  <BookOpen className="mr-2" />
+                  Start Study Session
+                </Button>
               ) : (
-                <p className="text-gray-400">Tap the microphone to start speaking</p>
+                <Button 
+                  onClick={handleEndSession}
+                  variant="outline"
+                  size="lg"
+                  className="border-white text-white hover:bg-blue-700"
+                >
+                  End Current Session
+                </Button>
               )}
             </div>
-            
-            {/* AI Visualization Sphere */}
-            <div className="relative w-48 h-48 md:w-64 md:h-64 mb-12">
-              <div className="absolute inset-0 rounded-full bg-purple-600/10 animate-pulse"></div>
-              <div 
-                className="absolute inset-0 rounded-full overflow-hidden border border-purple-500/30 transition-all duration-500"
-                style={{ transform: isRecording ? `scale(${pulseSize})` : 'scale(1)' }}
-              >
-                <div className="w-full h-full bg-gradient-to-br from-purple-600/40 via-blue-500/30 to-cyan-400/50 animate-rotate-gradient"></div>
-              </div>
-              
-              {/* Animated overlay effects */}
-              <div className="absolute inset-0 rounded-full overflow-hidden bg-black/10 backdrop-blur-sm">
-                <div className="w-full h-full bg-gradient-to-br from-purple-600/20 via-blue-500/20 to-indigo-500/20 mix-blend-overlay"></div>
-              </div>
+            <div className="w-32 h-32 bg-blue-500/30 rounded-full flex items-center justify-center">
+              <Users className="h-16 w-16 text-blue-100" />
             </div>
-            
-            {/* User message */}
-            {userMessage && (
-              <div className="w-full max-w-md bg-gray-800/60 rounded-xl p-4 mb-8 animate-fade-in">
-                <p className="text-center text-gray-300">{userMessage}</p>
-              </div>
-            )}
-            
-            {/* Microphone Button */}
-            <div className="fixed bottom-24 md:bottom-16 left-1/2 transform -translate-x-1/2">
-              <div className="relative">
-                {/* Ripple effects */}
-                {isRecording && (
-                  <>
-                    <div className="absolute inset-0 rounded-full bg-purple-500/10 animate-ping"></div>
-                    <div className="absolute inset-0 rounded-full bg-purple-500/5 animate-pulse"></div>
-                    <div className="absolute -inset-4 rounded-full border border-purple-500/20 animate-pulse"></div>
-                    <div className="absolute -inset-8 rounded-full border border-purple-500/10 animate-pulse"></div>
-                  </>
-                )}
-                
-                {/* Main microphone button */}
-                <button
-                  onClick={handleToggleRecording}
-                  className="relative z-10 w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                >
-                  <Mic className="h-6 w-6 text-white" />
-                </button>
-              </div>
-            </div>
-            
-            {/* Control buttons */}
-            <div className="fixed bottom-24 md:bottom-16 left-0 right-0 flex justify-between px-12 md:px-24">
-              <button className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center">
-                <MessageSquare className="h-5 w-5 text-gray-400" />
-              </button>
-              
-              <button 
-                onClick={handleEndSession}
-                className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center"
-              >
-                <X className="h-5 w-5 text-gray-400" />
-              </button>
-            </div>
-          </>
+          </div>
+        </AnimatedContainer>
+        
+        {sessionActive && (
+          <section className="mb-12">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-blue-50/50 dark:from-card dark:to-blue-900/10 p-0 overflow-hidden">
+              <CardContent className="p-0">
+                <div className="grid md:grid-cols-2">
+                  <div className="p-8 flex flex-col items-center justify-center text-center border-r border-border">
+                    <div className="w-28 h-28 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
+                      <Sparkles className="h-12 w-12 text-blue-500" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">AI Study Assistant</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-4">
+                      Your AI companion is analyzing your questions and providing intelligent responses
+                    </p>
+                    
+                    <div className="flex space-x-2 mt-2">
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-1"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-2"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-3"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-4"></div>
+                      <div className="h-2.5 w-2.5 bg-blue-500 rounded-full animate-wave-5"></div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-8 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/10 dark:to-transparent">
+                    <h3 className="text-xl font-semibold mb-5">Your Voice Input</h3>
+                    <p className="text-muted-foreground mb-8 text-center">
+                      Click the microphone to start talking to your AI study buddy
+                    </p>
+                    
+                    <RecordingIndicator 
+                      isRecording={isRecording}
+                      onClick={handleToggleRecording}
+                      className="transform hover:scale-105 transition-all duration-300 w-24 h-24 mb-4"
+                    />
+                    
+                    <p className="text-sm text-muted-foreground mt-4">
+                      {isRecording 
+                        ? "Listening to your voice... Click again to stop." 
+                        : "Click to start speaking"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
         )}
+        
+        <h2 className="text-2xl font-semibold mb-5">Study Resources</h2>
+        
+        <div className="grid gap-5 md:grid-cols-3 mb-12">
+          <Link 
+            to="/ai-chat"
+            className="group relative overflow-hidden rounded-xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6 h-full flex flex-col">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-lg bg-blue-500/10 mr-3 group-hover:bg-blue-500/20 transition-colors">
+                  <Brain className="h-5 w-5 text-blue-500" />
+                </div>
+                <h3 className="font-medium">AI Assistant</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 flex-grow">Get help with any subject and ask questions about complex topics.</p>
+              <div className="flex justify-end">
+                <div className="p-2 rounded-full bg-muted group-hover:bg-blue-500/10 transition-colors">
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                </div>
+              </div>
+            </div>
+          </Link>
+          
+          <Link 
+            to="/ai-chat"
+            className="group relative overflow-hidden rounded-xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6 h-full flex flex-col">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-lg bg-blue-500/10 mr-3 group-hover:bg-blue-500/20 transition-colors">
+                  <PenTool className="h-5 w-5 text-blue-500" />
+                </div>
+                <h3 className="font-medium">Practice Sessions</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 flex-grow">Test your knowledge with interactive questions and improve your understanding.</p>
+              <div className="flex justify-end">
+                <div className="p-2 rounded-full bg-muted group-hover:bg-blue-500/10 transition-colors">
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                </div>
+              </div>
+            </div>
+          </Link>
+          
+          <Link 
+            to="/notes"
+            className="group relative overflow-hidden rounded-xl border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-blue-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6 h-full flex flex-col">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-lg bg-blue-500/10 mr-3 group-hover:bg-blue-500/20 transition-colors">
+                  <History className="h-5 w-5 text-blue-500" />
+                </div>
+                <h3 className="font-medium">Study History</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 flex-grow">View your past study sessions and access your saved notes.</p>
+              <div className="flex justify-end">
+                <div className="p-2 rounded-full bg-muted group-hover:bg-blue-500/10 transition-colors">
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
       </main>
       
-      {!sessionActive && <MobileNavigation />}
+      <MobileNavigation />
     </div>
   );
 };
