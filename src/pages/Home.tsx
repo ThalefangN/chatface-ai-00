@@ -1,15 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Mic, X, MessageSquare } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import MobileNavigation from '@/components/MobileNavigation';
 import { toast } from 'sonner';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const Home = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isListening, setIsListening] = useState(false);
   const [userMessage, setUserMessage] = useState("");
+  const [aiMessage, setAiMessage] = useState("");
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+  
+  useEffect(() => {
+    // Auto display welcome message
+    const timer = setTimeout(() => {
+      setAiMessage("Hello! I'm your StudyBuddy AI. I'm trained on the BGCSE, JCE, and PSLE Botswana syllabus. How can I help with your studies today?");
+      setShowWelcomeMessage(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleToggleListen = () => {
     setIsListening(!isListening);
@@ -17,12 +30,21 @@ const Home = () => {
       toast.success("Listening...");
       // Simulate user typing a message after 2 seconds
       setTimeout(() => {
-        setUserMessage("I'm having anxiety about my career, can you help me dealing with it ?");
+        setUserMessage("Can you help me with my BGCSE Mathematics revision?");
+        
+        // Simulate AI response
+        setTimeout(() => {
+          setAiMessage("Of course! I'd be happy to help with your BGCSE Mathematics revision. Would you like to focus on a specific topic like Algebra, Geometry, Calculus, or Probability? Or would you prefer general revision tips?");
+        }, 1500);
       }, 2000);
     } else {
       toast.info("Stopped listening");
       setUserMessage("");
     }
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
   };
 
   return (
@@ -35,12 +57,19 @@ const Home = () => {
           </Link>
           <h1 className="text-xl font-semibold">Calm AI <span className="ml-1 text-xs border border-white/30 p-0.5 rounded">PRO</span></h1>
         </div>
-        <div className="w-9 h-9 bg-gray-700 rounded-full overflow-hidden">
-          <img 
-            src={(user?.user_metadata?.avatar_url || "/lovable-uploads/4f570823-6f09-4aea-a965-7a2405cf6a14.png")} 
-            alt="User avatar" 
-            className="w-full h-full object-cover"
-          />
+        <div 
+          className="w-10 h-10 bg-gray-700 rounded-full overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+          onClick={handleProfileClick}
+        >
+          <Avatar>
+            <AvatarImage 
+              src={(user?.user_metadata?.avatar_url || "/lovable-uploads/4f570823-6f09-4aea-a965-7a2405cf6a14.png")} 
+              alt="User avatar" 
+            />
+            <AvatarFallback>
+              {user?.email?.charAt(0).toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
         </div>
       </header>
 
@@ -48,9 +77,9 @@ const Home = () => {
       <main className="flex-1 flex flex-col items-center justify-between px-4 pb-24 pt-12">
         <div className="text-center w-full">
           {isListening ? (
-            <p className="text-xl mb-12">I'm listening</p>
+            <p className="text-xl mb-12">I'm listening...</p>
           ) : (
-            <p className="text-xl mb-12">How can I help you today?</p>
+            showWelcomeMessage && <p className="text-xl mb-12">How can I help you today?</p>
           )}
           
           {/* Animated orb */}
@@ -69,10 +98,17 @@ const Home = () => {
             </div>
           </div>
           
+          {/* AI message */}
+          {aiMessage && (
+            <div className="max-w-sm mx-auto text-center mb-6 bg-gray-900/70 p-4 rounded-lg border border-gray-800">
+              <p className="text-md">{aiMessage}</p>
+            </div>
+          )}
+          
           {/* User message */}
           {userMessage && (
-            <div className="max-w-xs mx-auto text-center">
-              <p className="text-lg mb-1">{userMessage}</p>
+            <div className="max-w-sm mx-auto text-center">
+              <p className="text-md bg-blue-900/30 p-3 rounded-lg border border-blue-800/50">{userMessage}</p>
             </div>
           )}
         </div>
@@ -104,8 +140,6 @@ const Home = () => {
           </div>
         </div>
       </main>
-
-      <MobileNavigation />
     </div>
   );
 };
