@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Mic, X, MessageSquare } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Mic, X, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import Logo from '@/components/Logo';
 
 const Home = () => {
   const { user } = useAuth();
@@ -12,17 +13,56 @@ const Home = () => {
   const [isListening, setIsListening] = useState(false);
   const [userMessage, setUserMessage] = useState("");
   const [aiMessage, setAiMessage] = useState("");
+  const [displayedMessage, setDisplayedMessage] = useState("");
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
+  // Full welcome message
+  const fullWelcomeMessage = "Hello! I'm your StudyBuddy AI. I'm trained on the BGCSE, JCE, and PSLE Botswana syllabus. How can I help with your studies today?";
+  
+  // Initialize speech synthesis
   useEffect(() => {
-    // Auto display welcome message
-    const timer = setTimeout(() => {
-      setAiMessage("Hello! I'm your StudyBuddy AI. I'm trained on the BGCSE, JCE, and PSLE Botswana syllabus. How can I help with your studies today?");
+    if ('speechSynthesis' in window) {
+      audioRef.current = new Audio();
+    }
+  }, []);
+  
+  // Auto display welcome message with typing effect
+  useEffect(() => {
+    // Delay before starting to type
+    const initialDelay = setTimeout(() => {
+      setAiMessage(fullWelcomeMessage);
+      setIsTyping(true);
       setShowWelcomeMessage(false);
+      
+      // Speak the welcome message
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(fullWelcomeMessage);
+        window.speechSynthesis.speak(utterance);
+      }
     }, 1000);
     
-    return () => clearTimeout(timer);
+    return () => clearTimeout(initialDelay);
   }, []);
+  
+  // Text typing animation effect
+  useEffect(() => {
+    if (!isTyping || !aiMessage) return;
+    
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex < aiMessage.length) {
+        setDisplayedMessage(aiMessage.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+        setIsTyping(false);
+      }
+    }, 30); // typing speed
+    
+    return () => clearInterval(typingInterval);
+  }, [isTyping, aiMessage]);
   
   const handleToggleListen = () => {
     setIsListening(!isListening);
@@ -32,9 +72,17 @@ const Home = () => {
       setTimeout(() => {
         setUserMessage("Can you help me with my BGCSE Mathematics revision?");
         
-        // Simulate AI response
+        // Simulate AI response with typing effect
         setTimeout(() => {
-          setAiMessage("Of course! I'd be happy to help with your BGCSE Mathematics revision. Would you like to focus on a specific topic like Algebra, Geometry, Calculus, or Probability? Or would you prefer general revision tips?");
+          const response = "Of course! I'd be happy to help with your BGCSE Mathematics revision. Would you like to focus on a specific topic like Algebra, Geometry, Calculus, or Probability? Or would you prefer general revision tips?";
+          setAiMessage(response);
+          setIsTyping(true);
+          
+          // Speak the response
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(response);
+            window.speechSynthesis.speak(utterance);
+          }
         }, 1500);
       }, 2000);
     } else {
@@ -52,10 +100,8 @@ const Home = () => {
       {/* Header */}
       <header className="px-4 py-5 flex items-center justify-between">
         <div className="flex items-center">
-          <Link to="/home" className="mr-2">
-            <ArrowLeft size={24} />
-          </Link>
-          <h1 className="text-xl font-semibold">Calm AI <span className="ml-1 text-xs border border-white/30 p-0.5 rounded">PRO</span></h1>
+          <Logo size="md" darkMode={true} />
+          <h1 className="text-xl font-semibold ml-2">StudyBuddy <span className="ml-1 text-xs border border-white/30 p-0.5 rounded">PRO</span></h1>
         </div>
         <div 
           className="w-10 h-10 bg-gray-700 rounded-full overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
@@ -98,10 +144,10 @@ const Home = () => {
             </div>
           </div>
           
-          {/* AI message */}
-          {aiMessage && (
+          {/* AI message with typing effect */}
+          {displayedMessage && (
             <div className="max-w-sm mx-auto text-center mb-6 bg-gray-900/70 p-4 rounded-lg border border-gray-800">
-              <p className="text-md">{aiMessage}</p>
+              <p className="text-md">{displayedMessage}{isTyping && <span className="animate-pulse">|</span>}</p>
             </div>
           )}
           
