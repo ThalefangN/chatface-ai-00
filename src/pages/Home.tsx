@@ -1,17 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, X, MessageSquare, Sun, Moon } from 'lucide-react';
+import { Mic, X, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Toggle } from "@/components/ui/toggle";
-import Logo from '@/components/Logo';
 import { useTheme } from '@/contexts/ThemeContext';
 
 const Home = () => {
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const [isListening, setIsListening] = useState(false);
   const [userMessage, setUserMessage] = useState("");
@@ -99,42 +97,19 @@ const Home = () => {
   };
   
   const handleChatClick = () => {
-    navigate('/ai-chat');
-  };
-  
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-    toast.success(`${theme === 'dark' ? 'Light' : 'Dark'} mode activated!`);
+    navigate('/chat');
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-black' : 'bg-gradient-to-b from-blue-50 to-white'} text-foreground flex flex-col`}>
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white text-foreground flex flex-col">
       {/* Header */}
       <header className="px-4 py-5 flex items-center justify-between">
-        <div className="flex items-center">
-          <Logo size="md" darkMode={theme === 'dark'} />
-          <h1 className={`text-xl font-semibold ml-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-            StudyBuddy <span className={`ml-1 text-xs ${theme === 'dark' ? 'border border-white/30' : 'border border-blue-500/50'} p-0.5 rounded`}>PRO</span>
-          </h1>
-        </div>
+        <div></div>
         
         <div className="flex items-center gap-4">
-          {/* Theme Toggle */}
-          <Toggle 
-            pressed={theme === 'dark'} 
-            onPressedChange={toggleTheme}
-            className={`p-2 rounded-full ${theme === 'dark' ? 'bg-blue-900/30' : 'bg-blue-100'} hover:bg-blue-200/50 transition-all duration-300`}
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5 text-yellow-300" />
-            ) : (
-              <Moon className="h-5 w-5 text-blue-600" />
-            )}
-          </Toggle>
-          
           {/* User Avatar */}
           <div 
-            className={`w-10 h-10 ${theme === 'dark' ? 'bg-gray-700' : 'bg-blue-100'} rounded-full overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all`}
+            className="w-10 h-10 bg-blue-100 rounded-full overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
             onClick={handleProfileClick}
           >
             <Avatar>
@@ -154,27 +129,19 @@ const Home = () => {
       <main className="flex-1 flex flex-col items-center justify-between px-4 pb-24 pt-12">
         <div className="text-center w-full">
           {isListening ? (
-            <p className={`text-xl mb-12 font-medium animate-pulse ${theme === 'dark' ? 'text-blue-300' : 'text-blue-600'}`}>I'm listening...</p>
+            <p className="text-xl mb-12 font-medium animate-pulse text-blue-600">I'm listening...</p>
           ) : (
-            showWelcomeMessage && <p className={`text-xl mb-12 font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>How can I help you today?</p>
+            showWelcomeMessage && <p className="text-xl mb-12 font-medium text-gray-700">How can I help you today?</p>
           )}
           
           {/* Animated orb */}
           <div className="relative w-52 h-52 mx-auto mb-12">
-            <div className={`absolute inset-0 rounded-full ${theme === 'dark' 
-              ? 'bg-gradient-to-r from-purple-500 via-blue-400 to-indigo-600' 
-              : 'bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500'} opacity-80 animate-pulse blur-sm`}></div>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 opacity-80 animate-pulse blur-sm"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className={`w-48 h-48 rounded-full ${theme === 'dark' 
-                ? 'bg-gradient-to-br from-blue-400 via-purple-500 to-indigo-600' 
-                : 'bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500'} opacity-90 animate-pulse-soft`}>
-                <div className={`w-full h-full rounded-full ${theme === 'dark' 
-                  ? 'bg-gradient-to-tl from-blue-300 via-indigo-400 to-purple-500' 
-                  : 'bg-gradient-to-tl from-blue-200 via-blue-300 to-blue-400'} opacity-90 flex items-center justify-center animate-float overflow-hidden relative`}>
+              <div className="w-48 h-48 rounded-full bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500 opacity-90 animate-pulse-soft">
+                <div className="w-full h-full rounded-full bg-gradient-to-tl from-blue-200 via-blue-300 to-blue-400 opacity-90 flex items-center justify-center animate-float overflow-hidden relative">
                   {/* Inner light effect */}
-                  <div className={`absolute inset-0 ${theme === 'dark' 
-                    ? 'bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600' 
-                    : 'bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500'} mix-blend-overlay opacity-80`}></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 mix-blend-overlay opacity-80"></div>
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
                     <div className="w-full h-full bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.8)_0%,_transparent_70%)]"></div>
                   </div>
@@ -185,10 +152,8 @@ const Home = () => {
           
           {/* AI message with typing effect */}
           {displayedMessage && (
-            <div className={`max-w-sm mx-auto text-center mb-6 ${theme === 'dark' 
-              ? 'bg-gray-900/70 border border-gray-800' 
-              : 'bg-white/80 border border-blue-100 shadow-md'} p-4 rounded-lg`}>
-              <p className={`text-md ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+            <div className="max-w-sm mx-auto text-center mb-6 bg-white/80 border border-blue-100 shadow-md p-4 rounded-lg">
+              <p className="text-md text-gray-700">
                 {displayedMessage}{isTyping && <span className="animate-pulse">|</span>}
               </p>
             </div>
@@ -197,9 +162,7 @@ const Home = () => {
           {/* User message */}
           {userMessage && (
             <div className="max-w-sm mx-auto text-center">
-              <p className={`text-md ${theme === 'dark' 
-                ? 'bg-blue-900/30 border border-blue-800/50' 
-                : 'bg-blue-50 border border-blue-200'} p-3 rounded-lg`}>
+              <p className="text-md bg-blue-50 border border-blue-200 p-3 rounded-lg">
                 {userMessage}
               </p>
             </div>
@@ -211,18 +174,16 @@ const Home = () => {
           <div className="flex items-center justify-between w-full">
             <button 
               onClick={handleChatClick}
-              className={`w-14 h-14 flex items-center justify-center rounded-full transition-all ${theme === 'dark' 
-                ? 'bg-gray-800/80 hover:bg-gray-700' 
-                : 'bg-white shadow-md hover:bg-blue-50'}`}
+              className="w-14 h-14 flex items-center justify-center rounded-full transition-all bg-white shadow-md hover:bg-blue-50"
             >
-              <MessageSquare size={24} className={theme === 'dark' ? 'text-blue-300' : 'text-blue-500'} />
+              <MessageSquare size={24} className="text-blue-500" />
             </button>
             
             <button 
               onClick={handleToggleListen} 
               className={`relative w-20 h-20 flex items-center justify-center rounded-full transition-all ${isListening 
-                ? theme === 'dark' ? 'bg-blue-500' : 'bg-blue-500' 
-                : theme === 'dark' ? 'bg-gray-700' : 'bg-white shadow-lg'}`}
+                ? "bg-blue-500" 
+                : "bg-white shadow-lg"}`}
             >
               {/* Pulse rings when listening */}
               {isListening && (
@@ -231,15 +192,13 @@ const Home = () => {
                   <div className="absolute inset-0 w-full h-full rounded-full border-4 border-blue-400/30 animate-pulse"></div>
                 </>
               )}
-              <Mic size={30} className={`${isListening ? 'text-white' : theme === 'dark' ? 'text-blue-300' : 'text-blue-500'}`} />
+              <Mic size={30} className={`${isListening ? 'text-white' : 'text-blue-500'}`} />
             </button>
             
             <button 
-              className={`w-14 h-14 flex items-center justify-center rounded-full transition-all ${theme === 'dark' 
-                ? 'bg-gray-800/80 hover:bg-gray-700' 
-                : 'bg-white shadow-md hover:bg-red-50'}`}
+              className="w-14 h-14 flex items-center justify-center rounded-full transition-all bg-white shadow-md hover:bg-red-50"
             >
-              <X size={24} className={theme === 'dark' ? 'text-red-300' : 'text-red-500'} />
+              <X size={24} className="text-red-500" />
             </button>
           </div>
         </div>
