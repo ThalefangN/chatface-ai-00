@@ -9,16 +9,16 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <Logo size="lg" />
-        <div className="space-x-4">
+        <div className="flex space-x-2 sm:space-x-4">
           <Link 
             to="/sign-in" 
-            className="text-sm font-medium px-4 py-2 rounded-md border border-blue-500 text-blue-500 hover:bg-blue-50 transition-colors"
+            className="text-xs sm:text-sm font-medium px-3 py-2 sm:px-4 sm:py-2 rounded-md border border-blue-500 text-blue-500 hover:bg-blue-50 transition-colors whitespace-nowrap"
           >
             Sign In
           </Link>
           <Link 
             to="/sign-up" 
-            className="text-sm font-medium px-4 py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+            className="text-xs sm:text-sm font-medium px-3 py-2 sm:px-4 sm:py-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors whitespace-nowrap"
           >
             Sign Up
           </Link>

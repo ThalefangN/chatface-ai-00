@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  darkMode?: boolean;
 }
 
-const Logo: React.FC<LogoProps> = ({ className, size = 'md' }) => {
+const Logo: React.FC<LogoProps> = ({ className, size = 'md', darkMode = false }) => {
   const sizeClasses = {
     sm: 'text-xl',
     md: 'text-2xl',
@@ -18,12 +19,22 @@ const Logo: React.FC<LogoProps> = ({ className, size = 'md' }) => {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <div className="relative">
-        <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-sm"></div>
-        <div className="relative bg-blue-500 text-white p-2 rounded-full">
+        <div className={cn(
+          "absolute inset-0 rounded-full blur-sm",
+          darkMode ? "bg-blue-400/30" : "bg-blue-500/20" 
+        )}></div>
+        <div className={cn(
+          "relative p-2 rounded-full",
+          darkMode ? "bg-blue-400 text-black" : "bg-blue-500 text-white"
+        )}>
           <BookOpen className={cn("animate-pulse-soft", sizeClasses[size])} />
         </div>
       </div>
-      <span className={cn("font-bold tracking-tight", sizeClasses[size])}>
+      <span className={cn(
+        "font-bold tracking-tight", 
+        sizeClasses[size],
+        darkMode && "text-white"
+      )}>
         StudyBuddy
       </span>
     </div>
