@@ -1,51 +1,26 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X, ChevronRight, Download, ZoomIn, ZoomOut, Calculator, Target, RefreshCw, Trophy, Clock, CheckCircle, BarChart3, Lightbulb } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useIsMobile } from '@/hooks/use-mobile';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, BarChart3, FileText, Target, Play, TrendingUp, Users, Clock, Star, CheckCircle, Award, Zap, Brain, BookOpenCheck } from "lucide-react";
+import TutorSection from "./TutorSection";
+import AssessmentExam from "./AssessmentExam";
 
-interface MindMapNode {
-  id: string;
-  title: string;
-  x: number;
-  y: number;
-  expanded: boolean;
-  children: MindMapNode[];
-  parent?: string;
-  level: number;
+interface LearningContentProps {
+  subject: string;
 }
 
-interface SubjectContent {
-  title: string;
-  icon: React.ReactNode;
-  description: string;
-  sources: string[];
-  mindMapNodes: MindMapNode[];
-  actions: Array<{
-    label: string;
-    icon: React.ReactNode;
-    variant?: 'default' | 'outline';
-  }>;
-  studioCards: Array<{
-    title: string;
-    icon: React.ReactNode;
-    content: React.ReactNode;
-    color: string;
-  }>;
-}
+const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
+  const [showAssessment, setShowAssessment] = useState(false);
 
-const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 Examples" }) => {
-  const [chatInput, setChatInput] = useState('');
-  const [showMindMap, setShowMindMap] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [draggedNode, setDraggedNode] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const isMobile = useIsMobile();
+  if (showAssessment) {
+    return (
+      <AssessmentExam 
+        subject={subject} 
+        onBack={() => setShowAssessment(false)} 
+      />
+    );
+  }
 
   // Extract subject type from the subject string
   const getSubjectType = () => {
