@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
+import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X, ChevronRight, Download, ZoomIn, ZoomOut, Calculator, Target, RefreshCw, Trophy, Clock, CheckCircle, BarChart3, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,74 +19,526 @@ interface MindMapNode {
   parent?: string;
 }
 
+interface SubjectContent {
+  title: string;
+  icon: React.ReactNode;
+  description: string;
+  sources: string[];
+  mindMapNodes: MindMapNode[];
+  actions: Array<{
+    label: string;
+    icon: React.ReactNode;
+    variant?: 'default' | 'outline';
+  }>;
+  studioCards: Array<{
+    title: string;
+    icon: React.ReactNode;
+    content: React.ReactNode;
+    color: string;
+  }>;
+}
+
 const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 Examples" }) => {
   const [chatInput, setChatInput] = useState('');
   const [showMindMap, setShowMindMap] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [mindMapNodes, setMindMapNodes] = useState<MindMapNode[]>([
-    {
-      id: 'root',
-      title: 'Mathematics for Machine Learning',
-      x: 50,
-      y: 50,
-      expanded: true,
-      children: [
+
+  // Extract subject type from the subject string
+  const getSubjectType = () => {
+    if (subject.includes('Practice')) return 'practice';
+    if (subject.includes('Review')) return 'review';
+    if (subject.includes('Assessment')) return 'assessment';
+    if (subject.includes('Mastery')) return 'mastery';
+    return 'foundation';
+  };
+
+  const subjectType = getSubjectType();
+
+  const subjectConfigs: Record<string, SubjectContent> = {
+    foundation: {
+      title: "Mathematics Fundamentals: Core Concepts",
+      icon: <BookOpen className="w-5 h-5 text-white" />,
+      description: "Build strong mathematical foundations with comprehensive theory and examples",
+      sources: [
+        'mathematicsofmachinelearning.pdf',
+        'mathofml.pdf',
+        'mathofml2.pdf',
+        'mathofml3.pdf',
+        'mathofml4.pdf',
+        'mlmath.pdf'
+      ],
+      mindMapNodes: [
         {
-          id: 'linear-algebra',
-          title: 'Linear Algebra',
-          x: 25,
-          y: 25,
-          expanded: false,
+          id: 'root',
+          title: 'Mathematics for Machine Learning',
+          x: 50,
+          y: 50,
+          expanded: true,
           children: [
-            { id: 'vectors', title: 'Vectors & Vector Spaces', x: 15, y: 15, expanded: false, children: [] },
-            { id: 'matrices', title: 'Matrices & Operations', x: 15, y: 35, expanded: false, children: [] }
+            {
+              id: 'linear-algebra',
+              title: 'Linear Algebra',
+              x: 25,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'vectors', title: 'Vectors & Vector Spaces', x: 15, y: 15, expanded: false, children: [] },
+                { id: 'matrices', title: 'Matrices & Operations', x: 15, y: 35, expanded: false, children: [] }
+              ]
+            },
+            {
+              id: 'calculus',
+              title: 'Calculus',
+              x: 75,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'derivatives', title: 'Derivatives & Gradients', x: 85, y: 15, expanded: false, children: [] },
+                { id: 'optimization', title: 'Optimization', x: 85, y: 35, expanded: false, children: [] }
+              ]
+            }
           ]
-        },
+        }
+      ],
+      actions: [
+        { label: "Add note", icon: <FileEdit className="w-4 h-4" />, variant: "outline" },
+        { label: "Audio Overview", icon: <Volume2 className="w-4 h-4" />, variant: "outline" },
+        { label: "Mind Map", icon: <Map className="w-4 h-4" />, variant: "outline" }
+      ],
+      studioCards: [
         {
-          id: 'calculus',
-          title: 'Calculus',
-          x: 75,
-          y: 25,
-          expanded: false,
-          children: [
-            { id: 'derivatives', title: 'Derivatives & Gradients', x: 85, y: 15, expanded: false, children: [] },
-            { id: 'optimization', title: 'Optimization', x: 85, y: 35, expanded: false, children: [] }
-          ]
-        },
+          title: "Audio Overview",
+          icon: <Volume2 className="w-5 h-5 text-blue-600" />,
+          color: "from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20",
+          content: (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <Mic className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                    Create an Audio Overview in more languages!
+                  </span>
+                </div>
+                <Button variant="link" className="text-blue-600 p-0 h-auto text-sm font-medium hover:text-blue-700">
+                  Learn more
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <BookOpen className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Foundation Overview
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Comprehensive explanation
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="flex-1 shadow-sm hover:shadow-md transition-all duration-200">
+                    Customize
+                  </Button>
+                  <Button size="sm" className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-md hover:shadow-lg transition-all duration-200">
+                    Generate
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+      ]
+    },
+    practice: {
+      title: "Interactive Problem Solving: Practice Session",
+      icon: <Calculator className="w-5 h-5 text-white" />,
+      description: "Hands-on practice with step-by-step problem solving and immediate feedback",
+      sources: [
+        'practice-problems-set1.pdf',
+        'worked-examples-calculus.pdf',
+        'linear-algebra-exercises.pdf',
+        'probability-practice.pdf',
+        'optimization-problems.pdf',
+        'ml-math-drills.pdf'
+      ],
+      mindMapNodes: [
         {
-          id: 'probability',
-          title: 'Probability & Statistics',
-          x: 25,
-          y: 75,
-          expanded: false,
+          id: 'root',
+          title: 'Practice Problem Categories',
+          x: 50,
+          y: 50,
+          expanded: true,
           children: [
-            { id: 'distributions', title: 'Probability Distributions', x: 15, y: 85, expanded: false, children: [] },
-            { id: 'bayes', title: 'Bayesian Inference', x: 35, y: 85, expanded: false, children: [] }
+            {
+              id: 'basic-problems',
+              title: 'Basic Problems',
+              x: 25,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'algebra', title: 'Algebraic Manipulation', x: 15, y: 15, expanded: false, children: [] },
+                { id: 'calculus-basic', title: 'Basic Derivatives', x: 15, y: 35, expanded: false, children: [] }
+              ]
+            },
+            {
+              id: 'advanced-problems',
+              title: 'Advanced Problems',
+              x: 75,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'optimization-advanced', title: 'Complex Optimization', x: 85, y: 15, expanded: false, children: [] },
+                { id: 'ml-applications', title: 'ML Applications', x: 85, y: 35, expanded: false, children: [] }
+              ]
+            }
           ]
-        },
+        }
+      ],
+      actions: [
+        { label: "Start Practice", icon: <Calculator className="w-4 h-4" />, variant: "default" },
+        { label: "Problem Hints", icon: <Lightbulb className="w-4 h-4" />, variant: "outline" },
+        { label: "Solution Guide", icon: <Map className="w-4 h-4" />, variant: "outline" }
+      ],
+      studioCards: [
         {
-          id: 'applications',
-          title: 'ML Applications',
-          x: 75,
-          y: 75,
-          expanded: false,
+          title: "Practice Generator",
+          icon: <Calculator className="w-5 h-5 text-green-600" />,
+          color: "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
+          content: (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-green-100 dark:border-green-800/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <Target className="w-5 h-5 text-green-600" />
+                  <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                    Generate personalized practice problems!
+                  </span>
+                </div>
+                <Button variant="link" className="text-green-600 p-0 h-auto text-sm font-medium hover:text-green-700">
+                  Start practicing
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-700 dark:to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Calculator className="w-5 h-5 text-green-600 dark:text-green-300" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Adaptive Practice Set
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Difficulty adjusts to your level
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="flex-1 shadow-sm hover:shadow-md transition-all duration-200">
+                    Configure
+                  </Button>
+                  <Button size="sm" className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all duration-200">
+                    Generate
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+      ]
+    },
+    review: {
+      title: "Knowledge Review: Spaced Repetition",
+      icon: <RefreshCw className="w-5 h-5 text-white" />,
+      description: "Reinforce your learning with spaced repetition and knowledge consolidation",
+      sources: [
+        'review-summaries.pdf',
+        'key-concepts-recap.pdf',
+        'formula-reference.pdf',
+        'common-mistakes.pdf',
+        'review-flashcards.pdf',
+        'concept-connections.pdf'
+      ],
+      mindMapNodes: [
+        {
+          id: 'root',
+          title: 'Knowledge Review System',
+          x: 50,
+          y: 50,
+          expanded: true,
           children: [
-            { id: 'regression', title: 'Linear Regression', x: 85, y: 85, expanded: false, children: [] },
-            { id: 'classification', title: 'Classification', x: 85, y: 65, expanded: false, children: [] }
+            {
+              id: 'recent-topics',
+              title: 'Recent Topics',
+              x: 25,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'last-week', title: 'Last Week Learning', x: 15, y: 15, expanded: false, children: [] },
+                { id: 'key-formulas', title: 'Key Formulas', x: 15, y: 35, expanded: false, children: [] }
+              ]
+            },
+            {
+              id: 'weak-areas',
+              title: 'Areas for Improvement',
+              x: 75,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'low-confidence', title: 'Low Confidence Topics', x: 85, y: 15, expanded: false, children: [] },
+                { id: 'common-errors', title: 'Common Errors', x: 85, y: 35, expanded: false, children: [] }
+              ]
+            }
           ]
+        }
+      ],
+      actions: [
+        { label: "Quick Review", icon: <Clock className="w-4 h-4" />, variant: "default" },
+        { label: "Flashcards", icon: <RefreshCw className="w-4 h-4" />, variant: "outline" },
+        { label: "Progress Map", icon: <Map className="w-4 h-4" />, variant: "outline" }
+      ],
+      studioCards: [
+        {
+          title: "Review Schedule",
+          icon: <Clock className="w-5 h-5 text-purple-600" />,
+          color: "from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20",
+          content: (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <RefreshCw className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+                    Personalized spaced repetition schedule!
+                  </span>
+                </div>
+                <Button variant="link" className="text-purple-600 p-0 h-auto text-sm font-medium hover:text-purple-700">
+                  View schedule
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-pink-200 dark:from-purple-700 dark:to-pink-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Clock className="w-5 h-5 text-purple-600 dark:text-purple-300" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Smart Review Session
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Based on forgetting curve
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="flex-1 shadow-sm hover:shadow-md transition-all duration-200">
+                    Schedule
+                  </Button>
+                  <Button size="sm" className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 shadow-md hover:shadow-lg transition-all duration-200">
+                    Start Review
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+      ]
+    },
+    assessment: {
+      title: "Knowledge Assessment: Gap Analysis",
+      icon: <BarChart3 className="w-5 h-5 text-white" />,
+      description: "Comprehensive assessment to identify knowledge gaps and track progress",
+      sources: [
+        'assessment-framework.pdf',
+        'diagnostic-tests.pdf',
+        'competency-matrix.pdf',
+        'benchmark-problems.pdf',
+        'progress-tracking.pdf',
+        'gap-analysis-guide.pdf'
+      ],
+      mindMapNodes: [
+        {
+          id: 'root',
+          title: 'Assessment Framework',
+          x: 50,
+          y: 50,
+          expanded: true,
+          children: [
+            {
+              id: 'diagnostic',
+              title: 'Diagnostic Assessment',
+              x: 25,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'skill-check', title: 'Skill Level Check', x: 15, y: 15, expanded: false, children: [] },
+                { id: 'knowledge-gaps', title: 'Knowledge Gaps', x: 15, y: 35, expanded: false, children: [] }
+              ]
+            },
+            {
+              id: 'progress',
+              title: 'Progress Tracking',
+              x: 75,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'competency-map', title: 'Competency Mapping', x: 85, y: 15, expanded: false, children: [] },
+                { id: 'improvement-plan', title: 'Improvement Plan', x: 85, y: 35, expanded: false, children: [] }
+              ]
+            }
+          ]
+        }
+      ],
+      actions: [
+        { label: "Start Assessment", icon: <Target className="w-4 h-4" />, variant: "default" },
+        { label: "View Progress", icon: <BarChart3 className="w-4 h-4" />, variant: "outline" },
+        { label: "Gap Analysis", icon: <Map className="w-4 h-4" />, variant: "outline" }
+      ],
+      studioCards: [
+        {
+          title: "Assessment Tools",
+          icon: <Target className="w-5 h-5 text-red-600" />,
+          color: "from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20",
+          content: (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <BarChart3 className="w-5 h-5 text-red-600" />
+                  <span className="text-sm text-red-600 dark:text-red-400 font-medium">
+                    Comprehensive knowledge assessment!
+                  </span>
+                </div>
+                <Button variant="link" className="text-red-600 p-0 h-auto text-sm font-medium hover:text-red-700">
+                  Learn more
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-orange-200 dark:from-red-700 dark:to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Target className="w-5 h-5 text-red-600 dark:text-red-300" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Adaptive Assessment
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Identifies knowledge gaps
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="flex-1 shadow-sm hover:shadow-md transition-all duration-200">
+                    Configure
+                  </Button>
+                  <Button size="sm" className="flex-1 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 shadow-md hover:shadow-lg transition-all duration-200">
+                    Begin Test
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+      ]
+    },
+    mastery: {
+      title: "Advanced Mastery: Deep Learning",
+      icon: <Trophy className="w-5 h-5 text-white" />,
+      description: "Advanced concepts and real-world applications for true mastery",
+      sources: [
+        'advanced-topics.pdf',
+        'research-papers.pdf',
+        'case-studies.pdf',
+        'industry-applications.pdf',
+        'cutting-edge-methods.pdf',
+        'mastery-challenges.pdf'
+      ],
+      mindMapNodes: [
+        {
+          id: 'root',
+          title: 'Mastery Learning Path',
+          x: 50,
+          y: 50,
+          expanded: true,
+          children: [
+            {
+              id: 'advanced-concepts',
+              title: 'Advanced Concepts',
+              x: 25,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'research-topics', title: 'Current Research', x: 15, y: 15, expanded: false, children: [] },
+                { id: 'cutting-edge', title: 'Cutting-edge Methods', x: 15, y: 35, expanded: false, children: [] }
+              ]
+            },
+            {
+              id: 'applications',
+              title: 'Real-world Applications',
+              x: 75,
+              y: 25,
+              expanded: false,
+              children: [
+                { id: 'industry-cases', title: 'Industry Case Studies', x: 85, y: 15, expanded: false, children: [] },
+                { id: 'project-work', title: 'Capstone Projects', x: 85, y: 35, expanded: false, children: [] }
+              ]
+            }
+          ]
+        }
+      ],
+      actions: [
+        { label: "Master Challenge", icon: <Trophy className="w-4 h-4" />, variant: "default" },
+        { label: "Research Deep Dive", icon: <BookOpen className="w-4 h-4" />, variant: "outline" },
+        { label: "Mastery Map", icon: <Map className="w-4 h-4" />, variant: "outline" }
+      ],
+      studioCards: [
+        {
+          title: "Mastery Challenges",
+          icon: <Trophy className="w-5 h-5 text-yellow-600" />,
+          color: "from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20",
+          content: (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 p-4 rounded-xl border border-yellow-100 dark:border-yellow-800/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <Trophy className="w-5 h-5 text-yellow-600" />
+                  <span className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                    Advanced mastery challenges await!
+                  </span>
+                </div>
+                <Button variant="link" className="text-yellow-600 p-0 h-auto text-sm font-medium hover:text-yellow-700">
+                  Explore challenges
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-yellow-700 dark:to-amber-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-300" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Expert Level Projects
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Real-world applications
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="flex-1 shadow-sm hover:shadow-md transition-all duration-200">
+                    Explore
+                  </Button>
+                  <Button size="sm" className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 shadow-md hover:shadow-lg transition-all duration-200">
+                    Start Challenge
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )
         }
       ]
     }
-  ]);
-  
-  const sources = [
-    'mathematicsofmachinelearning.pdf',
-    'mathofml.pdf',
-    'mathofml2.pdf',
-    'mathofml3.pdf',
-    'mathofml4.pdf',
-    'mlmath.pdf'
-  ];
+  };
+
+  const currentConfig = subjectConfigs[subjectType] || subjectConfigs.foundation;
+  const [mindMapNodes, setMindMapNodes] = useState<MindMapNode[]>(currentConfig.mindMapNodes);
 
   const handleMindMapClick = () => {
     setShowMindMap(true);
@@ -111,11 +563,9 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     canvas.height = 800;
     
     if (ctx) {
-      // Set white background
       ctx.fillStyle = '#f9fafb';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Simple text rendering for mind map nodes
       ctx.fillStyle = '#1f2937';
       ctx.font = '16px Arial';
       ctx.textAlign = 'center';
@@ -124,23 +574,19 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
         const x = (node.x / 100) * canvas.width;
         const y = (node.y / 100) * canvas.height;
         
-        // Draw node background
         ctx.fillStyle = node.id === 'root' ? '#3b82f6' : '#ffffff';
         ctx.beginPath();
         ctx.roundRect(x - 60, y - 15, 120, 30, 8);
         ctx.fill();
         
-        // Draw node border
         ctx.strokeStyle = node.id === 'root' ? '#1d4ed8' : '#d1d5db';
         ctx.lineWidth = 2;
         ctx.stroke();
         
-        // Draw text
         ctx.fillStyle = node.id === 'root' ? '#ffffff' : '#1f2937';
         ctx.fillText(node.title, x, y + 5);
       });
       
-      // Download the image
       const link = document.createElement('a');
       link.download = 'mind-map.png';
       link.href = canvas.toDataURL();
@@ -223,11 +669,16 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <BookOpen className="w-5 h-5 text-white" />
+              {currentConfig.icon}
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              {subject}
-            </h1>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                {currentConfig.title}
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {currentConfig.description}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all duration-200">
@@ -269,7 +720,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           
           <ScrollArea className="flex-1 p-6">
             <div className="space-y-3">
-              {sources.map((source, index) => (
+              {currentConfig.sources.map((source, index) => (
                 <motion.div 
                   key={index} 
                   className="flex items-center gap-4 p-3 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-200 cursor-pointer group"
@@ -312,7 +763,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              Mathematics Fundamentals: Core Concepts
+              {currentConfig.title}
             </motion.h3>
             <motion.p 
               className="text-gray-600 dark:text-gray-400 mb-10 text-center font-medium"
@@ -320,7 +771,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              {sources.length} sources
+              {currentConfig.sources.length} sources
             </motion.p>
             
             <motion.div 
@@ -329,18 +780,17 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Button variant="outline" className="flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
-                <FileEdit className="w-4 h-4" />
-                Add note
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105">
-                <Volume2 className="w-4 h-4" />
-                Audio Overview
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105" onClick={handleMindMapClick}>
-                <Map className="w-4 h-4" />
-                Mind Map
-              </Button>
+              {currentConfig.actions.map((action, index) => (
+                <Button 
+                  key={index}
+                  variant={action.variant || "outline"} 
+                  className="flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
+                  onClick={action.label === "Mind Map" ? handleMindMapClick : undefined}
+                >
+                  {action.icon}
+                  {action.label}
+                </Button>
+              ))}
             </motion.div>
             
             <motion.div 
@@ -386,57 +836,24 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="mb-6 shadow-lg hover:shadow-xl transition-all duration-200 border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
-                      Audio Overview
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" className="w-8 h-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                      <SettingsIcon className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-4">
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Mic className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                        Create an Audio Overview in more languages!
-                      </span>
-                    </div>
-                    <Button variant="link" className="text-blue-600 p-0 h-auto text-sm font-medium hover:text-blue-700">
-                      Learn more
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <BookOpen className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                          Deep Dive conversation
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Two hosts
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <Button variant="outline" size="sm" className="flex-1 shadow-sm hover:shadow-md transition-all duration-200">
-                        Customize
-                      </Button>
-                      <Button size="sm" className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-md hover:shadow-lg transition-all duration-200">
-                        Generate
+              {currentConfig.studioCards.map((card, index) => (
+                <Card key={index} className="mb-6 shadow-lg hover:shadow-xl transition-all duration-200 border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
+                        {card.title}
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" className="w-8 h-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <SettingsIcon className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {card.content}
+                  </CardContent>
+                </Card>
+              ))}
             </motion.div>
             
             <motion.div
@@ -490,9 +907,9 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
         <DialogContent className="w-screen h-screen max-w-none max-h-none m-0 rounded-none p-0 overflow-hidden">
           <DialogHeader className="p-4 border-b bg-white flex-shrink-0">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-medium">Mathematics for Machine Learning: Interactive Mind Map</DialogTitle>
+              <DialogTitle className="text-lg font-medium">{currentConfig.title}: Interactive Mind Map</DialogTitle>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Based on 6 sources</span>
+                <span className="text-sm text-gray-500">Based on {currentConfig.sources.length} sources</span>
                 <Button variant="ghost" size="sm" onClick={handleDownload}>
                   <Download className="w-4 h-4" />
                 </Button>
