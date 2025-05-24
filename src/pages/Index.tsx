@@ -368,7 +368,7 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="relative h-screen rounded-2xl overflow-hidden bg-white">
+          <div className="relative h-screen rounded-2xl overflow-hidden bg-blue-50">
             <RadialOrbitalTimeline timelineData={studyProgressionData} />
           </div>
         </div>
@@ -387,7 +387,48 @@ const Index = () => {
             <h2 className="text-3xl font-bold mb-4">How StudyBuddy Works</h2>
           </div>
           
-          <BentoGrid items={studyBuddyWorksFeatures} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* First Container - BentoGrid */}
+            <div>
+              <BentoGrid items={studyBuddyWorksFeatures} />
+            </div>
+            
+            {/* Second Container - Learning Timeline */}
+            <div className="flex flex-col">
+              <div className="relative h-full min-h-[600px] rounded-2xl overflow-hidden bg-blue-50 border border-blue-100">
+                <div className="absolute inset-0 p-8">
+                  <h3 className="text-xl font-semibold mb-6 text-blue-900">Learning Progress Timeline</h3>
+                  <div className="space-y-6">
+                    {studyProgressionData.map((item, index) => (
+                      <div key={item.id} className="flex items-center space-x-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                          item.status === 'completed' ? 'bg-blue-500' : 
+                          item.status === 'in-progress' ? 'bg-blue-400' : 'bg-blue-300'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-blue-900">{item.title}</h4>
+                            <span className="text-sm text-blue-600">{item.date}</span>
+                          </div>
+                          <p className="text-sm text-blue-700">{item.content}</p>
+                          <div className="mt-2">
+                            <div className="w-full bg-blue-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                                style={{ width: `${item.energy}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* How StudyBuddy Helps You Learn Section */}
