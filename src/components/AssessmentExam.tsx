@@ -5,7 +5,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, XCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft, ArrowRight, BookOpen, Target } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface Question {
   id: number;
@@ -26,17 +27,51 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
   const [showResults, setShowResults] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSubjectInput, setShowSubjectInput] = useState(true);
+  const [customSubject, setCustomSubject] = useState('');
+  const [customTopic, setCustomTopic] = useState('');
 
-  const generateQuestions = async (openaiApiKey: string) => {
+  // OpenAI API Key - directly embedded
+  const OPENAI_API_KEY = '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';
+
+  const generateQuestions = async (subjectInput: string, topicInput: string) => {
     try {
       setIsLoading(true);
+      const prompt = `Generate exactly 30 assessment questions for the subject "${subjectInput}" and topic "${topicInput}". 
+      
+      Mix multiple-choice (4 options) and true/false questions. 
+      
+      Return ONLY a valid JSON array with this exact structure (no markdown formatting, no backticks):
+      [
+        {
+          "id": 1,
+          "question": "What is the question text?",
+          "type": "multiple-choice",
+          "options": ["Option A", "Option B", "Option C", "Option D"],
+          "correctAnswer": "Option A",
+          "explanation": "Explanation of why this is correct"
+        },
+        {
+          "id": 2,
+          "question": "True or false statement?",
+          "type": "true-false",
+          "correctAnswer": "true",
+          "explanation": "Explanation of the answer"
+        }
+      ]
+      
+      Make sure:
+      - Questions are educational and appropriate
+      - Each multiple-choice has exactly 4 options
+      - True/false questions have correctAnswer as "true" or "false"
+      - All questions have clear explanations
+      - Return exactly 30 questions`;
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -44,7 +79,11 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
           messages: [
             {
               role: 'system',
-              content: `Generate 30 assessment questions for ${subject}. Mix multiple-choice (4 options) and true/false questions. Return a JSON array with this exact structure: [{"id": 1, "question": "Question text", "type": "multiple-choice", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why this is correct"}, {"id": 2, "question": "Statement", "type": "true-false", "correctAnswer": "true", "explanation": "Explanation"}]. Make sure questions are educational and appropriate for the subject.`
+              content: 'You are an expert assessment creator. Return only valid JSON without any markdown formatting or code blocks.'
+            },
+            {
+              role: 'user',
+              content: prompt
             }
           ],
           temperature: 0.7,
@@ -57,7 +96,14 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       }
 
       const data = await response.json();
-      const generatedQuestions = JSON.parse(data.choices[0].message.content);
+      let content = data.choices[0].message.content.trim();
+      
+      // Clean up any markdown formatting
+      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      console.log('Raw API response:', content);
+      
+      const generatedQuestions = JSON.parse(content);
       
       // Ensure we have exactly 30 questions
       const questions30 = generatedQuestions.slice(0, 30).map((q: any, index: number) => ({
@@ -70,29 +116,29 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     } catch (error) {
       console.error('Error generating questions:', error);
       // Fallback to sample questions if API fails
-      generateFallbackQuestions();
+      generateFallbackQuestions(subjectInput, topicInput);
     }
   };
 
-  const generateFallbackQuestions = () => {
+  const generateFallbackQuestions = (subjectInput: string, topicInput: string) => {
     const fallbackQuestions: Question[] = Array.from({ length: 30 }, (_, i) => ({
       id: i + 1,
       question: i % 2 === 0 
-        ? `Multiple choice question ${i + 1} for ${subject}?`
-        : `True or False: Statement ${i + 1} about ${subject}.`,
+        ? `Multiple choice question ${i + 1} about ${topicInput} in ${subjectInput}?`
+        : `True or False: Statement ${i + 1} about ${topicInput} in ${subjectInput}.`,
       type: i % 2 === 0 ? 'multiple-choice' : 'true-false',
       options: i % 2 === 0 ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
       correctAnswer: i % 2 === 0 ? 'Option A' : 'true',
-      explanation: `This is the explanation for question ${i + 1}.`
+      explanation: `This is the explanation for question ${i + 1} about ${topicInput}.`
     }));
     setQuestions(fallbackQuestions);
     setIsLoading(false);
   };
 
-  const handleApiKeySubmit = () => {
-    if (apiKey.trim()) {
-      setShowApiKeyInput(false);
-      generateQuestions(apiKey);
+  const handleSubjectSubmit = () => {
+    if (customSubject.trim() && customTopic.trim()) {
+      setShowSubjectInput(false);
+      generateQuestions(customSubject, customTopic);
     }
   };
 
@@ -130,26 +176,58 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     };
   };
 
-  if (showApiKeyInput) {
+  const getGradeLevel = (percentage: number) => {
+    if (percentage >= 90) return { grade: 'A+', color: 'text-green-600', message: 'Excellent! Outstanding performance!' };
+    if (percentage >= 80) return { grade: 'A', color: 'text-green-500', message: 'Great job! Well done!' };
+    if (percentage >= 70) return { grade: 'B', color: 'text-blue-500', message: 'Good work! Keep it up!' };
+    if (percentage >= 60) return { grade: 'C', color: 'text-yellow-500', message: 'Fair performance. Room for improvement.' };
+    if (percentage >= 50) return { grade: 'D', color: 'text-orange-500', message: 'Below average. Consider reviewing the material.' };
+    return { grade: 'F', color: 'text-red-500', message: 'Poor performance. Please review and try again.' };
+  };
+
+  if (showSubjectInput) {
     return (
       <div className="max-w-md mx-auto mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>OpenAI API Key Required</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Start Your Assessment
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Please enter your OpenAI API key to generate assessment questions:
+              Enter the subject and topic you want to be assessed on:
             </p>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your OpenAI API key"
-              className="w-full p-2 border border-gray-300 rounded-md"
-            />
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="subject">Subject</Label>
+                <Input
+                  id="subject"
+                  value={customSubject}
+                  onChange={(e) => setCustomSubject(e.target.value)}
+                  placeholder="e.g., Mathematics, Science, History"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="topic">Topic</Label>
+                <Input
+                  id="topic"
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  placeholder="e.g., Algebra, Physics, World War II"
+                  className="mt-1"
+                />
+              </div>
+            </div>
             <div className="flex gap-2">
-              <Button onClick={handleApiKeySubmit} disabled={!apiKey.trim()}>
+              <Button 
+                onClick={handleSubjectSubmit} 
+                disabled={!customSubject.trim() || !customTopic.trim()}
+                className="flex-1"
+              >
+                <Target className="w-4 h-4 mr-2" />
                 Start Assessment
               </Button>
               <Button variant="outline" onClick={onBack}>
@@ -167,7 +245,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Generating assessment questions...</p>
+          <p>Generating assessment questions for {customSubject} - {customTopic}...</p>
         </div>
       </div>
     );
@@ -175,20 +253,30 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
 
   if (showResults) {
     const results = calculateResults();
+    const gradeInfo = getGradeLevel(results.percentage);
     
     return (
       <div className="max-w-4xl mx-auto p-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-center">Assessment Results</CardTitle>
+            <div className="text-center text-sm text-muted-foreground">
+              {customSubject} - {customTopic}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-center mb-6">
-              <div className="text-4xl font-bold mb-2">
-                {results.correct}/{results.total}
+              <div className="text-6xl font-bold mb-2 ${gradeInfo.color}">
+                {gradeInfo.grade}
+              </div>
+              <div className="text-2xl font-semibold mb-2">
+                {results.correct}/{results.total} Correct
               </div>
               <div className="text-xl text-muted-foreground mb-4">
                 Score: {results.percentage}%
+              </div>
+              <div className="text-lg ${gradeInfo.color} font-medium mb-4">
+                {gradeInfo.message}
               </div>
               <Progress value={results.percentage} className="w-full max-w-md mx-auto" />
             </div>
@@ -226,10 +314,13 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
               })}
             </div>
 
-            <div className="text-center mt-6">
-              <Button onClick={onBack}>
+            <div className="text-center mt-6 space-y-3">
+              <Button onClick={onBack} size="lg">
                 Back to Learning
               </Button>
+              <div className="text-sm text-muted-foreground">
+                Great work on completing the assessment!
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -244,7 +335,10 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     <div className="max-w-3xl mx-auto p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">{subject} Assessment</h1>
+          <div>
+            <h1 className="text-2xl font-bold">{customSubject} Assessment</h1>
+            <p className="text-sm text-muted-foreground">{customTopic}</p>
+          </div>
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Exit
