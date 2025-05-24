@@ -115,12 +115,16 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
+          "h-12 px-4 py-2 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full border-b border-neutral-200 dark:border-neutral-700"
         )}
       >
-        <div className="flex justify-end z-20 w-full">
+        <div className="flex justify-between items-center z-20 w-full">
+          <div className="flex items-center space-x-2">
+            <div className="h-5 w-6 bg-blue-500 rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
+            <span className="font-medium text-black dark:text-white">StudyBuddy</span>
+          </div>
           <Menu
-            className="text-neutral-800 dark:text-neutral-200 cursor-pointer"
+            className="text-neutral-800 dark:text-neutral-200 cursor-pointer h-6 w-6"
             onClick={() => setOpen(!open)}
           />
         </div>
@@ -135,17 +139,19 @@ export const MobileSidebar = ({
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
+                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-6 z-[100] flex flex-col justify-between overflow-y-auto",
                 className
               )}
             >
               <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
+                className="absolute right-6 top-6 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
                 onClick={() => setOpen(!open)}
               >
-                <X />
+                <X className="h-6 w-6" />
               </div>
-              {children}
+              <div className="pt-12">
+                {children}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -167,7 +173,7 @@ export const SidebarLink = ({
     <Link
       to={link.href}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2",
+        "flex items-center justify-start gap-2 group/sidebar py-3 px-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors",
         className
       )}
       {...props}
