@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
@@ -27,7 +28,7 @@ const features = [
   },
 ];
 
-// How StudyBuddy Works Features
+// How StudyBuddy Works Features - Updated layout to match Advanced Learning Features
 const studyBuddyWorksFeatures = [
   {
     title: "Voice Interaction",
@@ -36,7 +37,8 @@ const studyBuddyWorksFeatures = [
     icon: <MicIcon className="w-4 h-4 text-blue-500" />,
     status: "Live",
     tags: ["Voice", "AI", "Tutor"],
-    colSpan: 1,
+    colSpan: 2,
+    hasPersistentHover: true,
   },
   {
     title: "Get Explanations",
@@ -54,7 +56,7 @@ const studyBuddyWorksFeatures = [
     icon: <Target className="w-4 h-4 text-purple-500" />,
     status: "Enhanced",
     tags: ["Practice", "Progress"],
-    colSpan: 1,
+    colSpan: 2,
   },
   {
     title: "Learning Progress Timeline",
@@ -388,13 +390,12 @@ const Index = () => {
           className="mt-24"
         />
         
-        {/* How StudyBuddy Works Section */}
+        {/* How StudyBuddy Works Section - Updated layout to match Advanced Learning Features */}
         <div className="mt-24">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How StudyBuddy Works</h2>
           </div>
           
-          {/* Updated to use 2x2 grid layout */}
           <BentoGrid items={studyBuddyWorksFeatures} />
         </div>
 
