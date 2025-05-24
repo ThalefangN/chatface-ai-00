@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
-import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe } from 'lucide-react';
+import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock } from 'lucide-react';
 
 const features = [
   { 
@@ -60,6 +61,65 @@ const studyFeatures = [
     icon: <Video className="w-4 h-4 text-sky-500" />,
     status: "Enhanced",
     tags: ["Voice", "Visual"],
+  },
+];
+
+// StudyBuddy learning progression timeline data
+const studyProgressionData = [
+  {
+    id: 1,
+    title: "Assessment",
+    date: "Week 1",
+    content: "AI evaluates your current knowledge level and learning style preferences to create a personalized study plan.",
+    category: "Evaluation",
+    icon: Calendar,
+    relatedIds: [2],
+    status: "completed" as const,
+    energy: 100,
+  },
+  {
+    id: 2,
+    title: "Foundation",
+    date: "Week 2-3",
+    content: "Build strong fundamentals with voice-guided lessons tailored to your syllabus requirements.",
+    category: "Learning",
+    icon: BookOpen,
+    relatedIds: [1, 3],
+    status: "completed" as const,
+    energy: 85,
+  },
+  {
+    id: 3,
+    title: "Practice",
+    date: "Week 4-6",
+    content: "Interactive exercises and quizzes with real-time AI feedback to reinforce your understanding.",
+    category: "Application",
+    icon: Code,
+    relatedIds: [2, 4],
+    status: "in-progress" as const,
+    energy: 70,
+  },
+  {
+    id: 4,
+    title: "Review",
+    date: "Week 7",
+    content: "Comprehensive revision sessions focusing on areas that need improvement based on your progress.",
+    category: "Revision",
+    icon: FileText,
+    relatedIds: [3, 5],
+    status: "pending" as const,
+    energy: 45,
+  },
+  {
+    id: 5,
+    title: "Mastery",
+    date: "Week 8",
+    content: "Final assessment and certification of your learning achievement with performance analytics.",
+    category: "Achievement",
+    icon: Award,
+    relatedIds: [4],
+    status: "pending" as const,
+    energy: 20,
   },
 ];
 
@@ -190,6 +250,20 @@ const Index = () => {
           autoPlayInterval={4000}
           className="mt-24"
         />
+
+        {/* Study Progression Timeline Section */}
+        <div className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Your Learning Journey</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Experience a structured learning path designed to maximize your academic success with AI-powered guidance
+            </p>
+          </div>
+          
+          <div className="relative h-screen rounded-2xl overflow-hidden">
+            <RadialOrbitalTimeline timelineData={studyProgressionData} />
+          </div>
+        </div>
         
         <div className="mt-24 text-center">
           <h2 className="text-3xl font-bold mb-12">How StudyBuddy Helps You Learn</h2>
