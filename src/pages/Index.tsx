@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
+import { PricingSection } from '@/components/ui/pricing-section';
 import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap } from 'lucide-react';
 
 const features = [
@@ -253,6 +253,85 @@ const studyProgressionData = [
   },
 ];
 
+// Pricing tiers for StudyBuddy
+const PAYMENT_FREQUENCIES = ["monthly", "yearly"];
+
+const TIERS = [
+  {
+    id: "free",
+    name: "Free Starter",
+    price: {
+      monthly: "Free",
+      yearly: "Free",
+    },
+    description: "Perfect for getting started",
+    features: [
+      "5 AI chat sessions per day",
+      "Basic study materials",
+      "Voice interaction (30 min/day)",
+      "Document upload (3 docs)",
+      "Email support",
+    ],
+    cta: "Get Started Free",
+  },
+  {
+    id: "student",
+    name: "Student",
+    price: {
+      monthly: 9,
+      yearly: 7,
+    },
+    description: "Great for individual students",
+    features: [
+      "Unlimited AI chat sessions",
+      "Advanced study materials",
+      "Unlimited voice interaction",
+      "Document upload (50 docs)",
+      "Progress tracking",
+      "Priority support",
+    ],
+    cta: "Start Learning",
+    popular: true,
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: {
+      monthly: 19,
+      yearly: 15,
+    },
+    description: "For serious learners",
+    features: [
+      "Everything in Student",
+      "Personalized learning paths",
+      "Advanced analytics",
+      "Unlimited document storage",
+      "Custom study schedules",
+      "1-on-1 tutoring sessions",
+    ],
+    cta: "Go Premium",
+  },
+  {
+    id: "institution",
+    name: "Institution",
+    price: {
+      monthly: "Custom",
+      yearly: "Custom",
+    },
+    description: "For schools and organizations",
+    features: [
+      "Everything in Premium",
+      "Multi-user management",
+      "Custom integrations",
+      "Advanced reporting",
+      "Dedicated support",
+      "API access",
+    ],
+    cta: "Contact Sales",
+    highlighted: true,
+  },
+];
+
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
@@ -276,90 +355,92 @@ const Index = () => {
         </div>
       </header>
       
-      <main className="flex-1 container mx-auto px-4 py-12 md:py-20">
-        <div className="grid gap-12 md:grid-cols-2 items-center">
-          <div className="space-y-6 max-w-xl">
-            <div className="inline-flex items-center rounded-full px-3 py-1 text-sm bg-blue-500/10 text-blue-500">
-              <span className="animate-pulse-soft mr-1">●</span> 
-              AI-Powered Study Assistant
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              Study Smarter with Your AI Voice Companion
-            </h1>
-            
-            <p className="text-lg text-muted-foreground">
-              Practice, learn, and improve with StudyBuddy. Get real-time feedback, explanations, and study help through natural voice conversations.
-            </p>
-            
-            <div className="pt-4">
-              <Link 
-                to="/sign-up" 
-                className="group inline-flex items-center justify-center rounded-md bg-blue-500 px-6 py-3 text-white font-medium hover:bg-blue-600 transition-colors"
-              >
-                Start Learning
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </div>
-            
-            <div className="flex items-center space-x-4 pt-4 text-sm text-muted-foreground">
-              <div className="flex items-center">
-                <div className="mr-1.5 h-4 w-4 text-blue-500">
-                  <MicIcon className="h-4 w-4" />
-                </div>
-                Voice Assistant
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-12 md:py-20">
+          <div className="grid gap-12 md:grid-cols-2 items-center">
+            <div className="space-y-6 max-w-xl">
+              <div className="inline-flex items-center rounded-full px-3 py-1 text-sm bg-blue-500/10 text-blue-500">
+                <span className="animate-pulse-soft mr-1">●</span> 
+                AI-Powered Study Assistant
               </div>
-              <div className="flex items-center">
-                <div className="mr-1.5 h-4 w-4 text-blue-500">
-                  <BookOpen className="h-4 w-4" />
-                </div>
-                Study Materials
+              
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+                Study Smarter with Your AI Smart Companion
+              </h1>
+              
+              <p className="text-lg text-muted-foreground">
+                Practice, learn, and improve with StudyBuddy. Get real-time feedback, explanations, and study help through natural voice conversations.
+              </p>
+              
+              <div className="pt-4">
+                <Link 
+                  to="/sign-up" 
+                  className="group inline-flex items-center justify-center rounded-md bg-blue-500 px-6 py-3 text-white font-medium hover:bg-blue-600 transition-colors"
+                >
+                  Start Learning
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
               </div>
-              <div className="flex items-center">
-                <div className="mr-1.5 h-4 w-4 text-blue-500">
-                  <Award className="h-4 w-4" />
-                </div>
-                Learning Coach
-              </div>
-            </div>
-          </div>
-          
-          <div className="relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-blue-500/40 rounded-2xl blur-xl animate-pulse-soft opacity-70"></div>
-            <div className="relative bg-card rounded-2xl overflow-hidden border border-border shadow-xl">
-              <div className="aspect-video bg-muted p-8 flex flex-col items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
-                  <Users className="h-7 w-7 text-blue-500" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">AI Study Session</h3>
-                <p className="text-center text-muted-foreground">
-                  Have natural voice conversations with your AI study assistant to learn any subject
-                </p>
-                <div className="mt-6 grid grid-cols-3 gap-3 w-full max-w-xs">
-                  {[1, 2, 3, 4, 5, 6].map((n) => (
-                    <div 
-                      key={n} 
-                      className={`h-1 rounded-full ${n % 2 === 0 ? 'bg-blue-500' : 'bg-muted-foreground/20'}`}
-                    ></div>
-                  ))}
-                </div>
-              </div>
-              <div className="p-6 bg-gradient-to-b from-card to-muted/30">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
-                      AI
-                    </div>
-                    <div className="flex-1 p-3 rounded-xl bg-muted/50">
-                      <p className="text-sm">Can you explain the water cycle to me?</p>
-                    </div>
+              
+              <div className="flex items-center space-x-4 pt-4 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                  <div className="mr-1.5 h-4 w-4 text-blue-500">
+                    <MicIcon className="h-4 w-4" />
                   </div>
-                  <div className="flex items-center space-x-3 justify-end">
-                    <div className="flex-1 p-3 rounded-xl bg-blue-500/10">
-                      <p className="text-sm">The water cycle describes how water evaporates from the Earth's surface...</p>
+                  Voice Assistant
+                </div>
+                <div className="flex items-center">
+                  <div className="mr-1.5 h-4 w-4 text-blue-500">
+                    <BookOpen className="h-4 w-4" />
+                  </div>
+                  Study Materials
+                </div>
+                <div className="flex items-center">
+                  <div className="mr-1.5 h-4 w-4 text-blue-500">
+                    <Award className="h-4 w-4" />
+                  </div>
+                  Learning Coach
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-blue-500/40 rounded-2xl blur-xl animate-pulse-soft opacity-70"></div>
+              <div className="relative bg-card rounded-2xl overflow-hidden border border-border shadow-xl">
+                <div className="aspect-video bg-muted p-8 flex flex-col items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+                    <Users className="h-7 w-7 text-blue-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">AI Study Session</h3>
+                  <p className="text-center text-muted-foreground">
+                    Have natural voice conversations with your AI study assistant to learn any subject
+                  </p>
+                  <div className="mt-6 grid grid-cols-3 gap-3 w-full max-w-xs">
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <div 
+                        key={n} 
+                        className={`h-1 rounded-full ${n % 2 === 0 ? 'bg-blue-500' : 'bg-muted-foreground/20'}`}
+                      ></div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-6 bg-gradient-to-b from-card to-muted/30">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                        AI
+                      </div>
+                      <div className="flex-1 p-3 rounded-xl bg-muted/50">
+                        <p className="text-sm">Can you explain the water cycle to me?</p>
+                      </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                      <Users className="h-4 w-4" />
+                    <div className="flex items-center space-x-3 justify-end">
+                      <div className="flex-1 p-3 rounded-xl bg-blue-500/10">
+                        <p className="text-sm">The water cycle describes how water evaporates from the Earth's surface...</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                        <Users className="h-4 w-4" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -369,67 +450,81 @@ const Index = () => {
         </div>
         
         {/* Study Progression Timeline Section */}
-        <div className="mt-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Your Learning Journey</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Experience a structured learning path designed to maximize your academic success with AI-powered guidance
-            </p>
+        <div className="w-full px-0">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Your Learning Journey</h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Experience a structured learning path designed to maximize your academic success with AI-powered guidance
+              </p>
+            </div>
           </div>
           
-          <div className="relative h-screen rounded-2xl overflow-hidden bg-blue-50">
+          <div className="relative h-screen w-full rounded-2xl overflow-hidden bg-blue-50">
             <RadialOrbitalTimeline timelineData={studyProgressionData} />
           </div>
         </div>
         
         {/* Feature Steps Section */}
-        <FeatureSteps 
-          features={features}
-          title="How StudyBuddy Works"
-          autoPlayInterval={4000}
-          className="mt-24"
-        />
-        
-        {/* How StudyBuddy Works Section - Updated layout to match Advanced Learning Features */}
-        <div className="mt-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How StudyBuddy Works</h2>
-          </div>
+        <div className="container mx-auto px-4">
+          <FeatureSteps 
+            features={features}
+            title="How StudyBuddy Works"
+            autoPlayInterval={4000}
+            className="mt-24"
+          />
           
-          <BentoGrid items={studyBuddyWorksFeatures} />
-        </div>
+          {/* How StudyBuddy Works Section - Updated layout to match Advanced Learning Features */}
+          <div className="mt-24">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">How StudyBuddy Works</h2>
+            </div>
+            
+            <BentoGrid items={studyBuddyWorksFeatures} />
+          </div>
 
-        {/* How StudyBuddy Helps You Learn Section */}
-        <div className="mt-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How StudyBuddy Helps You Learn</h2>
+          {/* How StudyBuddy Helps You Learn Section */}
+          <div className="mt-24">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">How StudyBuddy Helps You Learn</h2>
+            </div>
+            
+            <BentoGrid items={studyBuddyHelpsFeatures} />
           </div>
-          
-          <BentoGrid items={studyBuddyHelpsFeatures} />
-        </div>
 
-        {/* Document Intelligence Section */}
-        <div className="mt-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">AI Document Intelligence</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Upload your study materials and let StudyBuddy's AI become your personal tutor, grounded in your own content
-            </p>
+          {/* Document Intelligence Section */}
+          <div className="mt-24">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">AI Document Intelligence</h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Upload your study materials and let StudyBuddy's AI become your personal tutor, grounded in your own content
+              </p>
+            </div>
+            
+            <BentoGrid items={documentFeatures} />
           </div>
-          
-          <BentoGrid items={documentFeatures} />
-        </div>
 
-        {/* Advanced Learning Features Section */}
-        <div className="mt-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Advanced Learning Features</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Discover powerful tools designed to enhance your study experience and accelerate your learning journey
-            </p>
+          {/* Advanced Learning Features Section */}
+          <div className="mt-24">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Advanced Learning Features</h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Discover powerful tools designed to enhance your study experience and accelerate your learning journey
+              </p>
+            </div>
+            
+            <BentoGrid items={studyFeatures} />
           </div>
-          
-          <BentoGrid items={studyFeatures} />
+
+          {/* Pricing Section */}
+          <div className="mt-24">
+            <PricingSection
+              title="Choose Your Learning Plan"
+              subtitle="Start your learning journey with the plan that fits your needs"
+              frequencies={PAYMENT_FREQUENCIES}
+              tiers={TIERS}
+            />
+          </div>
         </div>
       </main>
       
