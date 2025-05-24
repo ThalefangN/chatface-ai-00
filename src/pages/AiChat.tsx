@@ -1,425 +1,222 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navigation from '@/components/Navigation';
-import MobileNavigation from '@/components/MobileNavigation';
-import VideoContainer from '@/components/VideoContainer';
-import InterviewSelector, { InterviewType } from '@/components/InterviewSelector';
-import AnimatedContainer from '@/components/AnimatedContainer';
-import { useVideoStream } from '@/hooks/useVideoStream';
-import { ArrowLeft, MicIcon, Play, Send, Video, X, Mic, MicOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useRef, useEffect } from 'react';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import AppSidebar from "@/components/AppSidebar";
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Send, Bot, User, BookOpen, Calculator, Lightbulb, History } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { useAIChat, Message } from '@/hooks/useAIChat';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-interface PracticeSession {
+interface Message {
   id: string;
-  type: string;
-  title: string;
-  duration: number | null;
-  created_at: string;
-  updated_at?: string;
+  content: string;
+  isAI: boolean;
+  timestamp: Date;
 }
 
 const AiChat = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedType, setSelectedType] = useState<InterviewType | null>(null);
-  const [isInterviewStarted, setIsInterviewStarted] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [videoEnabled, setVideoEnabled] = useState(true);
-  const [practiceHistory, setPracticeHistory] = useState<PracticeSession[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [messageInput, setMessageInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      content: "Hello! I'm your AI study assistant. I can help you with math problems, explain concepts, provide study tips, and answer questions about your learning materials. What would you like to study today?",
+      isAI: true,
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const { videoRef, error, isLoading, startStream, stopStream } = useVideoStream({
-    enabled: isInterviewStarted,
-    audioEnabled,
-  });
-  
-  const { 
-    messages, 
-    isLoading: isMessageLoading, 
-    sendMessage, 
-    initializeChat,
-    startListening,
-    stopListening,
-    isListening,
-    isSpeaking
-  } = useAIChat(currentSessionId);
-  
-  // Scroll to bottom when messages change
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    scrollToBottom();
   }, [messages]);
-  
-  // Fetch practice history from database
-  useEffect(() => {
-    if (user) {
-      const fetchPracticeHistory = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('practice_sessions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-            
-          if (error) throw error;
-          if (data) setPracticeHistory(data);
-        } catch (error) {
-          console.error('Error fetching practice history:', error);
-          toast.error('Failed to load practice history');
-        }
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: inputMessage,
+      isAI: false,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I understand you're asking about this topic. Let me help you break it down step by step. This is a great question that many students have!",
+        isAI: true,
+        timestamp: new Date()
       };
-      
-      fetchPracticeHistory();
-      
-      // Set up real-time subscription for practice sessions
-      const practiceChannel = supabase
-        .channel('practice_changes')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'practice_sessions',
-            filter: `user_id=eq.${user.id}`
-          }, 
-          (payload) => {
-            console.log('Practice session changed:', payload);
-            fetchPracticeHistory();
-          }
-        )
-        .subscribe();
-        
-      return () => {
-        supabase.removeChannel(practiceChannel);
-      };
-    }
-  }, [user]);
-  
-  // Initialize chat when session changes
-  useEffect(() => {
-    if (currentSessionId) {
-      initializeChat();
-      
-      // Set up real-time subscription for session messages
-      const messagesChannel = supabase
-        .channel('messages_changes')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'session_messages',
-            filter: `session_id=eq.${currentSessionId}`
-          }, 
-          (payload) => {
-            console.log('Message changed:', payload);
-            initializeChat();
-          }
-        )
-        .subscribe();
-        
-      return () => {
-        supabase.removeChannel(messagesChannel);
-      };
-    }
-  }, [currentSessionId, initializeChat]);
-  
-  const handleSelectType = (type: InterviewType) => {
-    setSelectedType(type);
+      setMessages(prev => [...prev, aiResponse]);
+      setIsLoading(false);
+    }, 1500);
   };
-  
-  const handleStartInterview = async () => {
-    if (!user || !selectedType) return;
-    
-    try {
-      // Create a new practice session in the database
-      const { data, error } = await supabase
-        .from('practice_sessions')
-        .insert({
-          user_id: user.id,
-          type: selectedType,
-          title: `${selectedType} Practice`,
-          duration: 0
-        })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      if (data) {
-        setCurrentSessionId(data.id);
-      }
-      
-      setIsInterviewStarted(true);
-      startStream();
-      
-      toast.success('Practice session started!');
-    } catch (error) {
-      console.error('Error starting practice session:', error);
-      toast.error('Failed to start practice session');
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
-  
-  const handleEndInterview = async () => {
-    if (currentSessionId) {
-      try {
-        // Update the duration of the practice session
-        await supabase
-          .from('practice_sessions')
-          .update({
-            updated_at: new Date().toISOString(),
-            // Calculate duration based on creation time
-            duration: practiceHistory.find(p => p.id === currentSessionId)?.duration || 0
-          })
-          .eq('id', currentSessionId);
-          
-        toast.success('Practice session saved!');
-      } catch (error) {
-        console.error('Error updating practice session:', error);
-        toast.error('Failed to save practice session');
-      }
-    }
-    
-    setIsInterviewStarted(false);
-    stopStream();
-    setCurrentSessionId(null);
-    
-    // Stop voice recognition if active
-    stopListening();
-  };
-  
-  const handleToggleAudio = () => {
-    setAudioEnabled(!audioEnabled);
-  };
-  
-  const handleToggleVideo = () => {
-    setVideoEnabled(!videoEnabled);
-  };
-  
-  const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
-    
-    sendMessage(messageInput);
-    setMessageInput('');
-  };
-  
-  const handleVoiceRecognition = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  };
-  
+
+  const quickPrompts = [
+    { icon: Calculator, text: "Help me solve this math problem", color: "bg-blue-500" },
+    { icon: BookOpen, text: "Explain this concept", color: "bg-green-500" },
+    { icon: Lightbulb, text: "Give me study tips", color: "bg-yellow-500" },
+    { icon: History, text: "Review my previous work", color: "bg-purple-500" }
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      
-      <main className="flex-1 container mx-auto px-4 py-6 pb-24 md:pb-6">
-        <div className="mb-6 flex items-center">
-          <button 
-            onClick={() => navigate('/home')} 
-            className="mr-4 p-2 rounded-full hover:bg-muted transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-2xl font-bold">AI Practice Session</h1>
-        </div>
-        
-        {!isInterviewStarted ? (
-          <div className="max-w-3xl mx-auto animate-fade-in">
-            <InterviewSelector 
-              selectedType={selectedType} 
-              onSelect={handleSelectType} 
-            />
-            
-            {selectedType && (
-              <div className="mt-8 text-center">
-                <p className="mb-6 text-muted-foreground">
-                  You've selected <span className="font-medium text-foreground">{selectedType}</span>. 
-                  Ready to start your practice session?
-                </p>
-                <button
-                  onClick={handleStartInterview}
-                  className="inline-flex items-center justify-center bg-primary text-primary-foreground px-6 py-3 rounded-full font-medium hover:bg-primary/90 transition-colors"
-                >
-                  <Play className="mr-2 h-5 w-5" />
-                  Start Practice Session
-                </button>
-              </div>
-            )}
-            
-            {practiceHistory.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-xl font-semibold mb-4">Your Recent Practice Sessions</h2>
-                <AnimatedContainer className="bg-card overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
-                  <div className="p-6">
-                    {practiceHistory.slice(0, 3).map((session) => (
-                      <div 
-                        key={session.id}
-                        className="flex items-center justify-between py-3 border-b last:border-b-0 border-border hover:bg-muted/20 rounded-lg px-2 transition-colors"
-                      >
-                        <div className="flex items-center">
-                          <div className="p-2 rounded-lg bg-primary/10 mr-3">
-                            {session.type === 'presentation' && <Play className="h-4 w-4 text-orange-500" />}
-                            {session.type === 'interview' && <Play className="h-4 w-4 text-blue-500" />}
-                            {session.type === 'public-speaking' && <Play className="h-4 w-4 text-green-500" />}
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{session.title}</h4>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(session.created_at).toLocaleDateString()} • {session.duration ? `${session.duration} min` : 'In progress'}
-                            </p>
-                          </div>
-                        </div>
-                        <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors group">
-                          <Play className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="bg-muted/30 p-4 text-center">
-                    <button 
-                      onClick={() => navigate('/profile')} 
-                      className="text-sm text-primary hover:underline font-medium"
-                    >
-                      View all sessions
-                    </button>
-                  </div>
-                </AnimatedContainer>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 animate-fade-in">
-            <VideoContainer
-              videoRef={videoRef}
-              isUser={true}
-              isLoading={isLoading}
-              error={error}
-              audioEnabled={audioEnabled}
-              videoEnabled={videoEnabled}
-              onToggleAudio={handleToggleAudio}
-              onToggleVideo={handleToggleVideo}
-            />
-            
-            <AnimatedContainer className="h-full flex flex-col bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
-              <div className="flex items-center justify-between mb-4 p-4">
-                <div className="flex items-center">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mr-3",
-                    isSpeaking && "border-2 border-blue-500 animate-pulse"
-                  )}>
-                    <MicIcon className={cn(
-                      "h-5 w-5 text-blue-500",
-                      isSpeaking && "animate-pulse"
-                    )} />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">AI Coach</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {isMessageLoading 
-                        ? 'Thinking...' 
-                        : isSpeaking 
-                          ? 'Speaking...' 
-                          : 'Listening and analyzing...'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleEndInterview}
-                  className="p-2 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto mb-4 space-y-4 px-4">
-                {messages.map((message, index) => (
-                  <div 
-                    key={message.id || index} 
-                    className={cn(
-                      "p-3 rounded-lg max-w-[80%]",
-                      message.is_ai 
-                        ? "bg-blue-500/10 animate-fade-in-left" 
-                        : "bg-green-500/10 animate-fade-in-right self-end ml-auto"
-                    )}
-                    style={{ 
-                      animationDelay: `${index * 0.1}s`,
-                    }}
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <h1 className="text-lg font-semibold">Study Chat</h1>
+            <Badge variant="secondary" className="ml-auto">
+              <Bot className="h-3 w-3 mr-1" />
+              AI Assistant
+            </Badge>
+          </header>
+          
+          <div className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
+            {/* Messages Area */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4 max-w-4xl mx-auto">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${message.isAI ? 'justify-start' : 'justify-end'}`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    {message.isAI && (
+                      <Avatar className="h-8 w-8 mt-1">
+                        <AvatarFallback className="bg-blue-500 text-white">
+                          <Bot className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    
+                    <Card className={`max-w-[85%] sm:max-w-[70%] ${
+                      message.isAI 
+                        ? 'bg-gray-50 dark:bg-gray-800' 
+                        : 'bg-blue-500 text-white ml-auto'
+                    }`}>
+                      <CardContent className="p-3">
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                        <p className={`text-xs mt-2 ${
+                          message.isAI 
+                            ? 'text-gray-500' 
+                            : 'text-blue-100'
+                        }`}>
+                          {message.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    {!message.isAI && (
+                      <Avatar className="h-8 w-8 mt-1">
+                        <AvatarImage src={user?.user_metadata?.avatar_url} />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                   </div>
                 ))}
-                {isMessageLoading && (
-                  <div className="p-3 rounded-lg bg-blue-500/10 animate-pulse max-w-[80%]">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    </div>
+                
+                {isLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <Avatar className="h-8 w-8 mt-1">
+                      <AvatarFallback className="bg-blue-500 text-white">
+                        <Bot className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <Card className="bg-gray-50 dark:bg-gray-800">
+                      <CardContent className="p-3">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              
-              <div className="flex items-center gap-2 mt-auto pt-4 px-4 pb-4 border-t border-border">
-                <Input
-                  type="text"
-                  placeholder={isListening ? "Listening..." : "Type your response..."}
-                  className="flex-1"
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSendMessage();
-                    }
-                  }}
-                  disabled={isMessageLoading || isListening}
-                />
-                <button 
-                  className={cn(
-                    "p-2 rounded-full transition-colors",
-                    isListening
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "bg-blue-500 hover:bg-blue-600 text-white"
-                  )}
-                  onClick={handleVoiceRecognition}
-                  disabled={isMessageLoading}
-                >
-                  {isListening ? (
-                    <MicOff className="h-5 w-5 animate-pulse" />
-                  ) : (
-                    <Mic className="h-5 w-5" />
-                  )}
-                </button>
-                <button 
-                  className={`p-2 rounded-full ${
-                    isMessageLoading || !messageInput.trim()
-                      ? 'bg-blue-300 cursor-not-allowed' 
-                      : 'bg-blue-500 hover:bg-blue-600 text-white'
-                  } transition-colors`}
-                  onClick={handleSendMessage}
-                  disabled={isMessageLoading || !messageInput.trim()}
-                >
-                  <Send className="h-5 w-5" />
-                </button>
+            </ScrollArea>
+
+            {/* Quick Prompts - Only show when no messages or few messages */}
+            {messages.length <= 1 && (
+              <div className="p-4 border-t bg-gray-50 dark:bg-gray-800">
+                <div className="max-w-4xl mx-auto">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Quick prompts to get started:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {quickPrompts.map((prompt, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        className="justify-start text-left h-auto p-3"
+                        onClick={() => setInputMessage(prompt.text)}
+                      >
+                        <div className={`w-6 h-6 rounded ${prompt.color} flex items-center justify-center mr-2 flex-shrink-0`}>
+                          <prompt.icon className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="text-sm truncate">{prompt.text}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </AnimatedContainer>
+            )}
+
+            {/* Input Area */}
+            <div className="p-4 border-t bg-white dark:bg-gray-900">
+              <div className="max-w-4xl mx-auto flex gap-2">
+                <Textarea
+                  placeholder="Ask me anything about your studies..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="min-h-[44px] max-h-32 resize-none flex-1"
+                  rows={1}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isLoading}
+                  size="icon"
+                  className="h-[44px] w-[44px] flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        )}
-      </main>
-      
-      <MobileNavigation />
-    </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 
