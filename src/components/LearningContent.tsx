@@ -1,14 +1,16 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown } from 'lucide-react';
+import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 Examples" }) => {
   const [chatInput, setChatInput] = useState('');
+  const [showMindMap, setShowMindMap] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const sources = [
     'mathematicsofmachinelearning.pdf',
@@ -18,6 +20,19 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     'mathofml4.pdf',
     'mlmath.pdf'
   ];
+
+  const handleMindMapClick = () => {
+    setShowMindMap(true);
+  };
+
+  const handleFullscreenToggle = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  const handleCloseMindMap = () => {
+    setShowMindMap(false);
+    setIsFullscreen(false);
+  };
 
   return (
     <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
@@ -112,7 +127,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                 <Volume2 className="w-4 h-4" />
                 Audio Overview
               </Button>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2" onClick={handleMindMapClick}>
                 <Map className="w-4 h-4" />
                 Mind Map
               </Button>
@@ -231,6 +246,89 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           </div>
         </div>
       </div>
+
+      {/* Mind Map Dialog */}
+      <Dialog open={showMindMap} onOpenChange={setShowMindMap}>
+        <DialogContent className={`${isFullscreen ? 'w-screen h-screen max-w-none max-h-none m-0 rounded-none' : 'max-w-4xl w-full h-[80vh]'} p-0 overflow-hidden`}>
+          <DialogHeader className="p-4 border-b bg-white">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg font-medium">MATLAB Basics: Arrays, Operations, and Programming</DialogTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Based on 6 sources</span>
+                <Button variant="ghost" size="sm" onClick={handleFullscreenToggle}>
+                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleCloseMindMap}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 bg-gray-50 relative overflow-hidden">
+            {/* Mind Map Content */}
+            <div className="w-full h-full flex items-center justify-center relative">
+              {/* Central Node */}
+              <div className="absolute bg-blue-200 rounded-lg px-4 py-2 text-blue-900 font-medium text-sm shadow-md">
+                Mathematics for Machine Learning
+              </div>
+              
+              {/* Connected Nodes */}
+              <div className="absolute top-20 right-20 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
+                Chapter 2: Creating Arrays
+                <div className="absolute -top-1 -right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  &gt;
+                </div>
+              </div>
+              
+              <div className="absolute top-40 right-10 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
+                Chapter 3: Mathematical Operations
+              </div>
+              
+              <div className="absolute bottom-32 right-16 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
+                Chapter 6: Programming in MATLAB
+              </div>
+              
+              <div className="absolute bottom-20 left-20 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
+                Examples
+                <div className="absolute -top-1 -right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  &gt;
+                </div>
+              </div>
+              
+              {/* Connecting Lines */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                <line x1="50%" y1="50%" x2="70%" y2="25%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
+                <line x1="50%" y1="50%" x2="75%" y2="45%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
+                <line x1="50%" y1="50%" x2="70%" y2="70%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
+                <line x1="50%" y1="50%" x2="30%" y2="80%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
+              </svg>
+            </div>
+            
+            {/* Controls */}
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+              <Button size="sm" className="w-8 h-8 p-0 bg-blue-500 hover:bg-blue-600">
+                <Plus className="w-4 h-4" />
+              </Button>
+              <Button size="sm" className="w-8 h-8 p-0 bg-blue-500 hover:bg-blue-600">
+                <span className="text-xs">−</span>
+              </Button>
+            </div>
+            
+            {/* Feedback Buttons */}
+            <div className="absolute bottom-4 left-4 flex gap-2">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <span className="text-green-600">👍</span>
+                Good content
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <span className="text-red-600">👎</span>
+                Bad content
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
