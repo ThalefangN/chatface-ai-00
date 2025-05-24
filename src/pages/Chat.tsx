@@ -1,178 +1,240 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-
-interface Message {
-  id: string;
-  content: string;
-  isUser: boolean;
-  timestamp: Date;
-}
+import React, { useState } from 'react';
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/animated-sidebar";
+import { LayoutDashboard, UserCog, Settings, LogOut, BookOpen, MessageSquare, Send, Bot, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from '@/components/ui/button';
 
 const Chat = () => {
-  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: "Hello! I'm your StudyBuddy AI tutor. I'm trained on the BGCSE, JCE, and PSLE Botswana syllabus. How can I help you with your studies today?",
-      isUser: false,
-      timestamp: new Date(),
-    },
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([
+    { id: 1, text: "Hello! I'm here to help you with your studies. What would you like to learn about today?", sender: 'bot' },
   ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
     
-    // Add user message
-    const userMessage = {
-      id: Date.now().toString(),
-      content: input,
-      isUser: true,
-      timestamp: new Date(),
-    };
+    const newMessage = { id: messages.length + 1, text: message, sender: 'user' };
+    setMessages([...messages, newMessage]);
+    setMessage('');
     
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-    
-    // Simulate AI response after a short delay
+    // Simulate bot response
     setTimeout(() => {
-      // Generate a simple response
-      let response = "I understand you're asking about ";
-      
-      if (input.toLowerCase().includes('math')) {
-        response += "mathematics. The BGCSE mathematics curriculum covers algebra, geometry, statistics, and calculus. Which specific topic would you like help with?";
-      } else if (input.toLowerCase().includes('science')) {
-        response += "science. The BGCSE science curriculum includes biology, chemistry, and physics. Which subject would you like to focus on?";
-      } else if (input.toLowerCase().includes('english')) {
-        response += "English. The BGCSE English curriculum covers comprehension, summary writing, essay writing, and literature. What aspect would you like assistance with?";
-      } else {
-        response += "your studies. I can help with any subject in the BGCSE, JCE, or PSLE Botswana syllabus. Could you please specify which subject you're studying?";
-      }
-      
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        content: response,
-        isUser: false,
-        timestamp: new Date(),
+      const botResponse = { 
+        id: messages.length + 2, 
+        text: "That's a great question! Let me help you with that.", 
+        sender: 'bot' 
       };
-      
-      setMessages(prev => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1500);
+      setMessages(prev => [...prev, botResponse]);
+    }, 1000);
+  };
+
+  const links = [
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      icon: (
+        <LayoutDashboard className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Study Materials",
+      href: "/notes",
+      icon: (
+        <BookOpen className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Chat",
+      href: "/chat",
+      icon: (
+        <MessageSquare className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Profile",
+      href: "/profile",
+      icon: (
+        <UserCog className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
+      label: "Settings",
+      href: "/profile",
+      icon: (
+        <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+  ];
+
+  const Logo = () => {
+    return (
+      <Link
+        to="/dashboard"
+        className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      >
+        <div className="h-5 w-6 bg-blue-500 rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
+        <motion.span
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="font-medium text-black dark:text-white whitespace-pre"
+        >
+          StudyBuddy
+        </motion.span>
+      </Link>
+    );
+  };
+
+  const LogoIcon = () => {
+    return (
+      <Link
+        to="/dashboard"
+        className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      >
+        <div className="h-5 w-6 bg-blue-500 rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
+      </Link>
+    );
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
-      <header className="p-4 flex items-center border-b">
-        <button 
-          onClick={() => navigate('/home')}
-          className="p-2 rounded-full hover:bg-blue-100"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="flex items-center ml-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <Avatar>
-              <AvatarImage src="/lovable-uploads/8b5ecfe5-c0f1-425e-bde4-2f47ed8b1fe6.png" />
-              <AvatarFallback>AI</AvatarFallback>
-            </Avatar>
+    <div className={cn(
+      "flex flex-col md:flex-row bg-gray-100 dark:bg-neutral-800 w-full flex-1 mx-auto border border-neutral-200 dark:border-neutral-700 overflow-hidden",
+      "h-screen"
+    )}>
+      <Sidebar open={open} setOpen={setOpen}>
+        <SidebarBody className="justify-between gap-10">
+          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+            {open ? <Logo /> : <LogoIcon />}
+            <div className="mt-8 flex flex-col gap-2">
+              {links.map((link, idx) => (
+                <SidebarLink key={idx} link={link} />
+              ))}
+            </div>
           </div>
-          <div className="ml-3">
-            <h2 className="font-medium">StudyBuddy AI</h2>
-            <p className="text-xs text-muted-foreground">
-              {isLoading ? 'Typing...' : 'Online'}
-            </p>
-          </div>
-        </div>
-      </header>
-      
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              "flex",
-              message.isUser ? "justify-end" : "justify-start"
-            )}
-          >
-            <div
-              className={cn(
-                "max-w-[80%] p-3 rounded-lg",
-                message.isUser
-                  ? "bg-blue-500 text-white rounded-br-none"
-                  : "bg-gray-100 text-gray-800 rounded-bl-none"
-              )}
+          <div className="flex flex-col gap-2">
+            <SidebarLink
+              link={{
+                label: user?.email || "User",
+                href: "/profile",
+                icon: (
+                  <Avatar className="h-7 w-7 flex-shrink-0">
+                    <AvatarImage 
+                      src={user?.user_metadata?.avatar_url || "/lovable-uploads/4f570823-6f09-4aea-a965-7a2405cf6a14.png"} 
+                      alt="User avatar" 
+                    />
+                    <AvatarFallback>
+                      {user?.email?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                ),
+              }}
+            />
+            <button
+              onClick={handleSignOut}
+              className="flex items-center justify-start gap-2 group/sidebar py-2 text-red-600 hover:text-red-700"
             >
-              {message.content}
-              <div
-                className={cn(
-                  "text-xs mt-1",
-                  message.isUser ? "text-blue-100" : "text-gray-500"
-                )}
+              <LogOut className="h-5 w-5 flex-shrink-0" />
+              <motion.span
+                animate={{
+                  display: open ? "inline-block" : "none",
+                  opacity: open ? 1 : 0,
+                }}
+                className="text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
               >
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                Logout
+              </motion.span>
+            </button>
+          </div>
+        </SidebarBody>
+      </Sidebar>
+
+      <div className="flex flex-1">
+        <div className="p-2 md:p-6 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full overflow-hidden">
+          <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
+            {/* Header Section */}
+            <div className="border-b border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  Study Chat
+                </h1>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Chat with other students and get help with your studies
+              </p>
+            </div>
+
+            {/* Chat Content */}
+            <div className="flex-1 p-6 overflow-hidden flex flex-col">
+              <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
+                {/* Messages Area */}
+                <div className="flex-1 overflow-auto mb-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="space-y-4">
+                    {messages.map((msg) => (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          msg.sender === 'user' 
+                            ? 'bg-blue-500' 
+                            : 'bg-green-500'
+                        }`}>
+                          {msg.sender === 'user' ? (
+                            <User className="w-4 h-4 text-white" />
+                          ) : (
+                            <Bot className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+                        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          msg.sender === 'user'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600'
+                        }`}>
+                          <p className="text-sm">{msg.text}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Message Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Type your message..."
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!message.trim()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 p-3 rounded-lg rounded-bl-none">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-      
-      {/* Input area */}
-      <div className="p-4 border-t">
-        <div className="flex items-center gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSend();
-              }
-            }}
-            className="flex-1"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className={cn(
-              "p-3 rounded-full",
-              input.trim() && !isLoading
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            )}
-          >
-            <Send className="h-5 w-5" />
-          </button>
         </div>
       </div>
     </div>
