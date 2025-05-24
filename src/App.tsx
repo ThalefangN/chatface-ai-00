@@ -18,8 +18,6 @@ import Chat from "./pages/Chat";
 import Notes from "./pages/Notes";
 import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import AudioOverview from "./pages/AudioOverview";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -46,8 +44,6 @@ const App = () => (
               <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
               <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/audio-overview" element={<ProtectedRoute><AudioOverview /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
