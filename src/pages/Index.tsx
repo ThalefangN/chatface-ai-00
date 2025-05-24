@@ -2,7 +2,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
+import { FeatureSteps } from '@/components/ui/feature-steps';
 import { ArrowRight, MicIcon, Users, BookOpen, Award } from 'lucide-react';
+
+const features = [
+  { 
+    step: 'Step 1', 
+    title: 'Voice Interaction',
+    content: 'Start by speaking naturally with your AI tutor about any subject you need help with.', 
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop' 
+  },
+  { 
+    step: 'Step 2',
+    title: 'Get Explanations',
+    content: 'Receive clear, detailed explanations tailored to your learning level and pace.',
+    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?q=80&w=2070&auto=format&fit=crop'
+  },
+  { 
+    step: 'Step 3',
+    title: 'Practice & Improve',
+    content: 'Practice with interactive exercises and track your progress as you master new concepts.',
+    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop'
+  },
+];
 
 const Index = () => {
   return (
@@ -123,6 +145,14 @@ const Index = () => {
             </div>
           </div>
         </div>
+        
+        {/* Feature Steps Section */}
+        <FeatureSteps 
+          features={features}
+          title="How StudyBuddy Works"
+          autoPlayInterval={4000}
+          className="mt-24"
+        />
         
         <div className="mt-24 text-center">
           <h2 className="text-3xl font-bold mb-12">How StudyBuddy Helps You Learn</h2>
