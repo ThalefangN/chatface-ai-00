@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -38,17 +37,10 @@ const AiChat = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([
-    { id: '1', name: 'mathematicsofmachinelearning.pdf', selected: true },
-    { id: '2', name: 'mathofml.pdf', selected: true },
-    { id: '3', name: 'mathofml2.pdf', selected: true },
-    { id: '4', name: 'mathofml3.pdf', selected: true },
-    { id: '5', name: 'mathofml4.pdf', selected: true },
-    { id: '6', name: 'mlmath.pdf', selected: true }
-  ]);
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
   const [documentSummary, setDocumentSummary] = useState({
-    title: 'Mathematics Fundamentals: Core Concepts',
-    description: 'Build strong mathematical foundations with comprehensive theory and examples'
+    title: 'No Documents Uploaded',
+    description: 'Upload documents to get AI-generated insights and summaries'
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -64,51 +56,6 @@ const AiChat = () => {
   }, [messages]);
 
   // Generate AI summary based on uploaded documents
-  const generateDocumentSummary = async (documents: UploadedDocument[]) => {
-    const selectedDocs = documents.filter(doc => doc.selected);
-    if (selectedDocs.length === 0) return;
-
-    try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'Based on the document names provided, generate a concise title and description for the study collection. Focus on the main academic subject. Return in format: "Title: [title]\nDescription: [description]"'
-            },
-            {
-              role: 'user',
-              content: `Generate a title and description for these documents: ${selectedDocs.map(doc => doc.name).join(', ')}`
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 100,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices[0].message.content;
-        const lines = content.split('\n');
-        const title = lines[0]?.replace('Title: ', '') || 'Study Collection';
-        const description = lines[1]?.replace('Description: ', '') || 'Comprehensive learning materials';
-        setDocumentSummary({ title, description });
-      }
-    } catch (error) {
-      console.error('Error generating document summary:', error);
-    }
-  };
-
-  useEffect(() => {
-    generateDocumentSummary(uploadedDocuments);
-  }, [uploadedDocuments]);
-
   const formatAIResponse = (text: string) => {
     // Remove asterisks and clean up formatting
     let cleanText = text.replace(/\*/g, '');
@@ -161,6 +108,57 @@ const AiChat = () => {
       };
     }
   };
+
+  const generateDocumentSummary = async (documents: UploadedDocument[]) => {
+    const selectedDocs = documents.filter(doc => doc.selected);
+    if (selectedDocs.length === 0) {
+      setDocumentSummary({
+        title: 'No Documents Selected',
+        description: 'Select documents to get AI-generated insights and summaries'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Based on the document names provided, generate a concise title and description for the study collection. Focus on the main academic subject. Return in format: "Title: [title]\nDescription: [description]"'
+            },
+            {
+              role: 'user',
+              content: `Generate a title and description for these documents: ${selectedDocs.map(doc => doc.name).join(', ')}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 100,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices[0].message.content;
+        const lines = content.split('\n');
+        const title = lines[0]?.replace('Title: ', '') || 'Study Collection';
+        const description = lines[1]?.replace('Description: ', '') || 'Comprehensive learning materials';
+        setDocumentSummary({ title, description });
+      }
+    } catch (error) {
+      console.error('Error generating document summary:', error);
+    }
+  };
+
+  useEffect(() => {
+    generateDocumentSummary(uploadedDocuments);
+  }, [uploadedDocuments]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -265,6 +263,16 @@ const AiChat = () => {
     }
   };
 
+  const addDocument = (fileName: string) => {
+    const newDoc: UploadedDocument = {
+      id: Date.now().toString(),
+      name: fileName,
+      selected: true
+    };
+    setUploadedDocuments(prev => [...prev, newDoc]);
+    toast.success(`Added ${fileName} to your document collection`);
+  };
+
   const toggleDocumentSelection = (docId: string) => {
     setUploadedDocuments(prev => 
       prev.map(doc => 
@@ -310,7 +318,15 @@ const AiChat = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sources</h2>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="text-xs">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                      onClick={() => {
+                        const fileName = prompt('Enter document name (e.g., "document.pdf"):');
+                        if (fileName) addDocument(fileName);
+                      }}
+                    >
                       <Plus className="w-3 h-3 mr-1" />
                       Add
                     </Button>
@@ -321,53 +337,79 @@ const AiChat = () => {
                   </div>
                 </div>
                 
-                <div className="mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                    {documentSummary.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    {documentSummary.description}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {selectedDocsCount} sources
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-3 mb-4">
-                  <input 
-                    type="checkbox" 
-                    className="rounded" 
-                    checked={uploadedDocuments.every(doc => doc.selected)}
-                    onChange={toggleSelectAll}
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    Select all sources
-                  </span>
-                </div>
-              </div>
-              
-              <ScrollArea className="flex-1 p-6">
-                <div className="space-y-3">
-                  {uploadedDocuments.map((doc) => (
-                    <div 
-                      key={doc.id}
-                      className="flex items-center gap-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                      onClick={() => toggleDocumentSelection(doc.id)}
-                    >
+                {uploadedDocuments.length > 0 && (
+                  <>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+                        {documentSummary.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        {documentSummary.description}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {selectedDocsCount} sources
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 mb-4">
                       <input 
                         type="checkbox" 
-                        checked={doc.selected}
-                        onChange={() => toggleDocumentSelection(doc.id)}
-                        className="rounded"
+                        className="rounded" 
+                        checked={uploadedDocuments.every(doc => doc.selected)}
+                        onChange={toggleSelectAll}
                       />
-                      <FileText className="w-5 h-5 text-red-500" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
-                        {doc.name}
+                      <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                        Select all sources
                       </span>
                     </div>
-                  ))}
-                </div>
-              </ScrollArea>
+                  </>
+                )}
+                
+                {uploadedDocuments.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      No documents uploaded yet
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const fileName = prompt('Enter document name (e.g., "document.pdf"):');
+                        if (fileName) addDocument(fileName);
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add your first document
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {uploadedDocuments.length > 0 && (
+                <ScrollArea className="flex-1 p-6">
+                  <div className="space-y-3">
+                    {uploadedDocuments.map((doc) => (
+                      <div 
+                        key={doc.id}
+                        className="flex items-center gap-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+                        onClick={() => toggleDocumentSelection(doc.id)}
+                      >
+                        <input 
+                          type="checkbox" 
+                          checked={doc.selected}
+                          onChange={() => toggleDocumentSelection(doc.id)}
+                          className="rounded"
+                        />
+                        <FileText className="w-5 h-5 text-red-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                          {doc.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
 
             {/* Right Panel - Chat */}
