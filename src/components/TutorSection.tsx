@@ -161,7 +161,7 @@ const TutorSection = () => {
   const currentGrade = gradeLevels.find(grade => grade.id === selectedGrade);
 
   return (
-    <div className="mt-6 sm:mt-8">
+    <div className="mt-2 sm:mt-4">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

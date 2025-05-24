@@ -83,7 +83,7 @@ const LearningJourney = () => {
       <div className="flex-1 p-3 sm:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Learning Steps Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {learningSteps.map((step, index) => {
               // Special layout for the last row (Review and Mastery)
               const isLastRow = index >= 3;
