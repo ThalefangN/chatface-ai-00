@@ -14,7 +14,7 @@ const Dashboard = () => {
             <SidebarTrigger className="-ml-1" />
             <h1 className="text-lg font-semibold">Dashboard</h1>
           </header>
-          <div className="flex-1 p-4 md:p-6 overflow-auto">
+          <div className="flex-1 p-2 sm:p-4 md:p-6 overflow-auto">
             <LearningJourney />
           </div>
         </SidebarInset>

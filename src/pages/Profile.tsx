@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -67,48 +66,49 @@ const Profile = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-2 sm:px-4">
             <SidebarTrigger className="-ml-1" />
-            <h1 className="text-lg font-semibold">Profile & Settings</h1>
+            <h1 className="text-sm sm:text-lg font-semibold">Profile & Settings</h1>
           </header>
           
-          <div className="flex-1 p-4 md:p-6 space-y-6 overflow-auto">
+          <div className="flex-1 p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6 overflow-auto">
             <Tabs defaultValue="profile" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="profile">Profile</TabsTrigger>
-                <TabsTrigger value="stats">Statistics</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
+                <TabsTrigger value="profile" className="text-xs sm:text-sm">Profile</TabsTrigger>
+                <TabsTrigger value="stats" className="text-xs sm:text-sm">Statistics</TabsTrigger>
+                <TabsTrigger value="settings" className="text-xs sm:text-sm">Settings</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="profile" className="space-y-6">
+              <TabsContent value="profile" className="space-y-4 sm:space-y-6">
                 {/* Profile Header */}
                 <Card>
                   <CardHeader>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <Avatar className="h-20 w-20">
+                    <div className="flex flex-col items-center sm:flex-row sm:items-center gap-4">
+                      <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
                         <AvatarImage src={user?.user_metadata?.avatar_url} />
                         <AvatarFallback className="text-lg">
                           {profile.name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 space-y-2 text-center sm:text-left">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <CardTitle className="text-xl">{profile.name}</CardTitle>
+                          <CardTitle className="text-lg sm:text-xl">{profile.name}</CardTitle>
                           <Badge variant="secondary">{profile.grade}</Badge>
                         </div>
-                        <CardDescription className="flex items-center gap-2">
+                        <CardDescription className="flex items-center justify-center sm:justify-start gap-2">
                           <Mail className="h-4 w-4" />
-                          {profile.email}
+                          <span className="text-xs sm:text-sm">{profile.email}</span>
                         </CardDescription>
-                        <CardDescription className="flex items-center gap-2">
+                        <CardDescription className="flex items-center justify-center sm:justify-start gap-2">
                           <BookOpen className="h-4 w-4" />
-                          {profile.school}
+                          <span className="text-xs sm:text-sm">{profile.school}</span>
                         </CardDescription>
                       </div>
                       <Button 
                         variant={isEditing ? "secondary" : "outline"}
                         onClick={() => setIsEditing(!isEditing)}
                         size="sm"
+                        className="w-full sm:w-auto"
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         {isEditing ? 'Cancel' : 'Edit'}
@@ -120,10 +120,10 @@ const Profile = () => {
                 {/* Profile Details */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Profile Information</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">Profile Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
                         <Input
@@ -167,9 +167,9 @@ const Profile = () => {
                     </div>
 
                     {isEditing && (
-                      <div className="flex gap-2 pt-4">
-                        <Button size="sm">Save Changes</Button>
-                        <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                        <Button size="sm" className="w-full sm:w-auto">Save Changes</Button>
+                        <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="w-full sm:w-auto">
                           Cancel
                         </Button>
                       </div>
@@ -180,13 +180,13 @@ const Profile = () => {
                 {/* Achievements */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <Trophy className="h-5 w-5" />
                       Achievements
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       {achievements.map((achievement, index) => (
                         <div
                           key={index}
@@ -216,16 +216,16 @@ const Profile = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="stats" className="space-y-6">
+              <TabsContent value="stats" className="space-y-4 sm:space-y-6">
                 {/* Study Statistics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">Total Study Time</CardTitle>
                       <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{studyStats.totalStudyTime}</div>
+                      <div className="text-xl sm:text-2xl font-bold">{studyStats.totalStudyTime}</div>
                     </CardContent>
                   </Card>
 
@@ -235,7 +235,7 @@ const Profile = () => {
                       <Target className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{studyStats.completedTopics}</div>
+                      <div className="text-xl sm:text-2xl font-bold">{studyStats.completedTopics}</div>
                     </CardContent>
                   </Card>
 
@@ -245,7 +245,7 @@ const Profile = () => {
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{studyStats.currentStreak} days</div>
+                      <div className="text-xl sm:text-2xl font-bold">{studyStats.currentStreak} days</div>
                     </CardContent>
                   </Card>
 
@@ -255,7 +255,7 @@ const Profile = () => {
                       <Trophy className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{studyStats.averageScore}%</div>
+                      <div className="text-xl sm:text-2xl font-bold">{studyStats.averageScore}%</div>
                     </CardContent>
                   </Card>
                 </div>
@@ -263,31 +263,33 @@ const Profile = () => {
                 {/* Progress Chart Placeholder */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Study Progress</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">Study Progress</CardTitle>
                     <CardDescription>Your learning journey over time</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[200px] flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded">
+                    <div className="h-[150px] sm:h-[200px] flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded text-center text-sm">
                       Progress chart will be displayed here
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="settings" className="space-y-6">
+              <TabsContent value="settings" className="space-y-4 sm:space-y-6">
                 {/* Notification Settings */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <Bell className="h-5 w-5" />
                       Notifications
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    
+                    
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="email-notifications">Email Notifications</Label>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex-1 pr-4">
+                        <Label htmlFor="email-notifications" className="text-sm font-medium">Email Notifications</Label>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           Receive study reminders via email
                         </p>
                       </div>
@@ -303,9 +305,9 @@ const Profile = () => {
                     <Separator />
                     
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="push-notifications">Push Notifications</Label>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex-1 pr-4">
+                        <Label htmlFor="push-notifications" className="text-sm font-medium">Push Notifications</Label>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           Get instant notifications on your device
                         </p>
                       </div>
@@ -321,9 +323,9 @@ const Profile = () => {
                     <Separator />
                     
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="study-reminders">Study Reminders</Label>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex-1 pr-4">
+                        <Label htmlFor="study-reminders" className="text-sm font-medium">Study Reminders</Label>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           Daily reminders to maintain study habits
                         </p>
                       </div>
@@ -341,16 +343,16 @@ const Profile = () => {
                 {/* App Preferences */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <SettingsIcon className="h-5 w-5" />
                       App Preferences
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="dark-mode">Dark Mode</Label>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex-1 pr-4">
+                        <Label htmlFor="dark-mode" className="text-sm font-medium">Dark Mode</Label>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           Switch to dark theme for better night studying
                         </p>
                       </div>
@@ -366,9 +368,9 @@ const Profile = () => {
                     <Separator />
                     
                     <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="auto-save">Auto Save</Label>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex-1 pr-4">
+                        <Label htmlFor="auto-save" className="text-sm font-medium">Auto Save</Label>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           Automatically save your progress
                         </p>
                       </div>
@@ -386,19 +388,19 @@ const Profile = () => {
                 {/* Security Settings */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       <Shield className="h-5 w-5" />
                       Security
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Button variant="outline" className="w-full sm:w-auto">
+                  <CardContent className="space-y-3">
+                    <Button variant="outline" className="w-full">
                       Change Password
                     </Button>
-                    <Button variant="outline" className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full">
                       Download My Data
                     </Button>
-                    <Button variant="destructive" className="w-full sm:w-auto">
+                    <Button variant="destructive" className="w-full">
                       Delete Account
                     </Button>
                   </CardContent>

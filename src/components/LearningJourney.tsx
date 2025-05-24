@@ -65,25 +65,25 @@ const LearningJourney = () => {
   return (
     <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
       {/* Header Section */}
-      <div className="border-b border-gray-200 dark:border-gray-700 p-6">
+      <div className="border-b border-gray-200 dark:border-gray-700 p-3 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
             <Brain className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
             Your Learning Journey
           </h1>
         </div>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">
+        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
           Experience a structured learning path designed to maximize your academic success with AI-powered guidance
         </p>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-3 sm:p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {/* Learning Steps Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
             {learningSteps.map((step, index) => {
               // Special layout for the last row (Review and Mastery)
               const isLastRow = index >= 3;
@@ -100,19 +100,19 @@ const LearningJourney = () => {
                   <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <div className={`${step.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
-                          <step.icon className="w-5 h-5 text-white" />
+                        <div className={`${step.color} w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center`}>
+                          <step.icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </div>
                         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
                           Step {step.id}
                         </span>
                       </div>
-                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         {step.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
                         {step.description}
                       </p>
                       
@@ -153,29 +153,29 @@ const LearningJourney = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.6 }}
-            className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700"
+            className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700"
           >
             <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Ready to Continue Learning?
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Choose how you'd like to proceed with your educational journey
               </p>
             </div>
             
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
               <button 
                 onClick={() => handleStartLearning('foundation')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2 text-sm"
               >
                 <BookOpen className="w-4 h-4" />
                 Start Learning
               </button>
-              <button className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 text-sm">
+              <button className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 text-sm">
                 View Progress
               </button>
-              <button className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 text-sm">
+              <button className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 text-sm">
                 Study Materials
               </button>
             </div>
