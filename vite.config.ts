@@ -23,11 +23,20 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    minify: 'terser',
+    target: 'esnext',
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@radix-ui/react-slot', '@radix-ui/react-toast'],
+        },
       },
     },
   },
   base: "/",
+  define: {
+    global: 'globalThis',
+  },
 }));
