@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { BookOpen } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -17,23 +16,11 @@ const Logo: React.FC<LogoProps> = ({ className, size = 'md', darkMode = false })
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className="relative">
-        <div className={cn(
-          "absolute inset-0 rounded-full blur-sm",
-          darkMode ? "bg-blue-400/30" : "bg-blue-500/20" 
-        )}></div>
-        <div className={cn(
-          "relative p-2 rounded-full",
-          darkMode ? "bg-blue-400 text-black" : "bg-blue-500 text-white"
-        )}>
-          <BookOpen className={cn("animate-pulse-soft", sizeClasses[size])} />
-        </div>
-      </div>
+    <div className={cn("flex items-center", className)}>
       <span className={cn(
         "font-bold tracking-tight", 
         sizeClasses[size],
-        darkMode && "text-white"
+        darkMode ? "text-white" : "text-black"
       )}>
         StudyBuddy
       </span>

@@ -185,11 +185,6 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <img 
-            src="/lovable-uploads/8b5ecfe5-c0f1-425e-bde4-2f47ed8b1fe6.png" 
-            alt="StudyBuddy Logo" 
-            className="h-10 w-10"
-          />
           <Logo size="lg" />
         </div>
         <div className="flex space-x-2">
@@ -309,7 +304,7 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="relative h-screen rounded-2xl overflow-hidden">
+          <div className="relative h-screen rounded-2xl overflow-hidden bg-white">
             <RadialOrbitalTimeline timelineData={studyProgressionData} />
           </div>
         </div>
