@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Send, Bot, User, BookOpen, Calculator, Lightbulb, History } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -32,6 +33,9 @@ const AiChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // OpenAI API Key - directly embedded
+  const OPENAI_API_KEY = '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';
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -39,6 +43,43 @@ const AiChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const sendMessageToAI = async (messageContent: string) => {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful AI study assistant focused exclusively on educational content. You can help with academic subjects, homework, study tips, and learning strategies. If someone asks about non-educational topics, politely redirect them back to academic subjects. Keep responses clear, educational, and supportive for students.'
+            },
+            {
+              role: 'user',
+              content: messageContent
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content;
+    } catch (error) {
+      console.error('Error calling OpenAI API:', error);
+      return "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. In the meantime, feel free to ask me about any academic subjects you need help with!";
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -51,20 +92,57 @@ const AiChat = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentMessage = inputMessage;
     setInputMessage('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const aiResponseContent = await sendMessageToAI(currentMessage);
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I understand you're asking about this topic. Let me help you break it down step by step. This is a great question that many students have!",
+        content: aiResponseContent,
         isAI: true,
         timestamp: new Date()
       };
+      
       setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      toast.error('Failed to get AI response. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
+  };
+
+  const handleQuickPrompt = async (promptText: string) => {
+    setInputMessage(promptText);
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: promptText,
+      isAI: false,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const aiResponseContent = await sendMessageToAI(promptText);
+      
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponseContent,
+        isAI: true,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      toast.error('Failed to get AI response. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -179,7 +257,8 @@ const AiChat = () => {
                         variant="outline"
                         size="sm"
                         className="justify-start text-left h-auto p-3"
-                        onClick={() => setInputMessage(prompt.text)}
+                        onClick={() => handleQuickPrompt(prompt.text)}
+                        disabled={isLoading}
                       >
                         <div className={`w-6 h-6 rounded ${prompt.color} flex items-center justify-center mr-2 flex-shrink-0`}>
                           <prompt.icon className="h-3 w-3 text-white" />
@@ -202,6 +281,7 @@ const AiChat = () => {
                   onKeyPress={handleKeyPress}
                   className="min-h-[44px] max-h-32 resize-none flex-1"
                   rows={1}
+                  disabled={isLoading}
                 />
                 <Button
                   onClick={handleSendMessage}

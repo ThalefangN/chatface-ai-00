@@ -4,8 +4,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, XCircle, ArrowLeft, ArrowRight, BookOpen, Target } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowLeft, ArrowRight, BookOpen, Target, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface Question {
   id: number;
@@ -255,6 +265,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
   const [showSubjectInput, setShowSubjectInput] = useState(true);
   const [customSubject, setCustomSubject] = useState('');
   const [customTopic, setCustomTopic] = useState('');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // OpenAI API Key - directly embedded
   const OPENAI_API_KEY = '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';
@@ -344,28 +355,6 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     }
   };
 
-  const generateFallbackQuestions = (subjectInput: string, topicInput: string) => {
-    const fallbackQuestions: Question[] = Array.from({ length: 30 }, (_, i) => ({
-      id: i + 1,
-      question: i % 2 === 0 
-        ? `Multiple choice question ${i + 1} about ${topicInput} in ${subjectInput}?`
-        : `True or False: Statement ${i + 1} about ${topicInput} in ${subjectInput}.`,
-      type: i % 2 === 0 ? 'multiple-choice' : 'true-false',
-      options: i % 2 === 0 ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-      correctAnswer: i % 2 === 0 ? 'Option A' : 'true',
-      explanation: `This is the explanation for question ${i + 1} about ${topicInput}.`
-    }));
-    setQuestions(fallbackQuestions);
-    setIsLoading(false);
-  };
-
-  const handleSubjectSubmit = () => {
-    if (customSubject.trim() && customTopic.trim()) {
-      setShowSubjectInput(false);
-      generateQuestions(customSubject, customTopic);
-    }
-  };
-
   const handleAnswerChange = (answer: string) => {
     setUserAnswers(prev => ({
       ...prev,
@@ -374,6 +363,14 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
   };
 
   const goToNextQuestion = () => {
+    const currentQuestion = questions[currentQuestionIndex];
+    const currentAnswer = userAnswers[currentQuestion.id];
+    
+    if (!currentAnswer) {
+      toast.error('Please answer the current question before proceeding to the next one.');
+      return;
+    }
+    
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
@@ -386,6 +383,19 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
   };
 
   const finishAssessment = () => {
+    const currentQuestion = questions[currentQuestionIndex];
+    const currentAnswer = userAnswers[currentQuestion.id];
+    
+    if (!currentAnswer) {
+      toast.error('Please answer the current question before finishing the assessment.');
+      return;
+    }
+    
+    setShowSuccessDialog(true);
+  };
+
+  const handleSuccessDialogClose = () => {
+    setShowSuccessDialog(false);
     setShowResults(true);
   };
 
@@ -407,6 +417,28 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     if (percentage >= 60) return { grade: 'C', color: 'text-yellow-500', message: 'Fair performance. Room for improvement.' };
     if (percentage >= 50) return { grade: 'D', color: 'text-orange-500', message: 'Below average. Consider reviewing the material.' };
     return { grade: 'F', color: 'text-red-500', message: 'Poor performance. Please review and try again.' };
+  };
+
+  const generateFallbackQuestions = (subjectInput: string, topicInput: string) => {
+    const fallbackQuestions: Question[] = Array.from({ length: 30 }, (_, i) => ({
+      id: i + 1,
+      question: i % 2 === 0 
+        ? `Multiple choice question ${i + 1} about ${topicInput} in ${subjectInput}?`
+        : `True or False: Statement ${i + 1} about ${topicInput} in ${subjectInput}.`,
+      type: i % 2 === 0 ? 'multiple-choice' : 'true-false',
+      options: i % 2 === 0 ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
+      correctAnswer: i % 2 === 0 ? 'Option A' : 'true',
+      explanation: `This is the explanation for question ${i + 1} about ${topicInput}.`
+    }));
+    setQuestions(fallbackQuestions);
+    setIsLoading(false);
+  };
+
+  const handleSubjectSubmit = () => {
+    if (customSubject.trim() && customTopic.trim()) {
+      setShowSubjectInput(false);
+      generateQuestions(customSubject, customTopic);
+    }
   };
 
   if (showSubjectInput) {
@@ -554,92 +586,134 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const currentAnswer = userAnswers[currentQuestion?.id];
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">{customSubject} Assessment</h1>
-            <p className="text-sm text-muted-foreground">{customTopic}</p>
+    <>
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">{customSubject} Assessment</h1>
+              <p className="text-sm text-muted-foreground">{customTopic}</p>
+            </div>
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Exit
+            </Button>
           </div>
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Exit
-          </Button>
+          
+          <div className="flex items-center gap-4 mb-4">
+            <span className="text-sm font-medium">
+              Question {currentQuestionIndex + 1} of {questions.length}
+            </span>
+            <Progress value={progress} className="flex-1" />
+            <span className="text-sm text-muted-foreground">
+              {Math.round(progress)}%
+            </span>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-4 mb-4">
-          <span className="text-sm font-medium">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </span>
-          <Progress value={progress} className="flex-1" />
-          <span className="text-sm text-muted-foreground">
-            {Math.round(progress)}%
-          </span>
-        </div>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <p className="text-lg">{currentQuestion.question}</p>
-            
-            <RadioGroup
-              value={userAnswers[currentQuestion.id] || ''}
-              onValueChange={handleAnswerChange}
-            >
-              {currentQuestion.type === 'multiple-choice' ? (
-                currentQuestion.options?.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={`option-${index}`} />
-                    <Label htmlFor={`option-${index}`} className="cursor-pointer">
-                      {option}
-                    </Label>
-                  </div>
-                ))
-              ) : (
-                <>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="true" id="true" />
-                    <Label htmlFor="true" className="cursor-pointer">True</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="false" id="false" />
-                    <Label htmlFor="false" className="cursor-pointer">False</Label>
-                  </div>
-                </>
+        <Card>
+          <CardHeader>
+            <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <p className="text-lg">{currentQuestion.question}</p>
+              
+              <RadioGroup
+                value={currentAnswer || ''}
+                onValueChange={handleAnswerChange}
+              >
+                {currentQuestion.type === 'multiple-choice' ? (
+                  currentQuestion.options?.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <RadioGroupItem value={option} id={`option-${index}`} />
+                      <Label htmlFor={`option-${index}`} className="cursor-pointer">
+                        {option}
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="true" id="true" />
+                      <Label htmlFor="true" className="cursor-pointer">True</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="false" id="false" />
+                      <Label htmlFor="false" className="cursor-pointer">False</Label>
+                    </div>
+                  </>
+                )}
+              </RadioGroup>
+              
+              {!currentAnswer && (
+                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
+                  Please select an answer to proceed to the next question.
+                </p>
               )}
-            </RadioGroup>
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="flex justify-between mt-6">
-        <Button
-          variant="outline"
-          onClick={goToPreviousQuestion}
-          disabled={currentQuestionIndex === 0}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-        
-        {currentQuestionIndex === questions.length - 1 ? (
-          <Button onClick={finishAssessment}>
-            Finish Assessment
+        <div className="flex justify-between mt-6">
+          <Button
+            variant="outline"
+            onClick={goToPreviousQuestion}
+            disabled={currentQuestionIndex === 0}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Previous
           </Button>
-        ) : (
-          <Button onClick={goToNextQuestion}>
-            Next
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        )}
+          
+          {currentQuestionIndex === questions.length - 1 ? (
+            <Button 
+              onClick={finishAssessment}
+              className={!currentAnswer ? 'opacity-50' : ''}
+            >
+              Finish Assessment
+            </Button>
+          ) : (
+            <Button 
+              onClick={goToNextQuestion}
+              className={!currentAnswer ? 'opacity-50' : ''}
+            >
+              Next
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
+
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent className="max-w-[360px]">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-green-50">
+              <CheckCircle2 className="size-6 text-green-600" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              Assessment Completed!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              <span>
+                Congratulations! You have successfully completed your {customSubject} assessment on {customTopic}. 
+                Click below to view your results and detailed feedback.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              className="w-full bg-[#2563eb] hover:bg-[#2563eb]/90"
+              onClick={handleSuccessDialogClose}
+            >
+              View Results
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
