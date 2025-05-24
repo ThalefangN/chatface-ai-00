@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -32,55 +31,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check for mock user in localStorage for bypass authentication
     const mockUser = localStorage.getItem('mockUser');
     if (mockUser) {
-      const parsedUser = JSON.parse(mockUser);
-      // Create a minimal user object that matches the User type
-      const minimalUser = {
-        id: parsedUser.id,
-        email: parsedUser.email,
-        user_metadata: {
-          first_name: parsedUser.first_name || '',
-          last_name: parsedUser.last_name || '',
-        },
-        app_metadata: {},
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-        phone: '',
-        email_confirmed_at: new Date().toISOString(),
-        confirmed_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-        role: 'authenticated',
-        updated_at: new Date().toISOString(),
-        identities: [],
-        factors: [],
-      } as User;
-      setUser(minimalUser);
+      try {
+        const parsedUser = JSON.parse(mockUser);
+        // Create a minimal user object that matches the User type
+        const minimalUser = {
+          id: parsedUser.id || 'test-user-id',
+          email: parsedUser.email || 'test@example.com',
+          user_metadata: {
+            first_name: parsedUser.firstName || '',
+            last_name: parsedUser.lastName || '',
+          },
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          phone: '',
+          email_confirmed_at: new Date().toISOString(),
+          confirmed_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+          role: 'authenticated',
+          updated_at: new Date().toISOString(),
+          identities: [],
+          factors: [],
+        } as User;
+        setUser(minimalUser);
+      } catch (error) {
+        console.log('Error parsing mock user:', error);
+        localStorage.removeItem('mockUser');
+      }
     }
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    setLoading(false);
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Bypass authentication - any email/password combination works
+      // Accept any email and password for testing
       if (email && password) {
         const minimalUser = {
-          id: 'mock-user-id',
+          id: 'test-user-id',
           email,
           user_metadata: {
             first_name: '',
@@ -99,11 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           factors: [],
         } as User;
         
-        localStorage.setItem('mockUser', JSON.stringify({ email, id: 'mock-user-id' }));
+        localStorage.setItem('mockUser', JSON.stringify({ email, id: 'test-user-id' }));
         setUser(minimalUser);
         return { error: null };
       }
-      return { error: 'Email and password required' };
+      return { error: 'Email and password are required' };
     } catch (error) {
       console.error('Error during sign in:', error);
       return { error };
@@ -112,10 +99,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
-      // Bypass authentication for sign up as well
+      // Accept any email and password for testing
       if (email && password) {
         const minimalUser = {
-          id: 'mock-user-id',
+          id: 'test-user-id',
           email,
           user_metadata: {
             first_name: firstName || '',
@@ -136,14 +123,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         localStorage.setItem('mockUser', JSON.stringify({ 
           email, 
-          id: 'mock-user-id', 
-          first_name: firstName,
-          last_name: lastName 
+          id: 'test-user-id', 
+          firstName,
+          lastName 
         }));
         setUser(minimalUser);
         return { error: null };
       }
-      return { error: 'Email and password required' };
+      return { error: 'Email and password are required' };
     } catch (error) {
       console.error('Error during sign up:', error);
       return { error };
@@ -154,12 +141,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('mockUser');
     setUser(null);
     setSession(null);
-    await supabase.auth.signOut();
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    return { error };
+    // Mock implementation for testing
+    console.log('Password reset requested for:', email);
+    return { error: null };
   };
 
   const value = {

@@ -7,7 +7,7 @@ import { AnimatedForm } from '@/components/ui/modern-animated-sign-in';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,11 +23,11 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      // Bypass authentication - any email/password combination works
-      if (email && password) {
-        // Set a mock user in localStorage for the bypass
-        localStorage.setItem('mockUser', JSON.stringify({ email, id: 'mock-user-id' }));
+      const { error } = await signIn(email, password);
+      if (!error) {
         navigate('/dashboard');
+      } else {
+        console.error('Sign in error:', error);
       }
     } catch (error) {
       console.error('Error during sign in:', error);
@@ -52,7 +52,7 @@ const SignIn = () => {
         label: 'email',
         required: true,
         type: 'email' as const,
-        placeholder: 'Enter your email address',
+        placeholder: 'Enter any email (test@example.com)',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
           setEmail(event.target.value),
       },
@@ -60,7 +60,7 @@ const SignIn = () => {
         label: 'password',
         required: true,
         type: 'password' as const,
-        placeholder: 'Enter your password',
+        placeholder: 'Enter any password (testing123)',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
           setPassword(event.target.value),
       },
