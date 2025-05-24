@@ -1,7 +1,6 @@
-
 import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/animated-sidebar";
-import { LayoutDashboard, UserCog, Settings, LogOut, Home, BookOpen, Brain, MessageSquare } from "lucide-react";
+import { LayoutDashboard, UserCog, Settings, LogOut, Home, BookOpen, MessageSquare } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -29,13 +28,6 @@ const LearningSession = () => {
       ),
     },
     {
-      label: "AI Chat",
-      href: "/ai-chat",
-      icon: (
-        <Brain className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
       label: "Study Materials",
       href: "/notes",
       icon: (
@@ -58,7 +50,7 @@ const LearningSession = () => {
     },
     {
       label: "Settings",
-      href: "/profile",
+      href: "/settings",
       icon: (
         <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
       ),
