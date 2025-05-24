@@ -4,7 +4,7 @@ import Logo from '@/components/Logo';
 import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
-import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock } from 'lucide-react';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck } from 'lucide-react';
 
 const features = [
   { 
@@ -61,6 +61,63 @@ const studyFeatures = [
     icon: <Video className="w-4 h-4 text-sky-500" />,
     status: "Enhanced",
     tags: ["Voice", "Visual"],
+  },
+];
+
+// Document Intelligence Features
+const documentFeatures = [
+  {
+    title: "Document Upload",
+    meta: "PDFs, Docs & More",
+    description: "Upload your study materials, textbooks, and notes for AI-powered analysis and assistance",
+    icon: <Upload className="w-4 h-4 text-blue-500" />,
+    status: "Live",
+    tags: ["PDF", "Upload", "AI"],
+    colSpan: 1,
+  },
+  {
+    title: "Smart Summaries",
+    meta: "Auto-generated",
+    description: "Get instant summaries, chapter overviews, and topic breakdowns from your documents",
+    icon: <Brain className="w-4 h-4 text-blue-500" />,
+    status: "Active",
+    tags: ["Summary", "Overview"],
+    colSpan: 2,
+    hasPersistentHover: true,
+  },
+  {
+    title: "Document Q&A",
+    meta: "Ask anything",
+    description: "Ask questions about specific chapters, topics, or concepts from your uploaded materials",
+    icon: <Search className="w-4 h-4 text-blue-500" />,
+    tags: ["Questions", "Search"],
+    colSpan: 2,
+  },
+  {
+    title: "Study Materials",
+    meta: "Auto-created",
+    description: "Generate flashcards, bullet points, timelines, and structured notes from your documents",
+    icon: <Lightbulb className="w-4 h-4 text-blue-500" />,
+    status: "Enhanced",
+    tags: ["Flashcards", "Notes"],
+    colSpan: 1,
+  },
+  {
+    title: "Source Tracking",
+    meta: "Always accurate",
+    description: "Every answer references the specific document and page where information was found",
+    icon: <FileCheck className="w-4 h-4 text-blue-500" />,
+    tags: ["References", "Accuracy"],
+    colSpan: 1,
+  },
+  {
+    title: "Privacy Focused",
+    meta: "Your data only",
+    description: "AI responses are grounded strictly in your documents - no internet hallucinations",
+    icon: <Shield className="w-4 h-4 text-blue-500" />,
+    status: "Secure",
+    tags: ["Privacy", "Secure"],
+    colSpan: 2,
   },
 ];
 
@@ -243,14 +300,6 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Feature Steps Section */}
-        <FeatureSteps 
-          features={features}
-          title="How StudyBuddy Works"
-          autoPlayInterval={4000}
-          className="mt-24"
-        />
-
         {/* Study Progression Timeline Section */}
         <div className="mt-24">
           <div className="text-center mb-12">
@@ -264,6 +313,14 @@ const Index = () => {
             <RadialOrbitalTimeline timelineData={studyProgressionData} />
           </div>
         </div>
+        
+        {/* Feature Steps Section */}
+        <FeatureSteps 
+          features={features}
+          title="How StudyBuddy Works"
+          autoPlayInterval={4000}
+          className="mt-24"
+        />
         
         <div className="mt-24 text-center">
           <h2 className="text-3xl font-bold mb-12">How StudyBuddy Helps You Learn</h2>
@@ -295,7 +352,19 @@ const Index = () => {
           </div>
         </div>
 
-        {/* New Bento Grid Section */}
+        {/* Document Intelligence Section */}
+        <div className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">AI Document Intelligence</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Upload your study materials and let StudyBuddy's AI become your personal tutor, grounded in your own content
+            </p>
+          </div>
+          
+          <BentoGrid items={documentFeatures} />
+        </div>
+
+        {/* Advanced Learning Features Section */}
         <div className="mt-24">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Advanced Learning Features</h2>
