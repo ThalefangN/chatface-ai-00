@@ -1,16 +1,82 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X } from 'lucide-react';
+import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+interface MindMapNode {
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+  expanded: boolean;
+  children: MindMapNode[];
+  parent?: string;
+}
+
 const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 Examples" }) => {
   const [chatInput, setChatInput] = useState('');
   const [showMindMap, setShowMindMap] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mindMapNodes, setMindMapNodes] = useState<MindMapNode[]>([
+    {
+      id: 'root',
+      title: 'Mathematics for Machine Learning',
+      x: 50,
+      y: 50,
+      expanded: true,
+      children: [
+        {
+          id: 'linear-algebra',
+          title: 'Linear Algebra',
+          x: 25,
+          y: 25,
+          expanded: false,
+          children: [
+            { id: 'vectors', title: 'Vectors & Vector Spaces', x: 15, y: 15, expanded: false, children: [] },
+            { id: 'matrices', title: 'Matrices & Operations', x: 15, y: 35, expanded: false, children: [] }
+          ]
+        },
+        {
+          id: 'calculus',
+          title: 'Calculus',
+          x: 75,
+          y: 25,
+          expanded: false,
+          children: [
+            { id: 'derivatives', title: 'Derivatives & Gradients', x: 85, y: 15, expanded: false, children: [] },
+            { id: 'optimization', title: 'Optimization', x: 85, y: 35, expanded: false, children: [] }
+          ]
+        },
+        {
+          id: 'probability',
+          title: 'Probability & Statistics',
+          x: 25,
+          y: 75,
+          expanded: false,
+          children: [
+            { id: 'distributions', title: 'Probability Distributions', x: 15, y: 85, expanded: false, children: [] },
+            { id: 'bayes', title: 'Bayesian Inference', x: 35, y: 85, expanded: false, children: [] }
+          ]
+        },
+        {
+          id: 'applications',
+          title: 'ML Applications',
+          x: 75,
+          y: 75,
+          expanded: false,
+          children: [
+            { id: 'regression', title: 'Linear Regression', x: 85, y: 85, expanded: false, children: [] },
+            { id: 'classification', title: 'Classification', x: 85, y: 65, expanded: false, children: [] }
+          ]
+        }
+      ]
+    }
+  ]);
   
   const sources = [
     'mathematicsofmachinelearning.pdf',
@@ -32,6 +98,78 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   const handleCloseMindMap = () => {
     setShowMindMap(false);
     setIsFullscreen(false);
+  };
+
+  const toggleNodeExpansion = (nodeId: string) => {
+    const updateNodes = (nodes: MindMapNode[]): MindMapNode[] => {
+      return nodes.map(node => {
+        if (node.id === nodeId) {
+          return { ...node, expanded: !node.expanded };
+        }
+        if (node.children.length > 0) {
+          return { ...node, children: updateNodes(node.children) };
+        }
+        return node;
+      });
+    };
+    setMindMapNodes(updateNodes(mindMapNodes));
+  };
+
+  const getAllVisibleNodes = (nodes: MindMapNode[]): MindMapNode[] => {
+    let visibleNodes: MindMapNode[] = [];
+    
+    const traverse = (nodeList: MindMapNode[], parentExpanded = true) => {
+      nodeList.forEach(node => {
+        if (parentExpanded) {
+          visibleNodes.push(node);
+          if (node.expanded && node.children.length > 0) {
+            traverse(node.children, true);
+          }
+        }
+      });
+    };
+    
+    traverse(nodes);
+    return visibleNodes;
+  };
+
+  const getConnections = (nodes: MindMapNode[]) => {
+    let connections: { from: MindMapNode; to: MindMapNode }[] = [];
+    
+    const traverse = (nodeList: MindMapNode[], parent?: MindMapNode) => {
+      nodeList.forEach(node => {
+        if (parent) {
+          connections.push({ from: parent, to: node });
+        }
+        if (node.expanded && node.children.length > 0) {
+          traverse(node.children, node);
+        }
+      });
+    };
+    
+    traverse(nodes);
+    return connections;
+  };
+
+  const visibleNodes = getAllVisibleNodes(mindMapNodes);
+  const connections = getConnections(mindMapNodes);
+
+  const generateCurvePath = (from: MindMapNode, to: MindMapNode) => {
+    const x1 = from.x;
+    const y1 = from.y;
+    const x2 = to.x;
+    const y2 = to.y;
+    
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    
+    // Create control points for curve
+    const controlX1 = x1 + (x2 - x1) * 0.3;
+    const controlY1 = y1;
+    const controlX2 = x2 - (x2 - x1) * 0.3;
+    const controlY2 = y2;
+    
+    return `M ${x1} ${y1} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${x2} ${y2}`;
   };
 
   return (
@@ -249,10 +387,10 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
 
       {/* Mind Map Dialog */}
       <Dialog open={showMindMap} onOpenChange={setShowMindMap}>
-        <DialogContent className={`${isFullscreen ? 'w-screen h-screen max-w-none max-h-none m-0 rounded-none' : 'max-w-4xl w-full h-[80vh]'} p-0 overflow-hidden`}>
+        <DialogContent className={`${isFullscreen ? 'w-screen h-screen max-w-none max-h-none m-0 rounded-none' : 'max-w-6xl w-full h-[85vh]'} p-0 overflow-hidden`}>
           <DialogHeader className="p-4 border-b bg-white">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-medium">MATLAB Basics: Arrays, Operations, and Programming</DialogTitle>
+              <DialogTitle className="text-lg font-medium">Mathematics for Machine Learning: Interactive Mind Map</DialogTitle>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">Based on 6 sources</span>
                 <Button variant="ghost" size="sm" onClick={handleFullscreenToggle}>
@@ -267,63 +405,88 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           
           <div className="flex-1 bg-gray-50 relative overflow-hidden">
             {/* Mind Map Content */}
-            <div className="w-full h-full flex items-center justify-center relative">
-              {/* Central Node */}
-              <div className="absolute bg-blue-200 rounded-lg px-4 py-2 text-blue-900 font-medium text-sm shadow-md">
-                Mathematics for Machine Learning
-              </div>
-              
-              {/* Connected Nodes */}
-              <div className="absolute top-20 right-20 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
-                Chapter 2: Creating Arrays
-                <div className="absolute -top-1 -right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  &gt;
-                </div>
-              </div>
-              
-              <div className="absolute top-40 right-10 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
-                Chapter 3: Mathematical Operations
-              </div>
-              
-              <div className="absolute bottom-32 right-16 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
-                Chapter 6: Programming in MATLAB
-              </div>
-              
-              <div className="absolute bottom-20 left-20 bg-blue-100 rounded-lg px-3 py-2 text-blue-800 text-sm shadow-md">
-                Examples
-                <div className="absolute -top-1 -right-1 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                  &gt;
-                </div>
-              </div>
-              
-              {/* Connecting Lines */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <line x1="50%" y1="50%" x2="70%" y2="25%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
-                <line x1="50%" y1="50%" x2="75%" y2="45%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
-                <line x1="50%" y1="50%" x2="70%" y2="70%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
-                <line x1="50%" y1="50%" x2="30%" y2="80%" stroke="#93c5fd" strokeWidth="2" opacity="0.6" />
+            <div className="w-full h-full relative">
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                {/* Curved connection lines */}
+                {connections.map((connection, index) => (
+                  <path
+                    key={index}
+                    d={generateCurvePath(connection.from, connection.to)}
+                    stroke="#3b82f6"
+                    strokeWidth="0.2"
+                    fill="none"
+                    opacity="0.6"
+                  />
+                ))}
               </svg>
+              
+              {/* Mind Map Nodes */}
+              {visibleNodes.map((node) => (
+                <motion.div
+                  key={node.id}
+                  className={`absolute cursor-pointer group ${node.id === 'root' ? 'z-20' : 'z-10'}`}
+                  style={{
+                    left: `${node.x}%`,
+                    top: `${node.y}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  onClick={() => toggleNodeExpansion(node.id)}
+                >
+                  <div className={`
+                    relative rounded-lg px-4 py-2 shadow-md border transition-all duration-200
+                    ${node.id === 'root' 
+                      ? 'bg-blue-500 text-white border-blue-600 text-base font-semibold' 
+                      : 'bg-white text-gray-800 border-gray-200 text-sm hover:shadow-lg hover:scale-105'
+                    }
+                    ${node.children.length > 0 ? 'pr-8' : ''}
+                  `}>
+                    {node.title}
+                    
+                    {/* Expand/Collapse Icon */}
+                    {node.children.length > 0 && (
+                      <div className={`
+                        absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs
+                        ${node.expanded ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}
+                        transition-all duration-200 hover:scale-110
+                      `}>
+                        <ChevronRight 
+                          className={`w-3 h-3 transition-transform duration-200 ${node.expanded ? 'rotate-90' : ''}`} 
+                        />
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
             </div>
             
             {/* Controls */}
             <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-              <Button size="sm" className="w-8 h-8 p-0 bg-blue-500 hover:bg-blue-600">
+              <Button size="sm" className="w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600 rounded-full">
                 <Plus className="w-4 h-4" />
               </Button>
-              <Button size="sm" className="w-8 h-8 p-0 bg-blue-500 hover:bg-blue-600">
-                <span className="text-xs">−</span>
+              <Button size="sm" className="w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600 rounded-full">
+                <span className="text-lg font-bold">−</span>
               </Button>
+            </div>
+            
+            {/* Instructions */}
+            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 text-sm text-gray-600">
+              <p className="font-medium mb-1">Interactive Mind Map</p>
+              <p>Click nodes with arrows to expand • Click again to collapse</p>
             </div>
             
             {/* Feedback Buttons */}
             <div className="absolute bottom-4 left-4 flex gap-2">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm">
                 <span className="text-green-600">👍</span>
-                Good content
+                Helpful
               </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/90 backdrop-blur-sm">
                 <span className="text-red-600">👎</span>
-                Bad content
+                Not helpful
               </Button>
             </div>
           </div>
