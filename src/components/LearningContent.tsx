@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -57,15 +56,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  if (showAssessment) {
-    return (
-      <AssessmentExam 
-        subject={subject} 
-        onBack={() => setShowAssessment(false)} 
-      />
-    );
-  }
 
   // Extract subject type from the subject string
   const getSubjectType = () => {
@@ -299,6 +289,15 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
 
   const currentConfig = subjectConfigs[subjectType] || subjectConfigs.foundation;
   const [mindMapNodes, setMindMapNodes] = useState<MindMapNode[]>(currentConfig.mindMapNodes);
+
+  if (showAssessment) {
+    return (
+      <AssessmentExam 
+        subject={subject} 
+        onBack={() => setShowAssessment(false)} 
+      />
+    );
+  }
 
   const handleMindMapClick = () => {
     setShowMindMap(true);
