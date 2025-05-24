@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Target, Users, RotateCcw, Trophy, Brain } from 'lucide-react';
+import { BookOpen, Target, Users, RotateCcw, Trophy, Brain, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 const LearningJourney = () => {
@@ -80,55 +81,71 @@ const LearningJourney = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Learning Steps Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {learningSteps.map((step, index) => (
-              <motion.div
-                key={step.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700 cursor-pointer"
-                      onClick={() => handleStartLearning(step.route)}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className={`${step.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
-                        <step.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
-                        Step {step.id}
-                      </span>
-                    </div>
-                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {step.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                      {step.description}
-                    </p>
-                    
-                    {/* Progress Section */}
-                    <div className="space-y-2">
+            {learningSteps.map((step, index) => {
+              // Special layout for the last row (Review and Mastery)
+              const isLastRow = index >= 3;
+              const gridColClass = isLastRow && index === 3 ? 'lg:col-span-2' : isLastRow && index === 4 ? 'lg:col-span-1' : '';
+              
+              return (
+                <motion.div
+                  key={step.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className={gridColClass}
+                >
+                  <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700">
+                    <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                          Progress
-                        </span>
-                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                          {step.progress}%
+                        <div className={`${step.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                          <step.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+                          Step {step.id}
                         </span>
                       </div>
-                      <Progress value={step.progress} className="h-2" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {step.progress === 100 ? 'Complete' : 'In Progress'}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                      <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {step.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                        {step.description}
+                      </p>
+                      
+                      {/* Progress Section */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                            Progress
+                          </span>
+                          <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                            {step.progress}%
+                          </span>
+                        </div>
+                        <Progress value={step.progress} className="h-2" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {step.progress === 100 ? 'Complete' : 'In Progress'}
+                        </span>
+                      </div>
+
+                      {/* Action Button */}
+                      <Button 
+                        onClick={() => handleStartLearning(step.route)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        {step.progress === 100 ? 'Review' : 'Continue'}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* Action Section */}
