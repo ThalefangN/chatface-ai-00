@@ -3,6 +3,7 @@ import React from "react";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
 import LearningJourney from "@/components/LearningJourney";
+import TutorSection from "@/components/TutorSection";
 
 const Dashboard = () => {
   return (
@@ -16,6 +17,7 @@ const Dashboard = () => {
           </header>
           <div className="flex-1 p-2 sm:p-4 md:p-6 overflow-auto">
             <LearningJourney />
+            <TutorSection />
           </div>
         </SidebarInset>
       </div>
