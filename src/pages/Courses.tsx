@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
@@ -22,6 +21,7 @@ interface Course {
   materials: number;
   description: string;
   level: string;
+  route?: string;
 }
 
 const Courses = () => {
@@ -54,7 +54,8 @@ const Courses = () => {
       students: 203,
       materials: 32,
       description: 'Free BGCSE English Literature course with past papers',
-      level: 'BGCSE'
+      level: 'BGCSE',
+      route: '/courses/english-literature'
     },
     {
       id: '3',
@@ -94,7 +95,8 @@ const Courses = () => {
       students: 187,
       materials: 25,
       description: 'Free Setswana language course for PSLE preparation',
-      level: 'PSLE'
+      level: 'PSLE',
+      route: '/courses/setswana-language'
     },
     // JCE Courses
     {
@@ -121,7 +123,8 @@ const Courses = () => {
       students: 198,
       materials: 30,
       description: 'Free Social Studies course with interactive content',
-      level: 'JCE'
+      level: 'JCE',
+      route: '/courses/social-studies'
     }
   ];
 
@@ -130,10 +133,13 @@ const Courses = () => {
     : allCourses.filter(course => course.level === selectedFilter);
 
   const handleCourseAction = (course: Course) => {
-    if (course.isFree) {
-      // Navigate to course content page for free courses
+    if (course.isFree && course.route) {
+      // Navigate to course content page for free courses with defined routes
+      navigate(course.route);
+    } else if (course.isFree) {
+      // For free courses without specific routes, navigate to learning session
       const courseSlug = course.title.toLowerCase().replace(/\s+/g, '-');
-      navigate(`/courses/${courseSlug}`);
+      navigate(`/learning/${courseSlug}`);
     } else {
       // Handle paid course enrollment
       console.log('Enrolling in paid course:', course.title);
