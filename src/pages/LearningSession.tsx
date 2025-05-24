@@ -36,6 +36,13 @@ const LearningSession = () => {
       ),
     },
     {
+      label: "Chat",
+      href: "/chat",
+      icon: (
+        <MessageSquare className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      ),
+    },
+    {
       label: "Profile",
       href: "/profile",
       icon: (
