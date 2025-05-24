@@ -12,6 +12,7 @@ import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import LearningSession from "./pages/LearningSession";
 import AiChat from "./pages/AiChat";
 import Chat from "./pages/Chat";
 import Notes from "./pages/Notes";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/learning/:subject" element={<ProtectedRoute><LearningSession /></ProtectedRoute>} />
               <Route path="/ai-chat" element={<ProtectedRoute><AiChat /></ProtectedRoute>} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />

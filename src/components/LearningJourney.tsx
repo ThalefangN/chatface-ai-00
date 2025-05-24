@@ -4,8 +4,11 @@ import { motion } from 'framer-motion';
 import { BookOpen, Target, Users, RotateCcw, Trophy, Brain } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useNavigate } from 'react-router-dom';
 
 const LearningJourney = () => {
+  const navigate = useNavigate();
+  
   const learningSteps = [
     {
       id: 1,
@@ -13,7 +16,8 @@ const LearningJourney = () => {
       description: 'Evaluate your current knowledge and identify learning gaps',
       icon: Target,
       color: 'bg-blue-500',
-      progress: 100
+      progress: 100,
+      route: 'assessment'
     },
     {
       id: 2,
@@ -21,7 +25,8 @@ const LearningJourney = () => {
       description: 'Build strong fundamentals with core concepts and principles',
       icon: BookOpen,
       color: 'bg-green-500',
-      progress: 75
+      progress: 75,
+      route: 'foundation'
     },
     {
       id: 3,
@@ -29,7 +34,8 @@ const LearningJourney = () => {
       description: 'Apply your knowledge through interactive exercises and problems',
       icon: Users,
       color: 'bg-yellow-500',
-      progress: 50
+      progress: 50,
+      route: 'practice'
     },
     {
       id: 4,
@@ -37,7 +43,8 @@ const LearningJourney = () => {
       description: 'Reinforce learning through spaced repetition and feedback',
       icon: RotateCcw,
       color: 'bg-orange-500',
-      progress: 25
+      progress: 25,
+      route: 'review'
     },
     {
       id: 5,
@@ -45,9 +52,14 @@ const LearningJourney = () => {
       description: 'Achieve deep understanding and advanced problem-solving skills',
       icon: Trophy,
       color: 'bg-purple-500',
-      progress: 10
+      progress: 10,
+      route: 'mastery'
     }
   ];
+
+  const handleStartLearning = (route: string) => {
+    navigate(`/learning/${route}`);
+  };
 
   return (
     <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
@@ -78,7 +90,8 @@ const LearningJourney = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
               >
-                <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700">
+                <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700 cursor-pointer"
+                      onClick={() => handleStartLearning(step.route)}>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className={`${step.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
@@ -135,7 +148,10 @@ const LearningJourney = () => {
             </div>
             
             <div className="flex flex-wrap justify-center gap-3">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm">
+              <button 
+                onClick={() => handleStartLearning('foundation')}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm"
+              >
                 <BookOpen className="w-4 h-4" />
                 Start Learning
               </button>
