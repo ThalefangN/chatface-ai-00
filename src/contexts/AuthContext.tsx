@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -25,7 +24,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up the auth state listener
+    // Check for mock user in localStorage
+    const mockUser = localStorage.getItem('mockUser');
+    if (mockUser) {
+      const userData = JSON.parse(mockUser);
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        user_metadata: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+        }
+      } as User);
+    }
+
+    // Set up the auth state listener for real Supabase auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
@@ -34,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (event === 'SIGNED_IN') {
           toast({
             title: "Logged in successfully",
-            description: "Welcome to SpeakAI!",
+            description: "Welcome to StudyBuddy!",
           });
         } else if (event === 'SIGNED_OUT') {
           toast({
@@ -48,8 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      if (!mockUser) { // Only set Supabase session if no mock user
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+      }
       setLoading(false);
     });
 
@@ -61,11 +76,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
       
-      if (error) throw error;
+      // For bypass mode, just check if email and password are provided
+      if (email && password) {
+        const mockUser = {
+          id: 'mock-user-id',
+          email: email,
+          user_metadata: {}
+        };
+        localStorage.setItem('mockUser', JSON.stringify(mockUser));
+        setUser(mockUser as User);
+        
+        toast({
+          title: "Logged in successfully",
+          description: "Welcome to StudyBuddy!",
+        });
+        
+        navigate('/dashboard');
+        return;
+      }
+
+      // Original Supabase auth (commented out for bypass)
+      // const { error } = await supabase.auth.signInWithPassword({ email, password });
+      // if (error) throw error;
+      // navigate('/dashboard');
       
-      navigate('/home');
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -81,6 +116,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
       setLoading(true);
+      
+      // For bypass mode
+      if (email && password && firstName && lastName) {
+        const mockUser = {
+          id: 'mock-user-id',
+          email: email,
+          user_metadata: {
+            first_name: firstName,
+            last_name: lastName
+          }
+        };
+        localStorage.setItem('mockUser', JSON.stringify(mockUser));
+        setUser(mockUser as User);
+        
+        toast({
+          title: "Account created",
+          description: "Welcome to StudyBuddy!",
+        });
+        
+        navigate('/dashboard');
+        return;
+      }
+
+      // Original Supabase code (commented out for bypass)
+      /*
       const { data: { user }, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -94,7 +154,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // Update profile with first name and last name
       if (user) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -109,7 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error updating profile:', profileError);
         }
         
-        // Also create some sample data for new users
         await createInitialUserData(user.id);
       }
       
@@ -118,7 +176,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Please check your email to confirm your account",
       });
       
-      navigate('/home');
+      navigate('/dashboard');
+      */
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -133,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const createInitialUserData = async (userId: string) => {
     try {
-      // 1. Create sample skills
       const skills = [
         { name: 'Clarity', value: 65 },
         { name: 'Confidence', value: 70 },
@@ -148,11 +206,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           value: skill.value
         })));
         
-      // 2. Create sample alerts
       const alerts = [
         {
           type: 'info',
-          title: 'Welcome to SpeakAI!',
+          title: 'Welcome to StudyBuddy!',
           message: 'Get started by scheduling your first practice session.',
           icon: 'Info'
         },
@@ -182,7 +239,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // Clear mock user
+      localStorage.removeItem('mockUser');
+      setUser(null);
+      setSession(null);
+      
+      // Also sign out from Supabase if needed
       await supabase.auth.signOut();
+      
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully",
+      });
+      
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Sign out failed",

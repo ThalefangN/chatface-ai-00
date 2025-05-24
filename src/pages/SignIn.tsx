@@ -1,24 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Logo from '@/components/Logo';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import SubscriptionNotification from '@/components/SubscriptionNotification';
-import { AnimatedForm, Ripple, TechOrbitDisplay } from '@/components/ui/modern-animated-sign-in';
-import { BookOpen, Award, Users, MicIcon, FileText, Brain } from 'lucide-react';
+import { AnimatedForm } from '@/components/ui/modern-animated-sign-in';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSubscription, setShowSubscription] = useState(false);
   
   useEffect(() => {
     if (user) {
-      navigate('/home');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
   
@@ -27,18 +23,17 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      await signIn(email, password);
-      setShowSubscription(true);
+      // Bypass authentication - any email/password combination works
+      if (email && password) {
+        // Set a mock user in localStorage for the bypass
+        localStorage.setItem('mockUser', JSON.stringify({ email, id: 'mock-user-id' }));
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Error during sign in:', error);
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const handleSubscriptionClose = () => {
-    setShowSubscription(false);
-    navigate('/home');
   };
 
   const goToSignUp = () => {
@@ -73,62 +68,6 @@ const SignIn = () => {
     submitButton: 'Sign In',
     textVariantButton: 'Forgot password?',
   };
-
-  const iconsArray = [
-    {
-      component: () => <BookOpen className="h-6 w-6 text-blue-500" />,
-      className: 'size-[30px] border-none bg-transparent',
-      duration: 20,
-      delay: 20,
-      radius: 100,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => <MicIcon className="h-6 w-6 text-green-500" />,
-      className: 'size-[30px] border-none bg-transparent',
-      duration: 20,
-      delay: 10,
-      radius: 100,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => <Award className="h-8 w-8 text-yellow-500" />,
-      className: 'size-[50px] border-none bg-transparent',
-      radius: 210,
-      duration: 20,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => <Users className="h-8 w-8 text-purple-500" />,
-      className: 'size-[50px] border-none bg-transparent',
-      radius: 210,
-      duration: 20,
-      delay: 20,
-      path: false,
-      reverse: false,
-    },
-    {
-      component: () => <FileText className="h-6 w-6 text-indigo-500" />,
-      className: 'size-[30px] border-none bg-transparent',
-      duration: 20,
-      delay: 20,
-      radius: 150,
-      path: false,
-      reverse: true,
-    },
-    {
-      component: () => <Brain className="h-6 w-6 text-pink-500" />,
-      className: 'size-[30px] border-none bg-transparent',
-      duration: 20,
-      delay: 10,
-      radius: 150,
-      path: false,
-      reverse: true,
-    },
-  ];
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -139,15 +78,8 @@ const SignIn = () => {
         </Link>
       </div>
       
-      <main className="flex-1 flex max-lg:justify-center">
-        {/* Left Side - Animation */}
-        <div className='flex flex-col justify-center w-1/2 max-lg:hidden relative'>
-          <Ripple mainCircleSize={100} />
-          <TechOrbitDisplay iconsArray={iconsArray} text="StudyBuddy" />
-        </div>
-
-        {/* Right Side - Form */}
-        <div className='w-1/2 h-[100dvh] flex flex-col justify-center items-center max-lg:w-full max-lg:px-[10%]'>
+      <main className="flex-1 flex justify-center items-center">
+        <div className='w-full max-w-md px-4'>
           <AnimatedForm
             {...formFields}
             fieldPerRow={1}
@@ -167,11 +99,6 @@ const SignIn = () => {
           </div>
         </div>
       </main>
-      
-      <SubscriptionNotification 
-        open={showSubscription} 
-        onClose={handleSubscriptionClose} 
-      />
     </div>
   );
 };
