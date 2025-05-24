@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, FileText, Trophy, Star, Users, DollarSign, Download } from 'lucide-react';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNavigate } from 'react-router-dom';
 
 interface Course {
   id: string;
@@ -33,6 +33,8 @@ interface GradeLevel {
 
 const TutorSection = () => {
   const [selectedGrade, setSelectedGrade] = useState<string>('bgcse');
+  const [showAllCourses, setShowAllCourses] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const gradeLevels: GradeLevel[] = [
     {
@@ -159,6 +161,23 @@ const TutorSection = () => {
   ];
 
   const currentGrade = gradeLevels.find(grade => grade.id === selectedGrade);
+  
+  // Get courses from other grade levels to show when "View More Courses" is clicked
+  const otherCourses = gradeLevels
+    .filter(grade => grade.id !== selectedGrade)
+    .flatMap(grade => grade.courses)
+    .slice(0, 6); // Limit to 6 additional courses
+
+  const handleCourseAction = (course: Course) => {
+    if (course.isFree) {
+      // Navigate to course content page for free courses
+      const courseSlug = course.title.toLowerCase().replace(/\s+/g, '-');
+      navigate(`/learning/${courseSlug}`);
+    } else {
+      // Handle paid course enrollment (could open payment modal, etc.)
+      console.log('Enrolling in paid course:', course.title);
+    }
+  };
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-6">
@@ -299,6 +318,7 @@ const TutorSection = () => {
                       <Button 
                         className="w-full text-xs sm:text-sm h-8" 
                         variant={course.isFree ? "default" : "outline"}
+                        onClick={() => handleCourseAction(course)}
                       >
                         {course.isFree ? 'Start Free Course' : `Enroll for P${course.price}`}
                       </Button>
@@ -308,7 +328,100 @@ const TutorSection = () => {
               ))}
             </div>
 
-            {/* Empty State for more courses */}
+            {/* Additional Courses Section */}
+            {showAllCourses && otherCourses.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-6"
+              >
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                  More Courses from Other Levels
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                  {otherCourses.map((course, index) => (
+                    <motion.div
+                      key={course.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-sm sm:text-base line-clamp-2 mb-1">
+                                {course.title}
+                              </CardTitle>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                by {course.instructor}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              {course.isFree ? (
+                                <Badge className="bg-green-100 text-green-800 text-xs">Free</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">P{course.price}</Badge>
+                              )}
+                              <Badge variant="secondary" className="text-xs">
+                                {course.level}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        
+                        <CardContent className="space-y-3">
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                            {course.description}
+                          </p>
+                          
+                          {/* Course Stats */}
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              <span>{course.rating}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              <span>{course.students}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <FileText className="w-3 h-3" />
+                              <span>{course.materials}</span>
+                            </div>
+                          </div>
+
+                          {/* Subject Badge */}
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className="text-xs">
+                              {course.subject}
+                            </Badge>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="outline" className="h-7 px-2">
+                                <Download className="w-3 h-3 mr-1" />
+                                Materials
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          <Button 
+                            className="w-full text-xs sm:text-sm h-8" 
+                            variant={course.isFree ? "default" : "outline"}
+                            onClick={() => handleCourseAction(course)}
+                          >
+                            {course.isFree ? 'Start Free Course' : `Enroll for P${course.price}`}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* View More Courses Section */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -317,13 +430,20 @@ const TutorSection = () => {
             >
               <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-3" />
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                More courses coming soon
+                {showAllCourses ? 'Showing all available courses' : 'More courses available'}
               </h3>
               <p className="text-xs text-gray-500 mb-4">
-                We're adding more {grade.name} courses and study materials
+                {showAllCourses 
+                  ? `Discover courses from all grade levels`
+                  : `We have more courses from other grade levels`
+                }
               </p>
-              <Button variant="outline" size="sm">
-                Request a Course
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowAllCourses(!showAllCourses)}
+              >
+                {showAllCourses ? 'Show Less' : 'View More Courses'}
               </Button>
             </motion.div>
           </TabsContent>
