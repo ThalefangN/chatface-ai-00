@@ -22,13 +22,17 @@ const LearningSession = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <SidebarInset className="flex-1">
+        <SidebarInset className="flex-1 min-w-0">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-2 sm:px-4">
-            <SidebarTrigger className="-ml-1" />
-            <h1 className="text-sm sm:text-lg font-semibold truncate">{currentSubject}</h1>
+            <SidebarTrigger className="-ml-1 flex-shrink-0" />
+            <h1 className="text-xs sm:text-sm md:text-lg font-semibold truncate min-w-0 flex-1">
+              {currentSubject}
+            </h1>
           </header>
-          <div className="flex-1 p-2 sm:p-4 md:p-6 overflow-auto">
-            <LearningContent subject={currentSubject} />
+          <div className="flex-1 p-1 sm:p-2 md:p-4 lg:p-6 overflow-auto w-full max-w-full">
+            <div className="w-full max-w-full">
+              <LearningContent subject={currentSubject} />
+            </div>
           </div>
         </SidebarInset>
       </div>
