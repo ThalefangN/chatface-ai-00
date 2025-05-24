@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, FileText, Trophy, Star, Users, DollarSign, Download } from 'lucide-react';
@@ -160,7 +161,7 @@ const TutorSection = () => {
   const currentGrade = gradeLevels.find(grade => grade.id === selectedGrade);
 
   return (
-    <div>
+    <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-6">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

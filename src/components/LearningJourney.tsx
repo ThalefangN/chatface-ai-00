@@ -63,7 +63,7 @@ const LearningJourney = () => {
   };
 
   return (
-    <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
+    <div className="w-full">
       {/* Header Section */}
       <div className="border-b border-gray-200 dark:border-gray-700 p-3 sm:p-6">
         <div className="flex items-center gap-3 mb-2">
@@ -80,7 +80,7 @@ const LearningJourney = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-3 sm:p-6 overflow-auto">
+      <div className="p-3 sm:p-6">
         <div className="max-w-7xl mx-auto">
           {/* Learning Steps Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
