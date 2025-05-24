@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Target, Users, RotateCcw, Trophy } from 'lucide-react';
+import { BookOpen, Target, Users, RotateCcw, Trophy, Brain } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 const LearningJourney = () => {
   const learningSteps = [
@@ -48,86 +50,104 @@ const LearningJourney = () => {
   ];
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900 p-6 rounded-2xl">
-      <div className="max-w-6xl mx-auto h-full flex flex-col">
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+    <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
+      {/* Header Section */}
+      <div className="border-b border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            <Brain className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
             Your Learning Journey
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Experience a structured learning path designed to maximize your academic success with AI-powered guidance
-          </p>
-        </motion.div>
-
-        {/* Learning Steps */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          {learningSteps.map((step, index) => (
-            <motion.div
-              key={step.id}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 dark:border-gray-700"
-            >
-              {/* Icon */}
-              <div className={`${step.color} w-16 h-16 rounded-full flex items-center justify-center mb-4 mx-auto`}>
-                <step.icon className="w-8 h-8 text-white" />
-              </div>
-
-              {/* Title */}
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white text-center mb-3">
-                {step.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-4 leading-relaxed">
-                {step.description}
-              </p>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${step.progress}%` }}
-                  transition={{ duration: 1, delay: index * 0.2 + 0.5 }}
-                  className={`h-2 rounded-full ${step.color}`}
-                />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                {step.progress}% Complete
-              </p>
-
-              {/* Step Number */}
-              <div className="absolute top-2 right-2 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                  {step.id}
-                </span>
-              </div>
-            </motion.div>
-          ))}
         </div>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
+          Experience a structured learning path designed to maximize your academic success with AI-powered guidance
+        </p>
+      </div>
 
-        {/* Action Buttons */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="flex flex-wrap justify-center gap-4 mt-8"
-        >
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            Start Learning
-          </button>
-          <button className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
-            View Progress
-          </button>
-        </motion.div>
+      {/* Main Content */}
+      <div className="flex-1 p-6 overflow-auto">
+        <div className="max-w-4xl mx-auto">
+          {/* Learning Steps Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {learningSteps.map((step, index) => (
+              <motion.div
+                key={step.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <Card className="h-full hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`${step.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                        <step.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+                        Step {step.id}
+                      </span>
+                    </div>
+                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {step.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                      {step.description}
+                    </p>
+                    
+                    {/* Progress Section */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          Progress
+                        </span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                          {step.progress}%
+                        </span>
+                      </div>
+                      <Progress value={step.progress} className="h-2" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {step.progress === 100 ? 'Complete' : 'In Progress'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Action Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
+            className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700"
+          >
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Ready to Continue Learning?
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Choose how you'd like to proceed with your educational journey
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-3">
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm">
+                <BookOpen className="w-4 h-4" />
+                Start Learning
+              </button>
+              <button className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 text-sm">
+                View Progress
+              </button>
+              <button className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 text-sm">
+                Study Materials
+              </button>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
