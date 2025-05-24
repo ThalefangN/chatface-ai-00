@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { FeatureSteps } from '@/components/ui/feature-steps';
-import { ArrowRight, MicIcon, Users, BookOpen, Award } from 'lucide-react';
+import { BentoGrid } from '@/components/ui/bento-grid';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe } from 'lucide-react';
 
 const features = [
   { 
@@ -23,6 +23,43 @@ const features = [
     title: 'Practice & Improve',
     content: 'Practice with interactive exercises and track your progress as you master new concepts.',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop'
+  },
+];
+
+const studyFeatures = [
+  {
+    title: "Progress Tracking",
+    meta: "Real-time",
+    description: "Monitor your learning journey with detailed analytics and performance insights",
+    icon: <TrendingUp className="w-4 h-4 text-blue-500" />,
+    status: "Live",
+    tags: ["Analytics", "Progress", "AI"],
+    colSpan: 2,
+    hasPersistentHover: true,
+  },
+  {
+    title: "Interactive Exercises",
+    meta: "500+ exercises",
+    description: "Practice with quizzes, flashcards and hands-on activities tailored to your level",
+    icon: <CheckCircle className="w-4 h-4 text-emerald-500" />,
+    status: "Active",
+    tags: ["Practice", "Quizzes"],
+  },
+  {
+    title: "24/7 Availability",
+    meta: "Always online",
+    description: "Get help anytime, anywhere you need it with your AI study companion",
+    icon: <Globe className="w-4 h-4 text-purple-500" />,
+    tags: ["Support", "AI"],
+    colSpan: 2,
+  },
+  {
+    title: "Multi-Modal Learning",
+    meta: "Text + Voice",
+    description: "Learn through text, voice conversations and visual content for better retention",
+    icon: <Video className="w-4 h-4 text-sky-500" />,
+    status: "Enhanced",
+    tags: ["Voice", "Visual"],
   },
 ];
 
@@ -182,6 +219,18 @@ const Index = () => {
               <p className="text-muted-foreground">Customized study sessions that adapt to your learning style and pace</p>
             </div>
           </div>
+        </div>
+
+        {/* New Bento Grid Section */}
+        <div className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Advanced Learning Features</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Discover powerful tools designed to enhance your study experience and accelerate your learning journey
+            </p>
+          </div>
+          
+          <BentoGrid items={studyFeatures} />
         </div>
       </main>
       
