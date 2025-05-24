@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MindMapNode {
   id: string;
@@ -16,6 +17,7 @@ interface MindMapNode {
   expanded: boolean;
   children: MindMapNode[];
   parent?: string;
+  level: number;
 }
 
 interface SubjectContent {
@@ -43,6 +45,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   const [zoomLevel, setZoomLevel] = useState(1);
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const isMobile = useIsMobile();
 
   // Extract subject type from the subject string
   const getSubjectType = () => {
@@ -73,42 +76,46 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           id: 'root',
           title: 'Mathematics for Machine Learning',
           x: 50,
-          y: 40,
+          y: 20,
           expanded: true,
+          level: 0,
           children: [
             {
               id: 'linear-algebra',
               title: 'Linear Algebra',
               x: 20,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'vectors', title: 'Vectors & Vector Spaces', x: 5, y: 15, expanded: false, children: [] },
-                { id: 'matrices', title: 'Matrices & Operations', x: 5, y: 35, expanded: false, children: [] },
-                { id: 'eigenvalues', title: 'Eigenvalues & Eigenvectors', x: 5, y: 55, expanded: false, children: [] }
+                { id: 'vectors', title: 'Vectors & Vector Spaces', x: 5, y: 65, expanded: false, level: 2, children: [] },
+                { id: 'matrices', title: 'Matrices & Operations', x: 20, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'eigenvalues', title: 'Eigenvalues & Eigenvectors', x: 35, y: 75, expanded: false, level: 2, children: [] }
               ]
             },
             {
               id: 'calculus',
               title: 'Calculus',
               x: 80,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'derivatives', title: 'Derivatives & Gradients', x: 95, y: 15, expanded: false, children: [] },
-                { id: 'optimization', title: 'Optimization', x: 95, y: 35, expanded: false, children: [] },
-                { id: 'chain-rule', title: 'Chain Rule', x: 95, y: 55, expanded: false, children: [] }
+                { id: 'derivatives', title: 'Derivatives & Gradients', x: 95, y: 65, expanded: false, level: 2, children: [] },
+                { id: 'optimization', title: 'Optimization', x: 80, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'chain-rule', title: 'Chain Rule', x: 65, y: 75, expanded: false, level: 2, children: [] }
               ]
             },
             {
               id: 'probability',
               title: 'Probability & Statistics',
               x: 50,
-              y: 70,
+              y: 80,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'distributions', title: 'Probability Distributions', x: 30, y: 85, expanded: false, children: [] },
-                { id: 'bayes', title: 'Bayes Theorem', x: 70, y: 85, expanded: false, children: [] }
+                { id: 'distributions', title: 'Probability Distributions', x: 30, y: 95, expanded: false, level: 2, children: [] },
+                { id: 'bayes', title: 'Bayes Theorem', x: 70, y: 95, expanded: false, level: 2, children: [] }
               ]
             }
           ]
@@ -182,29 +189,32 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           id: 'root',
           title: 'Practice Problem Categories',
           x: 50,
-          y: 50,
+          y: 20,
           expanded: true,
+          level: 0,
           children: [
             {
               id: 'basic-problems',
               title: 'Basic Problems',
               x: 25,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'algebra', title: 'Algebraic Manipulation', x: 15, y: 15, expanded: false, children: [] },
-                { id: 'calculus-basic', title: 'Basic Derivatives', x: 15, y: 35, expanded: false, children: [] }
+                { id: 'algebra', title: 'Algebraic Manipulation', x: 15, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'calculus-basic', title: 'Basic Derivatives', x: 35, y: 75, expanded: false, level: 2, children: [] }
               ]
             },
             {
               id: 'advanced-problems',
               title: 'Advanced Problems',
               x: 75,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'optimization-advanced', title: 'Complex Optimization', x: 85, y: 15, expanded: false, children: [] },
-                { id: 'ml-applications', title: 'ML Applications', x: 85, y: 35, expanded: false, children: [] }
+                { id: 'optimization-advanced', title: 'Complex Optimization', x: 85, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'ml-applications', title: 'ML Applications', x: 65, y: 75, expanded: false, level: 2, children: [] }
               ]
             }
           ]
@@ -278,29 +288,32 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           id: 'root',
           title: 'Knowledge Review System',
           x: 50,
-          y: 50,
+          y: 20,
           expanded: true,
+          level: 0,
           children: [
             {
               id: 'recent-topics',
               title: 'Recent Topics',
               x: 25,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'last-week', title: 'Last Week Learning', x: 15, y: 15, expanded: false, children: [] },
-                { id: 'key-formulas', title: 'Key Formulas', x: 15, y: 35, expanded: false, children: [] }
+                { id: 'last-week', title: 'Last Week Learning', x: 15, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'key-formulas', title: 'Key Formulas', x: 35, y: 75, expanded: false, level: 2, children: [] }
               ]
             },
             {
               id: 'weak-areas',
               title: 'Areas for Improvement',
               x: 75,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'low-confidence', title: 'Low Confidence Topics', x: 85, y: 15, expanded: false, children: [] },
-                { id: 'common-errors', title: 'Common Errors', x: 85, y: 35, expanded: false, children: [] }
+                { id: 'low-confidence', title: 'Low Confidence Topics', x: 85, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'common-errors', title: 'Common Errors', x: 65, y: 75, expanded: false, level: 2, children: [] }
               ]
             }
           ]
@@ -374,29 +387,32 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           id: 'root',
           title: 'Assessment Framework',
           x: 50,
-          y: 50,
+          y: 20,
           expanded: true,
+          level: 0,
           children: [
             {
               id: 'diagnostic',
               title: 'Diagnostic Assessment',
               x: 25,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'skill-check', title: 'Skill Level Check', x: 15, y: 15, expanded: false, children: [] },
-                { id: 'knowledge-gaps', title: 'Knowledge Gaps', x: 15, y: 35, expanded: false, children: [] }
+                { id: 'skill-check', title: 'Skill Level Check', x: 15, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'knowledge-gaps', title: 'Knowledge Gaps', x: 35, y: 75, expanded: false, level: 2, children: [] }
               ]
             },
             {
               id: 'progress',
               title: 'Progress Tracking',
               x: 75,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'competency-map', title: 'Competency Mapping', x: 85, y: 15, expanded: false, children: [] },
-                { id: 'improvement-plan', title: 'Improvement Plan', x: 85, y: 35, expanded: false, children: [] }
+                { id: 'competency-map', title: 'Competency Mapping', x: 85, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'improvement-plan', title: 'Improvement Plan', x: 65, y: 75, expanded: false, level: 2, children: [] }
               ]
             }
           ]
@@ -470,29 +486,32 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           id: 'root',
           title: 'Mastery Learning Path',
           x: 50,
-          y: 50,
+          y: 20,
           expanded: true,
+          level: 0,
           children: [
             {
               id: 'advanced-concepts',
               title: 'Advanced Concepts',
               x: 25,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'research-topics', title: 'Current Research', x: 15, y: 15, expanded: false, children: [] },
-                { id: 'cutting-edge', title: 'Cutting-edge Methods', x: 15, y: 35, expanded: false, children: [] }
+                { id: 'research-topics', title: 'Current Research', x: 15, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'cutting-edge', title: 'Cutting-edge Methods', x: 35, y: 75, expanded: false, level: 2, children: [] }
               ]
             },
             {
               id: 'applications',
               title: 'Real-world Applications',
               x: 75,
-              y: 25,
+              y: 45,
               expanded: false,
+              level: 1,
               children: [
-                { id: 'industry-cases', title: 'Industry Case Studies', x: 85, y: 15, expanded: false, children: [] },
-                { id: 'project-work', title: 'Capstone Projects', x: 85, y: 35, expanded: false, children: [] }
+                { id: 'industry-cases', title: 'Industry Case Studies', x: 85, y: 70, expanded: false, level: 2, children: [] },
+                { id: 'project-work', title: 'Capstone Projects', x: 65, y: 75, expanded: false, level: 2, children: [] }
               ]
             }
           ]
@@ -601,10 +620,6 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   <rect width="100%" height="100%" fill="#f8fafc"/>
   
   ${connections.map(conn => {
-    const fromX = (conn.from.x / 100) * 1200;
-    const fromY = (conn.from.y / 100) * 800;
-    const toX = (conn.to.x / 100) * 1200;
-    const toY = (conn.to.y / 100) * 800;
     const path = generateCurvePath(conn.from, conn.to, 1200, 800);
     return `<path d="${path}" class="connection"/>`;
   }).join('')}
@@ -635,6 +650,18 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
 </svg>`;
   };
 
+  const repositionChildren = (parentNode: MindMapNode, siblingIndex: number, totalSiblings: number) => {
+    // Smart positioning algorithm for better spacing
+    const baseAngle = (siblingIndex / Math.max(1, totalSiblings - 1)) * 180 - 90; // -90 to 90 degrees
+    const distance = 25 + (parentNode.level * 5); // Increase distance based on level
+    
+    const angleRad = (baseAngle * Math.PI) / 180;
+    const newX = Math.max(5, Math.min(95, parentNode.x + distance * Math.cos(angleRad)));
+    const newY = Math.max(10, Math.min(90, parentNode.y + distance * Math.sin(angleRad)));
+    
+    return { x: newX, y: newY };
+  };
+
   const handleNodeDrag = (nodeId: string, newX: number, newY: number) => {
     const updateNodes = (nodes: MindMapNode[]): MindMapNode[] => {
       return nodes.map(node => {
@@ -651,6 +678,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   };
 
   const handleMouseDown = (e: React.MouseEvent, nodeId: string, currentX: number, currentY: number) => {
+    if (isMobile) return; // Disable dragging on mobile
     e.stopPropagation();
     setDraggedNode(nodeId);
     const rect = e.currentTarget.getBoundingClientRect();
@@ -664,7 +692,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggedNode) return;
+    if (!draggedNode || isMobile) return;
     
     const containerRect = e.currentTarget.getBoundingClientRect();
     const newX = ((e.clientX - containerRect.left - dragOffset.x) / containerRect.width) * 100;
@@ -686,7 +714,18 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     const updateNodes = (nodes: MindMapNode[]): MindMapNode[] => {
       return nodes.map(node => {
         if (node.id === nodeId) {
-          return { ...node, expanded: !node.expanded };
+          const updatedNode = { ...node, expanded: !node.expanded };
+          
+          // If expanding, reposition children to prevent overlaps
+          if (updatedNode.expanded && updatedNode.children.length > 0) {
+            const repositionedChildren = updatedNode.children.map((child, index) => {
+              const newPos = repositionChildren(updatedNode, index, updatedNode.children.length);
+              return { ...child, x: newPos.x, y: newPos.y };
+            });
+            return { ...updatedNode, children: repositionedChildren };
+          }
+          
+          return updatedNode;
         }
         if (node.children.length > 0) {
           return { ...node, children: updateNodes(node.children) };
@@ -743,51 +782,33 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     const x2 = (to.x / 100) * width;
     const y2 = (to.y / 100) * height;
     
-    // Calculate proper connection points at container edges
-    const nodeWidth = 160;
-    const nodeHeight = 40;
+    // Calculate proper connection points at node edges
+    const nodeWidth = isMobile ? 120 : 160;
+    const nodeHeight = isMobile ? 32 : 40;
     
     // Determine connection direction
     const dx = x2 - x1;
     const dy = y2 - y1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
     
-    let fromX, fromY, toX, toY;
+    // Calculate connection points on node borders
+    const fromRadius = nodeWidth / 2;
+    const toRadius = nodeWidth / 2;
     
-    // Connect from appropriate edge of source node
-    if (Math.abs(dx) > Math.abs(dy)) {
-      // Horizontal connection
-      if (dx > 0) {
-        // Connect from right edge to left edge
-        fromX = x1 + nodeWidth / 2;
-        toX = x2 - nodeWidth / 2;
-      } else {
-        // Connect from left edge to right edge
-        fromX = x1 - nodeWidth / 2;
-        toX = x2 + nodeWidth / 2;
-      }
-      fromY = y1;
-      toY = y2;
-    } else {
-      // Vertical connection
-      if (dy > 0) {
-        // Connect from bottom edge to top edge
-        fromY = y1 + nodeHeight / 2;
-        toY = y2 - nodeHeight / 2;
-      } else {
-        // Connect from top edge to bottom edge
-        fromY = y1 - nodeHeight / 2;
-        toY = y2 + nodeHeight / 2;
-      }
-      fromX = x1;
-      toX = x2;
-    }
+    const fromX = x1 + (dx / distance) * fromRadius;
+    const fromY = y1 + (dy / distance) * fromRadius;
+    const toX = x2 - (dx / distance) * toRadius;
+    const toY = y2 - (dy / distance) * toRadius;
     
     // Create smooth curved path with better control points
     const controlOffset = Math.min(Math.abs(dx), Math.abs(dy)) * 0.4;
+    const midX = (fromX + toX) / 2;
+    const midY = (fromY + toY) / 2;
+    
     const controlX1 = fromX + (dx > 0 ? controlOffset : -controlOffset);
-    const controlY1 = fromY + (dy > 0 ? controlOffset : -controlOffset);
+    const controlY1 = fromY;
     const controlX2 = toX - (dx > 0 ? controlOffset : -controlOffset);
-    const controlY2 = toY - (dy > 0 ? controlOffset : -controlOffset);
+    const controlY2 = toY;
     
     return `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${toX} ${toY}`;
   };
@@ -795,47 +816,47 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   return (
     <div className="w-full h-full bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex flex-col">
       {/* Header */}
-      <div className="border-b border-gray-200/60 dark:border-gray-700/60 p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <div className="border-b border-gray-200/60 dark:border-gray-700/60 p-4 lg:p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="flex items-center gap-3 lg:gap-4 min-w-0 flex-1">
+            <div className="w-6 h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
               {currentConfig.icon}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate">
                 {currentConfig.title}
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">
                 {currentConfig.description}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
+            <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all duration-200 hidden sm:flex">
               <Share className="w-4 h-4 mr-2" />
               Share
             </Button>
             <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all duration-200">
-              <SettingsIcon className="w-4 h-4 mr-2" />
-              Settings
+              <SettingsIcon className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Three Panel Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Three Panel Layout - Responsive */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Panel - Sources */}
-        <div className="w-80 border-r border-gray-200/60 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col">
-          <div className="p-6 border-b border-gray-200/60 dark:border-gray-700/60">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sources</h2>
+        <div className="w-full lg:w-80 border-b lg:border-r lg:border-b-0 border-gray-200/60 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col max-h-64 lg:max-h-none">
+          <div className="p-4 lg:p-6 border-b border-gray-200/60 dark:border-gray-700/60">
+            <div className="flex items-center justify-between mb-4 lg:mb-6">
+              <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Sources</h2>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="text-xs shadow-sm hover:shadow-md transition-all duration-200">
                   <Plus className="w-3 h-3 mr-1" />
                   Add
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs shadow-sm hover:shadow-md transition-all duration-200">
+                <Button variant="outline" size="sm" className="text-xs shadow-sm hover:shadow-md transition-all duration-200 hidden sm:flex">
                   <Search className="w-3 h-3 mr-1" />
                   Discover
                 </Button>
@@ -848,19 +869,19 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
             </div>
           </div>
           
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-3">
+          <ScrollArea className="flex-1 p-4 lg:p-6">
+            <div className="space-y-2 lg:space-y-3">
               {currentConfig.sources.map((source, index) => (
                 <motion.div 
                   key={index} 
-                  className="flex items-center gap-4 p-3 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-200 cursor-pointer group"
+                  className="flex items-center gap-3 lg:gap-4 p-2 lg:p-3 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-200 cursor-pointer group"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <input type="checkbox" defaultChecked className="rounded shadow-sm" />
-                  <FileText className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform duration-200" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200">
+                  <input type="checkbox" defaultChecked className="rounded shadow-sm flex-shrink-0" />
+                  <FileText className="w-4 lg:w-5 h-4 lg:h-5 text-red-500 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+                  <span className="text-xs lg:text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200 truncate">
                     {source}
                   </span>
                 </motion.div>
@@ -871,24 +892,24 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
 
         {/* Center Panel - Chat */}
         <div className="flex-1 flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
-          <div className="p-6 border-b border-gray-200/60 dark:border-gray-700/60">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Chat</h2>
+          <div className="p-4 lg:p-6 border-b border-gray-200/60 dark:border-gray-700/60">
+            <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Chat</h2>
           </div>
           
-          <div className="flex-1 flex flex-col items-center justify-center p-8">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 lg:p-8">
             <motion.div 
-              className="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50 rounded-2xl flex items-center justify-center mb-8 shadow-lg"
+              className="w-16 lg:w-20 h-16 lg:h-20 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/50 dark:to-orange-800/50 rounded-2xl flex items-center justify-center mb-6 lg:mb-8 shadow-lg"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", duration: 0.6 }}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">🤖</span>
+              <div className="w-8 lg:w-10 h-8 lg:h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-base lg:text-lg">🤖</span>
               </div>
             </motion.div>
             
             <motion.h3 
-              className="text-3xl font-bold text-gray-900 dark:text-white mb-3"
+              className="text-xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-3 text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -896,7 +917,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               {currentConfig.title}
             </motion.h3>
             <motion.p 
-              className="text-gray-600 dark:text-gray-400 mb-10 text-center font-medium"
+              className="text-gray-600 dark:text-gray-400 mb-6 lg:mb-10 text-center font-medium text-sm lg:text-base"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -905,7 +926,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
             </motion.p>
             
             <motion.div 
-              className="flex gap-4 mb-10"
+              className="flex flex-wrap gap-2 lg:gap-4 mb-6 lg:mb-10 justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -914,11 +935,12 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                 <Button 
                   key={index}
                   variant={action.variant || "outline"} 
+                  size={isMobile ? "sm" : "default"}
                   className="flex items-center gap-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
                   onClick={action.label === "Mind Map" ? handleMindMapClick : undefined}
                 >
                   {action.icon}
-                  {action.label}
+                  <span className="hidden sm:inline">{action.label}</span>
                 </Button>
               ))}
             </motion.div>
@@ -933,18 +955,18 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                 placeholder="Start typing..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                className="pr-14 py-4 rounded-2xl border-2 shadow-lg focus:shadow-xl transition-all duration-200 text-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+                className="pr-14 py-3 lg:py-4 rounded-2xl border-2 shadow-lg focus:shadow-xl transition-all duration-200 text-base lg:text-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
               />
               <Button 
                 size="sm" 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 rounded-xl w-10 h-10 p-0 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 rounded-xl w-8 lg:w-10 h-8 lg:h-10 p-0 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200`}
               >
-                <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
+                <ChevronDown className="w-4 lg:w-5 h-4 lg:h-5 rotate-[-90deg]" />
               </Button>
             </motion.div>
             
             <motion.p 
-              className="text-xs text-gray-500 dark:text-gray-400 mt-6 text-center"
+              className="text-xs text-gray-500 dark:text-gray-400 mt-4 lg:mt-6 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
@@ -955,20 +977,20 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
         </div>
 
         {/* Right Panel - Studio */}
-        <div className="w-80 border-l border-gray-200/60 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col">
-          <div className="p-6 border-b border-gray-200/60 dark:border-gray-700/60">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Studio</h2>
+        <div className="w-full lg:w-80 border-t lg:border-l lg:border-t-0 border-gray-200/60 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col max-h-96 lg:max-h-none">
+          <div className="p-4 lg:p-6 border-b border-gray-200/60 dark:border-gray-700/60">
+            <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Studio</h2>
           </div>
           
-          <ScrollArea className="flex-1 p-6">
+          <ScrollArea className="flex-1 p-4 lg:p-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
               {currentConfig.studioCards.map((card, index) => (
-                <Card key={index} className="mb-6 shadow-lg hover:shadow-xl transition-all duration-200 border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50">
-                  <CardHeader className="pb-4">
+                <Card key={index} className="mb-4 lg:mb-6 shadow-lg hover:shadow-xl transition-all duration-200 border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50">
+                  <CardHeader className="pb-3 lg:pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm font-semibold flex items-center gap-2">
                         <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"></div>
@@ -992,7 +1014,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               transition={{ delay: 0.4 }}
             >
               <Card className="shadow-lg hover:shadow-xl transition-all duration-200 border-0 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-700/50">
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-3 lg:pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
                       <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full"></div>
@@ -1007,22 +1029,22 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                     Add note
                   </Button>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
-                      <BookOpen className="w-3 h-3 mr-2" />
-                      Study guide
+                  <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 text-xs">
+                      <BookOpen className="w-3 h-3 mr-1 lg:mr-2" />
+                      <span className="hidden sm:inline">Study guide</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
-                      <FileText className="w-3 h-3 mr-2" />
-                      Briefing doc
+                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 text-xs">
+                      <FileText className="w-3 h-3 mr-1 lg:mr-2" />
+                      <span className="hidden sm:inline">Briefing doc</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
-                      <FileEdit className="w-3 h-3 mr-2" />
-                      FAQ
+                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 text-xs">
+                      <FileEdit className="w-3 h-3 mr-1 lg:mr-2" />
+                      <span className="hidden sm:inline">FAQ</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
-                      <Map className="w-3 h-3 mr-2" />
-                      Timeline
+                    <Button variant="outline" size="sm" className="justify-start shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 text-xs">
+                      <Map className="w-3 h-3 mr-1 lg:mr-2" />
+                      <span className="hidden sm:inline">Timeline</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -1032,24 +1054,26 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
         </div>
       </div>
 
-      {/* Mind Map Dialog - Fullscreen */}
+      {/* Mind Map Dialog - Mobile Responsive */}
       <Dialog open={showMindMap} onOpenChange={setShowMindMap}>
         <DialogContent className="w-screen h-screen max-w-none max-h-none m-0 rounded-none p-0 overflow-hidden">
-          {/* Header with download button */}
-          <DialogHeader className="p-4 border-b bg-white/95 backdrop-blur-sm flex-shrink-0 z-50 relative">
+          {/* Header with mobile-friendly controls */}
+          <DialogHeader className="p-3 lg:p-4 border-b bg-white/95 backdrop-blur-sm flex-shrink-0 z-50 relative">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-medium">{currentConfig.title}: Interactive Mind Map</DialogTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Based on {currentConfig.sources.length} sources</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleDownload}
-                  className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
-                >
-                  <Download className="w-4 h-4" />
-                  Download SVG
-                </Button>
+              <DialogTitle className="text-base lg:text-lg font-medium pr-4 truncate">{currentConfig.title}: Interactive Mind Map</DialogTitle>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs lg:text-sm text-gray-500 hidden sm:block">Based on {currentConfig.sources.length} sources</span>
+                {!isMobile && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden lg:inline">Download SVG</span>
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" onClick={handleCloseMindMap}>
                   <X className="w-4 h-4" />
                 </Button>
@@ -1058,11 +1082,11 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           </DialogHeader>
           
           <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
-            {/* Mind Map Content with proper centering and zoom */}
+            {/* Mind Map Content with proper mobile scaling */}
             <div 
-              className="mind-map-container w-full h-full relative flex items-center justify-center cursor-grab active:cursor-grabbing"
+              className="mind-map-container w-full h-full relative flex items-center justify-center"
               style={{
-                transform: `scale(${zoomLevel})`,
+                transform: `scale(${isMobile ? Math.min(zoomLevel, 1.2) : zoomLevel})`,
                 transformOrigin: 'center center',
                 transition: 'transform 0.3s ease'
               }}
@@ -1071,14 +1095,14 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               onMouseLeave={handleMouseUp}
             >
               <div className="relative w-[90vw] h-[80vh]">
-                {/* Connection lines */}
+                {/* Connection lines with improved mobile visibility */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
                   {connections.map((connection, index) => (
                     <path
                       key={index}
                       d={generateCurvePath(connection.from, connection.to, 90 * window.innerWidth / 100, 80 * window.innerHeight / 100)}
                       stroke="#3b82f6"
-                      strokeWidth="3"
+                      strokeWidth={isMobile ? "4" : "3"}
                       fill="none"
                       opacity="0.8"
                       strokeDasharray="none"
@@ -1094,11 +1118,11 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                   </defs>
                 </svg>
                 
-                {/* Mind Map Nodes */}
+                {/* Mind Map Nodes with mobile-optimized sizing */}
                 {visibleNodes.map((node) => (
                   <motion.div
                     key={node.id}
-                    className={`absolute cursor-move group select-none ${node.id === 'root' ? 'z-30' : 'z-20'}`}
+                    className={`absolute group select-none ${node.id === 'root' ? 'z-30' : 'z-20'} ${isMobile ? 'cursor-pointer' : 'cursor-move'}`}
                     style={{
                       left: `${node.x}%`,
                       top: `${node.y}%`,
@@ -1108,31 +1132,32 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
                     onMouseDown={(e) => handleMouseDown(e, node.id, node.x, node.y)}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={!isMobile ? { scale: 1.05 } : {}}
                     whileTap={{ scale: 0.95 }}
                   >
                     <div className={`
-                      relative rounded-xl px-6 py-3 shadow-lg border-2 transition-all duration-300 user-select-none
+                      relative rounded-xl shadow-lg border-2 transition-all duration-300 user-select-none text-center
                       ${node.id === 'root' 
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-700 text-lg font-bold min-w-[220px]' 
-                        : 'bg-white text-gray-800 border-gray-300 text-base font-medium hover:shadow-xl hover:border-blue-300 min-w-[180px]'
+                        ? `bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-700 font-bold
+                           ${isMobile ? 'px-4 py-2 text-sm min-w-[150px]' : 'px-6 py-3 text-lg min-w-[220px]'}` 
+                        : `bg-white text-gray-800 border-gray-300 font-medium hover:shadow-xl hover:border-blue-300
+                           ${isMobile ? 'px-3 py-2 text-xs min-w-[120px]' : 'px-6 py-3 text-base min-w-[180px]'}`
                       }
-                      ${node.children.length > 0 ? 'pr-12' : ''}
-                      text-center
+                      ${node.children.length > 0 ? (isMobile ? 'pr-8' : 'pr-12') : ''}
                       ${draggedNode === node.id ? 'shadow-2xl ring-4 ring-blue-300' : ''}
                     `}>
-                      {node.title}
+                      <span className="block leading-tight">{node.title}</span>
                       
-                      {/* Expand/Collapse Icon */}
+                      {/* Expand/Collapse Icon - Mobile optimized */}
                       {node.children.length > 0 && (
                         <div 
                           className={`
-                            absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold cursor-pointer
+                            absolute flex items-center justify-center text-sm font-bold cursor-pointer transition-all duration-300 hover:scale-110 border-2 border-white
                             ${node.expanded 
                               ? 'bg-green-500 text-white shadow-lg' 
                               : 'bg-orange-500 text-white shadow-lg'
                             }
-                            transition-all duration-300 hover:scale-110 border-2 border-white
+                            ${isMobile ? '-top-1 -right-1 w-6 h-6 rounded-full text-xs' : '-top-2 -right-2 w-8 h-8 rounded-full'}
                           `}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1148,41 +1173,41 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
               </div>
             </div>
             
-            {/* Zoom Controls */}
-            <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-40">
+            {/* Mobile-optimized controls */}
+            <div className={`absolute flex gap-2 z-40 ${isMobile ? 'bottom-4 right-4 flex-col' : 'bottom-6 right-6 flex-col gap-3'}`}>
               <Button 
                 size="sm" 
-                className="w-12 h-12 p-0 bg-white/90 hover:bg-white text-gray-700 border border-gray-300 rounded-full shadow-lg backdrop-blur-sm" 
+                className={`bg-white/90 hover:bg-white text-gray-700 border border-gray-300 rounded-full shadow-lg backdrop-blur-sm ${isMobile ? 'w-10 h-10 p-0' : 'w-12 h-12 p-0'}`}
                 onClick={handleZoomIn}
-                disabled={zoomLevel >= 2}
+                disabled={zoomLevel >= (isMobile ? 1.2 : 2)}
               >
-                <ZoomIn className="w-5 h-5" />
+                <ZoomIn className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
               </Button>
               <Button 
                 size="sm" 
-                className="w-12 h-12 p-0 bg-white/90 hover:bg-white text-gray-700 border border-gray-300 rounded-full shadow-lg backdrop-blur-sm" 
+                className={`bg-white/90 hover:bg-white text-gray-700 border border-gray-300 rounded-full shadow-lg backdrop-blur-sm ${isMobile ? 'w-10 h-10 p-0' : 'w-12 h-12 p-0'}`}
                 onClick={handleZoomOut}
                 disabled={zoomLevel <= 0.5}
               >
-                <ZoomOut className="w-5 h-5" />
+                <ZoomOut className={isMobile ? 'w-4 h-4' : 'w-5 h-5'} />
               </Button>
-              <div className="text-sm text-center text-gray-600 bg-white/90 px-2 py-1 rounded-lg shadow-sm backdrop-blur-sm">
+              <div className={`text-center text-gray-600 bg-white/90 rounded-lg shadow-sm backdrop-blur-sm ${isMobile ? 'text-xs px-2 py-1' : 'text-sm px-2 py-1'}`}>
                 {Math.round(zoomLevel * 100)}%
               </div>
             </div>
             
-            {/* Instructions */}
-            <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 text-sm text-gray-700 shadow-lg border border-gray-200 max-w-xs z-40">
+            {/* Instructions - Mobile responsive */}
+            <div className={`absolute bg-white/95 backdrop-blur-sm rounded-xl text-gray-700 shadow-lg border border-gray-200 z-40 ${isMobile ? 'top-4 left-4 right-4 p-3 text-xs' : 'top-6 left-6 p-4 text-sm max-w-xs'}`}>
               <p className="font-semibold mb-2 text-blue-600">📍 Interactive Mind Map</p>
-              <p className="mb-1">• <strong>Drag</strong> nodes to reposition them</p>
-              <p className="mb-1">• Click <span className="bg-orange-100 px-1 rounded">+</span> to expand topics</p>
-              <p className="mb-1">• Click <span className="bg-green-100 px-1 rounded">−</span> to collapse topics</p>
+              <p className="mb-1">• <strong>{isMobile ? 'Tap' : 'Drag'}</strong> nodes to {isMobile ? 'expand' : 'reposition them'}</p>
+              <p className="mb-1">• {isMobile ? 'Tap' : 'Click'} <span className="bg-orange-100 px-1 rounded">+</span> to expand topics</p>
+              <p className="mb-1">• {isMobile ? 'Tap' : 'Click'} <span className="bg-green-100 px-1 rounded">−</span> to collapse topics</p>
               <p>• Use zoom controls to navigate</p>
             </div>
             
             {/* Node count indicator */}
-            <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 text-sm text-gray-600 shadow-sm border border-gray-200 z-40">
-              <span className="font-medium">{visibleNodes.length}</span> nodes visible • Draggable
+            <div className={`absolute bg-white/95 backdrop-blur-sm rounded-lg text-gray-600 shadow-sm border border-gray-200 z-40 ${isMobile ? 'bottom-4 left-4 px-3 py-2 text-xs' : 'bottom-6 left-6 px-4 py-2 text-sm'}`}>
+              <span className="font-medium">{visibleNodes.length}</span> nodes visible • {isMobile ? 'Touch to interact' : 'Draggable'}
             </div>
           </div>
         </DialogContent>
