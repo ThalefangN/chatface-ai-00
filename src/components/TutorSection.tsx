@@ -172,11 +172,15 @@ const TutorSection = () => {
     if (course.isFree) {
       // Navigate to course content page for free courses
       const courseSlug = course.title.toLowerCase().replace(/\s+/g, '-');
-      navigate(`/learning/${courseSlug}`);
+      navigate(`/courses/${courseSlug}`);
     } else {
       // Handle paid course enrollment (could open payment modal, etc.)
       console.log('Enrolling in paid course:', course.title);
     }
+  };
+
+  const handleViewMoreCourses = () => {
+    navigate('/courses');
   };
 
   return (
@@ -328,99 +332,6 @@ const TutorSection = () => {
               ))}
             </div>
 
-            {/* Additional Courses Section */}
-            {showAllCourses && otherCourses.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mt-6"
-              >
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                  More Courses from Other Levels
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                  {otherCourses.map((course, index) => (
-                    <motion.div
-                      key={course.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border border-gray-200 dark:border-gray-700">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <CardTitle className="text-sm sm:text-base line-clamp-2 mb-1">
-                                {course.title}
-                              </CardTitle>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">
-                                by {course.instructor}
-                              </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              {course.isFree ? (
-                                <Badge className="bg-green-100 text-green-800 text-xs">Free</Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-xs">P{course.price}</Badge>
-                              )}
-                              <Badge variant="secondary" className="text-xs">
-                                {course.level}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        
-                        <CardContent className="space-y-3">
-                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                            {course.description}
-                          </p>
-                          
-                          {/* Course Stats */}
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span>{course.rating}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="w-3 h-3" />
-                              <span>{course.students}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <FileText className="w-3 h-3" />
-                              <span>{course.materials}</span>
-                            </div>
-                          </div>
-
-                          {/* Subject Badge */}
-                          <div className="flex items-center justify-between">
-                            <Badge variant="secondary" className="text-xs">
-                              {course.subject}
-                            </Badge>
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="h-7 px-2">
-                                <Download className="w-3 h-3 mr-1" />
-                                Materials
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Action Button */}
-                          <Button 
-                            className="w-full text-xs sm:text-sm h-8" 
-                            variant={course.isFree ? "default" : "outline"}
-                            onClick={() => handleCourseAction(course)}
-                          >
-                            {course.isFree ? 'Start Free Course' : `Enroll for P${course.price}`}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
             {/* View More Courses Section */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -430,20 +341,17 @@ const TutorSection = () => {
             >
               <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-3" />
               <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                {showAllCourses ? 'Showing all available courses' : 'More courses available'}
+                More courses available
               </h3>
               <p className="text-xs text-gray-500 mb-4">
-                {showAllCourses 
-                  ? `Discover courses from all grade levels`
-                  : `We have more courses from other grade levels`
-                }
+                Explore courses from all grade levels and subjects
               </p>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setShowAllCourses(!showAllCourses)}
+                onClick={handleViewMoreCourses}
               >
-                {showAllCourses ? 'Show Less' : 'View More Courses'}
+                View All Courses
               </Button>
             </motion.div>
           </TabsContent>

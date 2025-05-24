@@ -19,6 +19,10 @@ import Notes from "./pages/Notes";
 import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
 import AudioOverview from "./pages/AudioOverview";
+import Courses from "./pages/Courses";
+import EnglishLiterature from "./pages/EnglishLiterature";
+import SetswanaLanguage from "./pages/SetswanaLanguage";
+import SocialStudies from "./pages/SocialStudies";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -46,6 +50,10 @@ const App = () => (
               <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/audio-overview" element={<ProtectedRoute><AudioOverview /></ProtectedRoute>} />
+              <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+              <Route path="/courses/english-literature" element={<ProtectedRoute><EnglishLiterature /></ProtectedRoute>} />
+              <Route path="/courses/setswana-language" element={<ProtectedRoute><SetswanaLanguage /></ProtectedRoute>} />
+              <Route path="/courses/social-studies" element={<ProtectedRoute><SocialStudies /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

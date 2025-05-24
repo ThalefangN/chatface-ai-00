@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Bot, User, BookOpen, Calculator, Lightbulb, History } from 'lucide-react';
+import { Send, Bot, User, BookOpen, Calculator, Lightbulb, History, HelpCircle, Brain } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
@@ -44,6 +44,21 @@ const AiChat = () => {
     scrollToBottom();
   }, [messages]);
 
+  const formatAIResponse = (text: string) => {
+    // Remove asterisks and clean up formatting
+    let cleanText = text.replace(/\*/g, '');
+    
+    // Check if this appears to be a math solution
+    const isMathSolution = /\d+[\+\-\*\/\=]|\bsolution\b|\bsolve\b|\banswer\b/i.test(cleanText);
+    
+    if (isMathSolution) {
+      // Add follow-up questions for math solutions
+      cleanText += "\n\nWould you like me to:\n• Explain any step in more detail?\n• Create a practice quiz on this topic?";
+    }
+    
+    return cleanText;
+  };
+
   const sendMessageToAI = async (messageContent: string) => {
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -57,7 +72,7 @@ const AiChat = () => {
           messages: [
             {
               role: 'system',
-              content: 'You are a helpful AI study assistant focused exclusively on educational content. You can help with academic subjects, homework, study tips, and learning strategies. If someone asks about non-educational topics, politely redirect them back to academic subjects. Keep responses clear, educational, and supportive for students.'
+              content: 'You are a helpful AI study assistant focused exclusively on educational content. When solving math problems, provide clear step-by-step solutions without using asterisks for formatting. Use simple text formatting and line breaks for clarity. Keep responses concise but comprehensive. Always offer to provide additional explanation or create practice questions after solving problems. If someone asks about non-educational topics, politely redirect them back to academic subjects.'
             },
             {
               role: 'user',
@@ -65,7 +80,7 @@ const AiChat = () => {
             }
           ],
           temperature: 0.7,
-          max_tokens: 500,
+          max_tokens: 400,
         }),
       });
 
@@ -74,7 +89,7 @@ const AiChat = () => {
       }
 
       const data = await response.json();
-      return data.choices[0].message.content;
+      return formatAIResponse(data.choices[0].message.content);
     } catch (error) {
       console.error('Error calling OpenAI API:', error);
       return "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. In the meantime, feel free to ask me about any academic subjects you need help with!";
@@ -156,7 +171,7 @@ const AiChat = () => {
     { icon: Calculator, text: "Help me solve this math problem", color: "bg-blue-500" },
     { icon: BookOpen, text: "Explain this concept", color: "bg-green-500" },
     { icon: Lightbulb, text: "Give me study tips", color: "bg-yellow-500" },
-    { icon: History, text: "Review my previous work", color: "bg-purple-500" }
+    { icon: Brain, text: "Create a practice quiz", color: "bg-purple-500" }
   ];
 
   return (
@@ -176,30 +191,43 @@ const AiChat = () => {
           <div className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4 max-w-4xl mx-auto">
+              <div className="space-y-3 max-w-4xl mx-auto">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex gap-3 ${message.isAI ? 'justify-start' : 'justify-end'}`}
                   >
                     {message.isAI && (
-                      <Avatar className="h-8 w-8 mt-1">
-                        <AvatarFallback className="bg-blue-500 text-white">
-                          <Bot className="h-4 w-4" />
+                      <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                        <AvatarFallback className="bg-blue-500 text-white text-xs">
+                          <Bot className="h-3 w-3" />
                         </AvatarFallback>
                       </Avatar>
                     )}
                     
-                    <Card className={`max-w-[85%] sm:max-w-[70%] ${
+                    <Card className={`max-w-[85%] sm:max-w-[75%] ${
                       message.isAI 
                         ? 'bg-gray-50 dark:bg-gray-800' 
                         : 'bg-blue-500 text-white ml-auto'
                     }`}>
-                      <CardContent className="p-3">
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
-                        <p className={`text-xs mt-2 ${
+                      <CardContent className="p-2.5">
+                        <div className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
+                          message.isAI ? 'text-gray-800 dark:text-gray-200' : 'text-white'
+                        }`}>
+                          {message.content.split('\n').map((line, index) => (
+                            <div key={index} className={line.startsWith('•') ? 'ml-2 flex items-start gap-1' : ''}>
+                              {line.startsWith('•') ? (
+                                <>
+                                  <HelpCircle className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
+                                  <span>{line.substring(1).trim()}</span>
+                                </>
+                              ) : (
+                                line
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className={`text-xs mt-1.5 ${
                           message.isAI 
                             ? 'text-gray-500' 
                             : 'text-blue-100'
@@ -213,10 +241,10 @@ const AiChat = () => {
                     </Card>
                     
                     {!message.isAI && (
-                      <Avatar className="h-8 w-8 mt-1">
+                      <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
                         <AvatarImage src={user?.user_metadata?.avatar_url} />
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
+                        <AvatarFallback className="text-xs">
+                          <User className="h-3 w-3" />
                         </AvatarFallback>
                       </Avatar>
                     )}
@@ -225,17 +253,17 @@ const AiChat = () => {
                 
                 {isLoading && (
                   <div className="flex gap-3 justify-start">
-                    <Avatar className="h-8 w-8 mt-1">
-                      <AvatarFallback className="bg-blue-500 text-white">
-                        <Bot className="h-4 w-4" />
+                    <Avatar className="h-7 w-7 mt-1">
+                      <AvatarFallback className="bg-blue-500 text-white text-xs">
+                        <Bot className="h-3 w-3" />
                       </AvatarFallback>
                     </Avatar>
                     <Card className="bg-gray-50 dark:bg-gray-800">
-                      <CardContent className="p-3">
+                      <CardContent className="p-2.5">
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </CardContent>
                     </Card>
@@ -256,14 +284,14 @@ const AiChat = () => {
                         key={index}
                         variant="outline"
                         size="sm"
-                        className="justify-start text-left h-auto p-3"
+                        className="justify-start text-left h-auto p-2.5"
                         onClick={() => handleQuickPrompt(prompt.text)}
                         disabled={isLoading}
                       >
-                        <div className={`w-6 h-6 rounded ${prompt.color} flex items-center justify-center mr-2 flex-shrink-0`}>
-                          <prompt.icon className="h-3 w-3 text-white" />
+                        <div className={`w-5 h-5 rounded ${prompt.color} flex items-center justify-center mr-2 flex-shrink-0`}>
+                          <prompt.icon className="h-2.5 w-2.5 text-white" />
                         </div>
-                        <span className="text-sm truncate">{prompt.text}</span>
+                        <span className="text-xs truncate">{prompt.text}</span>
                       </Button>
                     ))}
                   </div>
@@ -279,7 +307,7 @@ const AiChat = () => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="min-h-[44px] max-h-32 resize-none flex-1"
+                  className="min-h-[40px] max-h-28 resize-none flex-1 text-sm"
                   rows={1}
                   disabled={isLoading}
                 />
@@ -287,9 +315,9 @@ const AiChat = () => {
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || isLoading}
                   size="icon"
-                  className="h-[44px] w-[44px] flex-shrink-0"
+                  className="h-[40px] w-[40px] flex-shrink-0"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-3 w-3" />
                 </Button>
               </div>
             </div>
