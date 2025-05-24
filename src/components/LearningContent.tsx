@@ -41,6 +41,8 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
   const [chatInput, setChatInput] = useState('');
   const [showMindMap, setShowMindMap] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // Extract subject type from the subject string
   const getSubjectType = () => {
@@ -71,42 +73,42 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           id: 'root',
           title: 'Mathematics for Machine Learning',
           x: 50,
-          y: 50,
+          y: 40,
           expanded: true,
           children: [
             {
               id: 'linear-algebra',
               title: 'Linear Algebra',
-              x: 25,
-              y: 35,
+              x: 20,
+              y: 25,
               expanded: false,
               children: [
-                { id: 'vectors', title: 'Vectors & Vector Spaces', x: 10, y: 25, expanded: false, children: [] },
-                { id: 'matrices', title: 'Matrices & Operations', x: 10, y: 45, expanded: false, children: [] },
-                { id: 'eigenvalues', title: 'Eigenvalues & Eigenvectors', x: 10, y: 65, expanded: false, children: [] }
+                { id: 'vectors', title: 'Vectors & Vector Spaces', x: 5, y: 15, expanded: false, children: [] },
+                { id: 'matrices', title: 'Matrices & Operations', x: 5, y: 35, expanded: false, children: [] },
+                { id: 'eigenvalues', title: 'Eigenvalues & Eigenvectors', x: 5, y: 55, expanded: false, children: [] }
               ]
             },
             {
               id: 'calculus',
               title: 'Calculus',
-              x: 75,
-              y: 35,
+              x: 80,
+              y: 25,
               expanded: false,
               children: [
-                { id: 'derivatives', title: 'Derivatives & Gradients', x: 90, y: 25, expanded: false, children: [] },
-                { id: 'optimization', title: 'Optimization', x: 90, y: 45, expanded: false, children: [] },
-                { id: 'chain-rule', title: 'Chain Rule', x: 90, y: 65, expanded: false, children: [] }
+                { id: 'derivatives', title: 'Derivatives & Gradients', x: 95, y: 15, expanded: false, children: [] },
+                { id: 'optimization', title: 'Optimization', x: 95, y: 35, expanded: false, children: [] },
+                { id: 'chain-rule', title: 'Chain Rule', x: 95, y: 55, expanded: false, children: [] }
               ]
             },
             {
               id: 'probability',
               title: 'Probability & Statistics',
               x: 50,
-              y: 75,
+              y: 70,
               expanded: false,
               children: [
-                { id: 'distributions', title: 'Probability Distributions', x: 35, y: 85, expanded: false, children: [] },
-                { id: 'bayes', title: 'Bayes Theorem', x: 65, y: 85, expanded: false, children: [] }
+                { id: 'distributions', title: 'Probability Distributions', x: 30, y: 85, expanded: false, children: [] },
+                { id: 'bayes', title: 'Bayes Theorem', x: 70, y: 85, expanded: false, children: [] }
               ]
             }
           ]
@@ -633,6 +635,53 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
 </svg>`;
   };
 
+  const handleNodeDrag = (nodeId: string, newX: number, newY: number) => {
+    const updateNodes = (nodes: MindMapNode[]): MindMapNode[] => {
+      return nodes.map(node => {
+        if (node.id === nodeId) {
+          return { ...node, x: newX, y: newY };
+        }
+        if (node.children.length > 0) {
+          return { ...node, children: updateNodes(node.children) };
+        }
+        return node;
+      });
+    };
+    setMindMapNodes(updateNodes(mindMapNodes));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, nodeId: string, currentX: number, currentY: number) => {
+    e.stopPropagation();
+    setDraggedNode(nodeId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const containerRect = e.currentTarget.closest('.mind-map-container')?.getBoundingClientRect();
+    if (containerRect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!draggedNode) return;
+    
+    const containerRect = e.currentTarget.getBoundingClientRect();
+    const newX = ((e.clientX - containerRect.left - dragOffset.x) / containerRect.width) * 100;
+    const newY = ((e.clientY - containerRect.top - dragOffset.y) / containerRect.height) * 100;
+    
+    // Constrain to container bounds
+    const constrainedX = Math.max(10, Math.min(90, newX));
+    const constrainedY = Math.max(10, Math.min(90, newY));
+    
+    handleNodeDrag(draggedNode, constrainedX, constrainedY);
+  };
+
+  const handleMouseUp = () => {
+    setDraggedNode(null);
+    setDragOffset({ x: 0, y: 0 });
+  };
+
   const toggleNodeExpansion = (nodeId: string) => {
     const updateNodes = (nodes: MindMapNode[]): MindMapNode[] => {
       return nodes.map(node => {
@@ -694,17 +743,51 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     const x2 = (to.x / 100) * width;
     const y2 = (to.y / 100) * height;
     
-    // Calculate connection points on the edge of containers (80px wide, 40px tall boxes)
-    const fromX = x1 + (x2 > x1 ? 80 : -80); // Connect from right or left edge
-    const fromY = y1;
-    const toX = x2 + (x1 > x2 ? 80 : -80); // Connect to left or right edge  
-    const toY = y2;
+    // Calculate proper connection points at container edges
+    const nodeWidth = 160;
+    const nodeHeight = 40;
     
-    // Create smooth curved path
-    const controlX1 = fromX + (toX - fromX) * 0.5;
-    const controlY1 = fromY;
-    const controlX2 = toX - (toX - fromX) * 0.5;
-    const controlY2 = toY;
+    // Determine connection direction
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    
+    let fromX, fromY, toX, toY;
+    
+    // Connect from appropriate edge of source node
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal connection
+      if (dx > 0) {
+        // Connect from right edge to left edge
+        fromX = x1 + nodeWidth / 2;
+        toX = x2 - nodeWidth / 2;
+      } else {
+        // Connect from left edge to right edge
+        fromX = x1 - nodeWidth / 2;
+        toX = x2 + nodeWidth / 2;
+      }
+      fromY = y1;
+      toY = y2;
+    } else {
+      // Vertical connection
+      if (dy > 0) {
+        // Connect from bottom edge to top edge
+        fromY = y1 + nodeHeight / 2;
+        toY = y2 - nodeHeight / 2;
+      } else {
+        // Connect from top edge to bottom edge
+        fromY = y1 - nodeHeight / 2;
+        toY = y2 + nodeHeight / 2;
+      }
+      fromX = x1;
+      toX = x2;
+    }
+    
+    // Create smooth curved path with better control points
+    const controlOffset = Math.min(Math.abs(dx), Math.abs(dy)) * 0.4;
+    const controlX1 = fromX + (dx > 0 ? controlOffset : -controlOffset);
+    const controlY1 = fromY + (dy > 0 ? controlOffset : -controlOffset);
+    const controlX2 = toX - (dx > 0 ? controlOffset : -controlOffset);
+    const controlY2 = toY - (dy > 0 ? controlOffset : -controlOffset);
     
     return `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${toX} ${toY}`;
   };
@@ -977,31 +1060,36 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
             {/* Mind Map Content with proper centering and zoom */}
             <div 
-              className="w-full h-full relative flex items-center justify-center"
+              className="mind-map-container w-full h-full relative flex items-center justify-center cursor-grab active:cursor-grabbing"
               style={{
                 transform: `scale(${zoomLevel})`,
                 transformOrigin: 'center center',
                 transition: 'transform 0.3s ease'
               }}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
             >
-              <div className="relative w-[80vw] h-[70vh]">
+              <div className="relative w-[90vw] h-[80vh]">
                 {/* Connection lines */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
                   {connections.map((connection, index) => (
                     <path
                       key={index}
-                      d={generateCurvePath(connection.from, connection.to, 80 * window.innerWidth / 100, 70 * window.innerHeight / 100)}
+                      d={generateCurvePath(connection.from, connection.to, 90 * window.innerWidth / 100, 80 * window.innerHeight / 100)}
                       stroke="#3b82f6"
                       strokeWidth="3"
                       fill="none"
-                      opacity="0.7"
+                      opacity="0.8"
+                      strokeDasharray="none"
                       markerEnd="url(#arrowhead)"
+                      className="transition-all duration-300"
                     />
                   ))}
                   <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                      refX="9" refY="3.5" orient="auto">
-                      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" opacity="0.7" />
+                    <marker id="arrowhead" markerWidth="12" markerHeight="8" 
+                      refX="11" refY="4" orient="auto">
+                      <polygon points="0 0, 12 4, 0 8" fill="#3b82f6" opacity="0.8" />
                     </marker>
                   </defs>
                 </svg>
@@ -1010,7 +1098,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                 {visibleNodes.map((node) => (
                   <motion.div
                     key={node.id}
-                    className={`absolute cursor-pointer group ${node.id === 'root' ? 'z-30' : 'z-20'}`}
+                    className={`absolute cursor-move group select-none ${node.id === 'root' ? 'z-30' : 'z-20'}`}
                     style={{
                       left: `${node.x}%`,
                       top: `${node.y}%`,
@@ -1019,31 +1107,38 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
-                    onClick={() => toggleNodeExpansion(node.id)}
+                    onMouseDown={(e) => handleMouseDown(e, node.id, node.x, node.y)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <div className={`
-                      relative rounded-xl px-6 py-3 shadow-lg border-2 transition-all duration-300
+                      relative rounded-xl px-6 py-3 shadow-lg border-2 transition-all duration-300 user-select-none
                       ${node.id === 'root' 
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-700 text-lg font-bold min-w-[200px]' 
-                        : 'bg-white text-gray-800 border-gray-300 text-base font-medium hover:shadow-xl hover:border-blue-300 min-w-[160px]'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-700 text-lg font-bold min-w-[220px]' 
+                        : 'bg-white text-gray-800 border-gray-300 text-base font-medium hover:shadow-xl hover:border-blue-300 min-w-[180px]'
                       }
                       ${node.children.length > 0 ? 'pr-12' : ''}
                       text-center
+                      ${draggedNode === node.id ? 'shadow-2xl ring-4 ring-blue-300' : ''}
                     `}>
                       {node.title}
                       
                       {/* Expand/Collapse Icon */}
                       {node.children.length > 0 && (
-                        <div className={`
-                          absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold
-                          ${node.expanded 
-                            ? 'bg-green-500 text-white shadow-lg' 
-                            : 'bg-orange-500 text-white shadow-lg'
-                          }
-                          transition-all duration-300 hover:scale-110 cursor-pointer border-2 border-white
-                        `}>
+                        <div 
+                          className={`
+                            absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold cursor-pointer
+                            ${node.expanded 
+                              ? 'bg-green-500 text-white shadow-lg' 
+                              : 'bg-orange-500 text-white shadow-lg'
+                            }
+                            transition-all duration-300 hover:scale-110 border-2 border-white
+                          `}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleNodeExpansion(node.id);
+                          }}
+                        >
                           {node.expanded ? '−' : '+'}
                         </div>
                       )}
@@ -1079,6 +1174,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
             {/* Instructions */}
             <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 text-sm text-gray-700 shadow-lg border border-gray-200 max-w-xs z-40">
               <p className="font-semibold mb-2 text-blue-600">📍 Interactive Mind Map</p>
+              <p className="mb-1">• <strong>Drag</strong> nodes to reposition them</p>
               <p className="mb-1">• Click <span className="bg-orange-100 px-1 rounded">+</span> to expand topics</p>
               <p className="mb-1">• Click <span className="bg-green-100 px-1 rounded">−</span> to collapse topics</p>
               <p>• Use zoom controls to navigate</p>
@@ -1086,7 +1182,7 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
             
             {/* Node count indicator */}
             <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 text-sm text-gray-600 shadow-sm border border-gray-200 z-40">
-              <span className="font-medium">{visibleNodes.length}</span> nodes visible
+              <span className="font-medium">{visibleNodes.length}</span> nodes visible • Draggable
             </div>
           </div>
         </DialogContent>
