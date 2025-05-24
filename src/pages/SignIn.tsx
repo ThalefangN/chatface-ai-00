@@ -2,12 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { ArrowLeft, LogIn, Mail, Lock, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import AnimatedContainer from '@/components/AnimatedContainer';
-import { Input } from '@/components/ui/input';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import SubscriptionNotification from '@/components/SubscriptionNotification';
+import { AnimatedForm, Ripple, TechOrbitDisplay } from '@/components/ui/modern-animated-sign-in';
+import { BookOpen, Award, Users, MicIcon, FileText, Brain } from 'lucide-react';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -18,7 +17,6 @@ const SignIn = () => {
   const [showSubscription, setShowSubscription] = useState(false);
   
   useEffect(() => {
-    // Redirect if user is already logged in
     if (user) {
       navigate('/home');
     }
@@ -42,6 +40,95 @@ const SignIn = () => {
     setShowSubscription(false);
     navigate('/home');
   };
+
+  const goToSignUp = () => {
+    navigate('/sign-up');
+  };
+
+  const goToForgotPassword = () => {
+    navigate('/forgot-password');
+  };
+
+  const formFields = {
+    header: 'Welcome Back, Student',
+    subHeader: 'Sign in to continue your learning journey with StudyBuddy',
+    fields: [
+      {
+        label: 'email',
+        required: true,
+        type: 'email' as const,
+        placeholder: 'Enter your email address',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+          setEmail(event.target.value),
+      },
+      {
+        label: 'password',
+        required: true,
+        type: 'password' as const,
+        placeholder: 'Enter your password',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+          setPassword(event.target.value),
+      },
+    ],
+    submitButton: 'Sign In',
+    textVariantButton: 'Forgot password?',
+  };
+
+  const iconsArray = [
+    {
+      component: () => <BookOpen className="h-6 w-6 text-blue-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 20,
+      radius: 100,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <MicIcon className="h-6 w-6 text-green-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 10,
+      radius: 100,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <Award className="h-8 w-8 text-yellow-500" />,
+      className: 'size-[50px] border-none bg-transparent',
+      radius: 210,
+      duration: 20,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <Users className="h-8 w-8 text-purple-500" />,
+      className: 'size-[50px] border-none bg-transparent',
+      radius: 210,
+      duration: 20,
+      delay: 20,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <FileText className="h-6 w-6 text-indigo-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 20,
+      radius: 150,
+      path: false,
+      reverse: true,
+    },
+    {
+      component: () => <Brain className="h-6 w-6 text-pink-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 10,
+      radius: 150,
+      path: false,
+      reverse: true,
+    },
+  ];
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -52,80 +139,32 @@ const SignIn = () => {
         </Link>
       </div>
       
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="text-center mb-8">
-            <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Welcome Back, Student</h1>
-            <p className="text-muted-foreground">Sign in to continue your learning journey</p>
-          </div>
+      <main className="flex-1 flex max-lg:justify-center">
+        {/* Left Side - Animation */}
+        <div className='flex flex-col justify-center w-1/2 max-lg:hidden relative'>
+          <Ripple mainCircleSize={100} />
+          <TechOrbitDisplay iconsArray={iconsArray} text="StudyBuddy" />
+        </div>
+
+        {/* Right Side - Form */}
+        <div className='w-1/2 h-[100dvh] flex flex-col justify-center items-center max-lg:w-full max-lg:px-[10%]'>
+          <AnimatedForm
+            {...formFields}
+            fieldPerRow={1}
+            onSubmit={handleSubmit}
+            goTo={goToForgotPassword}
+            isLoading={isLoading}
+            googleLogin='Sign in with Google'
+          />
           
-          <AnimatedContainer className="bg-card p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-muted-foreground" />
-                    Password
-                  </label>
-                  <Link to="/forgot-password" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" />
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                    Signing in...
-                  </span>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign In
-                  </>
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-6 text-center text-sm">
-              <p className="text-muted-foreground">
-                Don't have an account?{' '}
-                <Link to="/sign-up" className="text-blue-500 hover:underline">
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          </AnimatedContainer>
+          <div className="mt-6 text-center text-sm">
+            <p className="text-muted-foreground">
+              Don't have an account?{' '}
+              <button onClick={goToSignUp} className="text-blue-500 hover:underline">
+                Sign up
+              </button>
+            </p>
+          </div>
         </div>
       </main>
       

@@ -2,12 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { ArrowLeft, UserPlus, User, Mail, Lock, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import AnimatedContainer from '@/components/AnimatedContainer';
-import { Input } from '@/components/ui/input';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import SubscriptionNotification from '@/components/SubscriptionNotification';
+import { AnimatedForm, Ripple, TechOrbitDisplay } from '@/components/ui/modern-animated-sign-in';
+import { BookOpen, Award, Users, MicIcon, FileText, Brain } from 'lucide-react';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -17,11 +16,9 @@ const SignUp = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
   
   useEffect(() => {
-    // Redirect if user is already logged in
     if (user) {
       navigate('/home');
     }
@@ -45,6 +42,107 @@ const SignUp = () => {
     setShowSubscription(false);
     navigate('/home');
   };
+
+  const goToSignIn = () => {
+    navigate('/sign-in');
+  };
+
+  const formFields = {
+    header: 'Join StudyBuddy',
+    subHeader: 'Create your account and start learning with AI today',
+    fields: [
+      {
+        label: 'firstName',
+        required: true,
+        type: 'text' as const,
+        placeholder: 'Enter your first name',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+          setFirstName(event.target.value),
+      },
+      {
+        label: 'lastName',
+        required: true,
+        type: 'text' as const,
+        placeholder: 'Enter your last name',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+          setLastName(event.target.value),
+      },
+      {
+        label: 'email',
+        required: true,
+        type: 'email' as const,
+        placeholder: 'Enter your email address',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+          setEmail(event.target.value),
+      },
+      {
+        label: 'password',
+        required: true,
+        type: 'password' as const,
+        placeholder: 'Create a password (min. 6 characters)',
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+          setPassword(event.target.value),
+      },
+    ],
+    submitButton: 'Create Account',
+    textVariantButton: 'Already have an account? Sign in',
+  };
+
+  const iconsArray = [
+    {
+      component: () => <BookOpen className="h-6 w-6 text-blue-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 20,
+      radius: 100,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <MicIcon className="h-6 w-6 text-green-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 10,
+      radius: 100,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <Award className="h-8 w-8 text-yellow-500" />,
+      className: 'size-[50px] border-none bg-transparent',
+      radius: 210,
+      duration: 20,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <Users className="h-8 w-8 text-purple-500" />,
+      className: 'size-[50px] border-none bg-transparent',
+      radius: 210,
+      duration: 20,
+      delay: 20,
+      path: false,
+      reverse: false,
+    },
+    {
+      component: () => <FileText className="h-6 w-6 text-indigo-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 20,
+      radius: 150,
+      path: false,
+      reverse: true,
+    },
+    {
+      component: () => <Brain className="h-6 w-6 text-pink-500" />,
+      className: 'size-[30px] border-none bg-transparent',
+      duration: 20,
+      delay: 10,
+      radius: 150,
+      path: false,
+      reverse: true,
+    },
+  ];
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -55,128 +153,23 @@ const SignUp = () => {
         </Link>
       </div>
       
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md animate-fade-in">
-          <div className="text-center mb-8">
-            <Logo className="mx-auto mb-6" size="lg" />
-            <h1 className="text-2xl font-bold mb-2">Join StudyBuddy</h1>
-            <p className="text-muted-foreground">Create your account and start learning today</p>
-          </div>
-          
-          <AnimatedContainer className="bg-card p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="first-name" className="text-sm font-medium flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    First Name
-                  </label>
-                  <Input
-                    id="first-name"
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First name"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="last-name" className="text-sm font-medium flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    Last Name
-                  </label>
-                  <Input
-                    id="last-name"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last name"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-muted-foreground" />
-                  Password
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="h-4 w-4 rounded border-border text-blue-500 focus:ring-blue-500/30"
-                  required
-                />
-                <label htmlFor="terms" className="text-sm text-muted-foreground flex items-center gap-1">
-                  <FileText className="h-3 w-3" />
-                  I agree to the{' '}
-                  <a href="#" className="text-blue-500 hover:underline">
-                    terms
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="text-blue-500 hover:underline">
-                    privacy policy
-                  </a>
-                </label>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600"
-                disabled={isLoading || !termsAccepted}
-              >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                    Creating account...
-                  </span>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Create Account
-                  </>
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-6 text-center text-sm">
-              <p className="text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/sign-in" className="text-blue-500 hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </AnimatedContainer>
+      <main className="flex-1 flex max-lg:justify-center">
+        {/* Left Side - Animation */}
+        <div className='flex flex-col justify-center w-1/2 max-lg:hidden relative'>
+          <Ripple mainCircleSize={100} />
+          <TechOrbitDisplay iconsArray={iconsArray} text="StudyBuddy" />
+        </div>
+
+        {/* Right Side - Form */}
+        <div className='w-1/2 h-[100dvh] flex flex-col justify-center items-center max-lg:w-full max-lg:px-[10%]'>
+          <AnimatedForm
+            {...formFields}
+            fieldPerRow={2}
+            onSubmit={handleSubmit}
+            goTo={goToSignIn}
+            isLoading={isLoading}
+            googleLogin='Sign up with Google'
+          />
         </div>
       </main>
       
