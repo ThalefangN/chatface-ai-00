@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
-import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck } from 'lucide-react';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap } from 'lucide-react';
 
 const features = [
   { 
@@ -24,6 +25,69 @@ const features = [
     title: 'Practice & Improve',
     content: 'Practice with interactive exercises and track your progress as you master new concepts.',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop'
+  },
+];
+
+// How StudyBuddy Works Features
+const studyBuddyWorksFeatures = [
+  {
+    title: "Voice Interaction",
+    meta: "Natural AI conversations",
+    description: "Start by speaking naturally with your AI tutor about any subject you need help with",
+    icon: <MicIcon className="w-4 h-4 text-blue-500" />,
+    status: "Live",
+    tags: ["Voice", "AI", "Tutor"],
+    colSpan: 1,
+  },
+  {
+    title: "Get Explanations",
+    meta: "Tailored learning",
+    description: "Receive clear, detailed explanations tailored to your learning level and pace",
+    icon: <MessageSquare className="w-4 h-4 text-emerald-500" />,
+    status: "Active",
+    tags: ["Explanations", "Personalized"],
+    colSpan: 2,
+    hasPersistentHover: true,
+  },
+  {
+    title: "Practice & Improve",
+    meta: "Interactive exercises",
+    description: "Practice with interactive exercises and track your progress as you master new concepts",
+    icon: <Target className="w-4 h-4 text-purple-500" />,
+    status: "Enhanced",
+    tags: ["Practice", "Progress"],
+    colSpan: 3,
+  },
+];
+
+// How StudyBuddy Helps You Learn Features
+const studyBuddyHelpsFeatures = [
+  {
+    title: "Voice Interaction",
+    meta: "AI conversations",
+    description: "Natural conversations with an AI tutor that explains concepts clearly",
+    icon: <MicIcon className="w-4 h-4 text-blue-500" />,
+    status: "Live",
+    tags: ["Voice", "Tutor"],
+    colSpan: 1,
+  },
+  {
+    title: "Subject Expertise", 
+    meta: "All subjects covered",
+    description: "Get help with any subject from math and science to languages and humanities",
+    icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
+    status: "Active",
+    tags: ["Math", "Science", "Languages"],
+    colSpan: 1,
+  },
+  {
+    title: "Personal Learning",
+    meta: "Adaptive sessions",
+    description: "Customized study sessions that adapt to your learning style and pace",
+    icon: <Zap className="w-4 h-4 text-purple-500" />,
+    status: "Enhanced",
+    tags: ["Personalized", "Adaptive"],
+    colSpan: 1,
   },
 ];
 
@@ -317,34 +381,22 @@ const Index = () => {
           className="mt-24"
         />
         
-        <div className="mt-24 text-center">
-          <h2 className="text-3xl font-bold mb-12">How StudyBuddy Helps You Learn</h2>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-card p-6 rounded-xl border border-border">
-              <div className="w-12 h-12 mb-4 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center">
-                <MicIcon className="h-6 w-6 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Voice Interaction</h3>
-              <p className="text-muted-foreground">Natural conversations with an AI tutor that explains concepts clearly</p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-xl border border-border">
-              <div className="w-12 h-12 mb-4 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center">
-                <BookOpen className="h-6 w-6 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Subject Expertise</h3>
-              <p className="text-muted-foreground">Get help with any subject from math and science to languages and humanities</p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-xl border border-border">
-              <div className="w-12 h-12 mb-4 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center">
-                <Award className="h-6 w-6 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Personal Learning</h3>
-              <p className="text-muted-foreground">Customized study sessions that adapt to your learning style and pace</p>
-            </div>
+        {/* How StudyBuddy Works Section */}
+        <div className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">How StudyBuddy Works</h2>
           </div>
+          
+          <BentoGrid items={studyBuddyWorksFeatures} />
+        </div>
+
+        {/* How StudyBuddy Helps You Learn Section */}
+        <div className="mt-24">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">How StudyBuddy Helps You Learn</h2>
+          </div>
+          
+          <BentoGrid items={studyBuddyHelpsFeatures} />
         </div>
 
         {/* Document Intelligence Section */}
