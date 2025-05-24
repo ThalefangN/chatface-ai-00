@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X, ChevronRight } from 'lucide-react';
+import { Plus, Search, FileText, Mic, Volume2, BookOpen, FileEdit, Map, Share, Settings as SettingsIcon, ChevronDown, Maximize, Minimize, X, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ interface MindMapNode {
 const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 Examples" }) => {
   const [chatInput, setChatInput] = useState('');
   const [showMindMap, setShowMindMap] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [mindMapNodes, setMindMapNodes] = useState<MindMapNode[]>([
     {
       id: 'root',
@@ -91,13 +91,60 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     setShowMindMap(true);
   };
 
-  const handleFullscreenToggle = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
   const handleCloseMindMap = () => {
     setShowMindMap(false);
-    setIsFullscreen(false);
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.2, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.2, 0.3));
+  };
+
+  const handleDownload = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 1200;
+    canvas.height = 800;
+    
+    if (ctx) {
+      // Set white background
+      ctx.fillStyle = '#f9fafb';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Simple text rendering for mind map nodes
+      ctx.fillStyle = '#1f2937';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      
+      visibleNodes.forEach(node => {
+        const x = (node.x / 100) * canvas.width;
+        const y = (node.y / 100) * canvas.height;
+        
+        // Draw node background
+        ctx.fillStyle = node.id === 'root' ? '#3b82f6' : '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(x - 60, y - 15, 120, 30, 8);
+        ctx.fill();
+        
+        // Draw node border
+        ctx.strokeStyle = node.id === 'root' ? '#1d4ed8' : '#d1d5db';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Draw text
+        ctx.fillStyle = node.id === 'root' ? '#ffffff' : '#1f2937';
+        ctx.fillText(node.title, x, y + 5);
+      });
+      
+      // Download the image
+      const link = document.createElement('a');
+      link.download = 'mind-map.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
   };
 
   const toggleNodeExpansion = (nodeId: string) => {
@@ -160,10 +207,6 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
     const x2 = to.x;
     const y2 = to.y;
     
-    const midX = (x1 + x2) / 2;
-    const midY = (y1 + y2) / 2;
-    
-    // Create control points for curve
     const controlX1 = x1 + (x2 - x1) * 0.3;
     const controlY1 = y1;
     const controlX2 = x2 - (x2 - x1) * 0.3;
@@ -385,16 +428,16 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
         </div>
       </div>
 
-      {/* Mind Map Dialog */}
+      {/* Mind Map Dialog - Fullscreen */}
       <Dialog open={showMindMap} onOpenChange={setShowMindMap}>
-        <DialogContent className={`${isFullscreen ? 'w-screen h-screen max-w-none max-h-none m-0 rounded-none' : 'max-w-6xl w-full h-[85vh]'} p-0 overflow-hidden`}>
-          <DialogHeader className="p-4 border-b bg-white">
+        <DialogContent className="w-screen h-screen max-w-none max-h-none m-0 rounded-none p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b bg-white flex-shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-lg font-medium">Mathematics for Machine Learning: Interactive Mind Map</DialogTitle>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">Based on 6 sources</span>
-                <Button variant="ghost" size="sm" onClick={handleFullscreenToggle}>
-                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                <Button variant="ghost" size="sm" onClick={handleDownload}>
+                  <Download className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleCloseMindMap}>
                   <X className="w-4 h-4" />
@@ -404,78 +447,90 @@ const LearningContent = ({ subject = "Mathematics for Machine Learning: Week 1 E
           </DialogHeader>
           
           <div className="flex-1 bg-gray-50 relative overflow-hidden">
-            {/* Mind Map Content */}
-            <div className="w-full h-full relative">
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                {/* Curved connection lines */}
-                {connections.map((connection, index) => (
-                  <path
-                    key={index}
-                    d={generateCurvePath(connection.from, connection.to)}
-                    stroke="#3b82f6"
-                    strokeWidth="0.2"
-                    fill="none"
-                    opacity="0.6"
-                  />
+            {/* Mind Map Content with Zoom */}
+            <div 
+              className="w-full h-full relative overflow-auto"
+              style={{
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.2s ease'
+              }}
+            >
+              <div className="min-w-[200vw] min-h-[200vh] relative">
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {/* Curved connection lines */}
+                  {connections.map((connection, index) => (
+                    <path
+                      key={index}
+                      d={generateCurvePath(connection.from, connection.to)}
+                      stroke="#3b82f6"
+                      strokeWidth="0.2"
+                      fill="none"
+                      opacity="0.6"
+                    />
+                  ))}
+                </svg>
+                
+                {/* Mind Map Nodes */}
+                {visibleNodes.map((node) => (
+                  <motion.div
+                    key={node.id}
+                    className={`absolute cursor-pointer group ${node.id === 'root' ? 'z-20' : 'z-10'}`}
+                    style={{
+                      left: `${node.x}%`,
+                      top: `${node.y}%`,
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={() => toggleNodeExpansion(node.id)}
+                  >
+                    <div className={`
+                      relative rounded-lg px-4 py-2 shadow-md border transition-all duration-200
+                      ${node.id === 'root' 
+                        ? 'bg-blue-500 text-white border-blue-600 text-base font-semibold' 
+                        : 'bg-white text-gray-800 border-gray-200 text-sm hover:shadow-lg hover:scale-105'
+                      }
+                      ${node.children.length > 0 ? 'pr-8' : ''}
+                    `}>
+                      {node.title}
+                      
+                      {/* Expand/Collapse Icon */}
+                      {node.children.length > 0 && (
+                        <div className={`
+                          absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs
+                          ${node.expanded ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}
+                          transition-all duration-200 hover:scale-110
+                        `}>
+                          <ChevronRight 
+                            className={`w-3 h-3 transition-transform duration-200 ${node.expanded ? 'rotate-90' : ''}`} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
                 ))}
-              </svg>
-              
-              {/* Mind Map Nodes */}
-              {visibleNodes.map((node) => (
-                <motion.div
-                  key={node.id}
-                  className={`absolute cursor-pointer group ${node.id === 'root' ? 'z-20' : 'z-10'}`}
-                  style={{
-                    left: `${node.x}%`,
-                    top: `${node.y}%`,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  onClick={() => toggleNodeExpansion(node.id)}
-                >
-                  <div className={`
-                    relative rounded-lg px-4 py-2 shadow-md border transition-all duration-200
-                    ${node.id === 'root' 
-                      ? 'bg-blue-500 text-white border-blue-600 text-base font-semibold' 
-                      : 'bg-white text-gray-800 border-gray-200 text-sm hover:shadow-lg hover:scale-105'
-                    }
-                    ${node.children.length > 0 ? 'pr-8' : ''}
-                  `}>
-                    {node.title}
-                    
-                    {/* Expand/Collapse Icon */}
-                    {node.children.length > 0 && (
-                      <div className={`
-                        absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs
-                        ${node.expanded ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}
-                        transition-all duration-200 hover:scale-110
-                      `}>
-                        <ChevronRight 
-                          className={`w-3 h-3 transition-transform duration-200 ${node.expanded ? 'rotate-90' : ''}`} 
-                        />
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+              </div>
             </div>
             
-            {/* Controls */}
+            {/* Zoom Controls */}
             <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-              <Button size="sm" className="w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600 rounded-full">
-                <Plus className="w-4 h-4" />
+              <Button size="sm" className="w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600 rounded-full" onClick={handleZoomIn}>
+                <ZoomIn className="w-4 h-4" />
               </Button>
-              <Button size="sm" className="w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600 rounded-full">
-                <span className="text-lg font-bold">−</span>
+              <Button size="sm" className="w-10 h-10 p-0 bg-blue-500 hover:bg-blue-600 rounded-full" onClick={handleZoomOut}>
+                <ZoomOut className="w-4 h-4" />
               </Button>
+              <div className="text-xs text-center text-gray-600 mt-1">
+                {Math.round(zoomLevel * 100)}%
+              </div>
             </div>
             
             {/* Instructions */}
             <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 text-sm text-gray-600">
               <p className="font-medium mb-1">Interactive Mind Map</p>
-              <p>Click nodes with arrows to expand • Click again to collapse</p>
+              <p>Click nodes with arrows to expand • Use zoom controls to navigate</p>
             </div>
             
             {/* Feedback Buttons */}
