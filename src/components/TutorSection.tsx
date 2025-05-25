@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, FileText, Trophy, Star, Users, DollarSign, Download } from 'lucide-react';
@@ -69,18 +68,81 @@ const TutorSection = () => {
         return;
       }
 
-      // Group courses by grade level (for now, we'll use difficulty_level as a proxy)
+      // Group courses by grade level with both free and paid courses
       const bgcseCourses = courses?.filter(course => 
-        course.difficulty_level === 'advanced' || course.subject === 'Mathematics' || course.subject === 'English' || course.subject === 'Business Studies'
+        course.difficulty_level === 'advanced' || 
+        course.subject === 'Mathematics' || 
+        course.subject === 'English' || 
+        course.subject === 'Business Studies'
       ) || [];
       
       const psleCourses = courses?.filter(course => 
-        course.difficulty_level === 'beginner' || course.subject === 'Setswana'
+        course.difficulty_level === 'beginner' || 
+        course.subject === 'Setswana'
       ) || [];
       
       const jceCourses = courses?.filter(course => 
-        course.difficulty_level === 'intermediate' || course.subject === 'Science' || course.subject === 'History'
+        course.difficulty_level === 'intermediate' || 
+        course.subject === 'Science' || 
+        course.subject === 'History' || 
+        course.subject === 'Social Studies'
       ) || [];
+
+      // Add sample paid courses for demonstration
+      const samplePaidCourses = [
+        {
+          id: 'paid-1',
+          title: 'Advanced Mathematics Mastery',
+          subject: 'Mathematics',
+          teacher_profiles: { first_name: 'Dr. John', last_name: 'Mokone' },
+          price: 299,
+          is_free: false,
+          rating: 4.8,
+          students_count: 156,
+          materials_count: 45,
+          description: 'Comprehensive BGCSE Mathematics preparation with advanced problem-solving techniques',
+          difficulty_level: 'advanced'
+        },
+        {
+          id: 'paid-2',
+          title: 'Business Studies Pro',
+          subject: 'Business Studies',
+          teacher_profiles: { first_name: 'Ms. Sarah', last_name: 'Thabo' },
+          price: 199,
+          is_free: false,
+          rating: 4.7,
+          students_count: 89,
+          materials_count: 32,
+          description: 'Complete Business Studies curriculum with real-world case studies',
+          difficulty_level: 'advanced'
+        },
+        {
+          id: 'paid-3',
+          title: 'Primary Math Excellence',
+          subject: 'Mathematics',
+          teacher_profiles: { first_name: 'Mr. Peter', last_name: 'Kgomo' },
+          price: 149,
+          is_free: false,
+          rating: 4.9,
+          students_count: 234,
+          materials_count: 28,
+          description: 'Structured mathematics program for Standard 7 PSLE success',
+          difficulty_level: 'beginner'
+        },
+        {
+          id: 'paid-4',
+          title: 'Science Mastery JCE',
+          subject: 'Science',
+          teacher_profiles: { first_name: 'Dr. Maria', last_name: 'Sekai' },
+          price: 249,
+          is_free: false,
+          rating: 4.6,
+          students_count: 178,
+          materials_count: 55,
+          description: 'Comprehensive JCE Science preparation with practical experiments',
+          difficulty_level: 'intermediate'
+        }
+      ];
 
       const initialGradeLevels = [
         {
@@ -90,7 +152,10 @@ const TutorSection = () => {
           description: 'Form 4-5 students preparing for national examinations',
           icon: GraduationCap,
           color: 'bg-blue-500',
-          courses: bgcseCourses
+          courses: [
+            ...bgcseCourses, 
+            ...samplePaidCourses.filter(c => c.difficulty_level === 'advanced')
+          ]
         },
         {
           id: 'psle',
@@ -99,7 +164,10 @@ const TutorSection = () => {
           description: 'Standard 7 students preparing for primary school completion',
           icon: BookOpen,
           color: 'bg-green-500',
-          courses: psleCourses
+          courses: [
+            ...psleCourses, 
+            ...samplePaidCourses.filter(c => c.difficulty_level === 'beginner')
+          ]
         },
         {
           id: 'jce',
@@ -108,7 +176,10 @@ const TutorSection = () => {
           description: 'Form 3 students preparing for junior secondary completion',
           icon: Trophy,
           color: 'bg-purple-500',
-          courses: jceCourses
+          courses: [
+            ...jceCourses, 
+            ...samplePaidCourses.filter(c => c.difficulty_level === 'intermediate')
+          ]
         }
       ];
 
@@ -249,6 +320,9 @@ const TutorSection = () => {
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       {grade.courses.filter(c => c.is_free).length} Free Courses
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {grade.courses.filter(c => !c.is_free).length} Premium Courses
                     </Badge>
                   </div>
                 </CardContent>
