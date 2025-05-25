@@ -276,34 +276,36 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
         body: {
           message: `Generate exactly 30 assessment questions for the subject "${subjectInput}" and topic "${topicInput}". 
           
-          Mix multiple-choice (4 options) and true/false questions. 
+          Create a mix of multiple-choice (4 options each) and true/false questions about ${topicInput} in ${subjectInput}.
           
-          Return ONLY a valid JSON array with this exact structure (no markdown formatting, no backticks):
+          Return ONLY a valid JSON array with this exact structure (no markdown formatting, no backticks, no explanation):
           [
             {
               "id": 1,
-              "question": "What is the question text?",
+              "question": "What is 2 + 2?",
               "type": "multiple-choice",
-              "options": ["Option A", "Option B", "Option C", "Option D"],
-              "correctAnswer": "Option A",
-              "explanation": "Explanation of why this is correct"
+              "options": ["3", "4", "5", "6"],
+              "correctAnswer": "4",
+              "explanation": "2 + 2 equals 4 because addition combines quantities."
             },
             {
               "id": 2,
-              "question": "True or false statement?",
+              "question": "The sum of two even numbers is always even.",
               "type": "true-false",
               "correctAnswer": "true",
-              "explanation": "Explanation of the answer"
+              "explanation": "When you add two even numbers, the result is always even."
             }
           ]
           
-          Make sure:
-          - Questions are educational and appropriate
+          Requirements:
+          - Exactly 30 questions total
+          - Mix of multiple-choice and true/false
           - Each multiple-choice has exactly 4 options
           - True/false questions have correctAnswer as "true" or "false"
-          - All questions have clear explanations
-          - Return exactly 30 questions`,
-          systemPrompt: 'You are an expert assessment creator. Return only valid JSON without any markdown formatting or code blocks.'
+          - All questions have clear, educational explanations
+          - Questions should be appropriate difficulty level
+          - Return ONLY the JSON array, no other text`,
+          systemPrompt: 'You are an expert assessment creator. You must return ONLY valid JSON without any markdown formatting, code blocks, or additional text. The response should start with [ and end with ].'
         }
       });
 
@@ -311,25 +313,71 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
 
       let content = data.content.trim();
       
-      // Clean up any markdown formatting
+      // Clean up any markdown formatting that might slip through
       content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       
-      console.log('Raw API response:', content);
+      // Remove any text before the JSON array
+      const jsonStart = content.indexOf('[');
+      const jsonEnd = content.lastIndexOf(']') + 1;
       
-      const generatedQuestions = JSON.parse(content);
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        content = content.substring(jsonStart, jsonEnd);
+      }
       
-      // Ensure we have exactly 30 questions
-      const questions30 = generatedQuestions.slice(0, 30).map((q: any, index: number) => ({
-        ...q,
-        id: index + 1,
-      }));
+      console.log('Cleaned AI response:', content);
       
-      setQuestions(questions30);
-      setIsLoading(false);
+      try {
+        const generatedQuestions = JSON.parse(content);
+        
+        if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
+          throw new Error('Invalid questions format');
+        }
+        
+        // Ensure we have exactly 30 questions and proper formatting
+        const questions30 = generatedQuestions.slice(0, 30).map((q: any, index: number) => ({
+          id: index + 1,
+          question: q.question || `Question ${index + 1}`,
+          type: q.type || (index % 2 === 0 ? 'multiple-choice' : 'true-false'),
+          options: q.type === 'multiple-choice' ? (q.options || ['Option A', 'Option B', 'Option C', 'Option D']) : undefined,
+          correctAnswer: q.correctAnswer || (q.type === 'true-false' ? 'true' : 'Option A'),
+          explanation: q.explanation || `This is the explanation for question ${index + 1}.`
+        }));
+        
+        if (questions30.length < 30) {
+          // Fill remaining questions if needed
+          while (questions30.length < 30) {
+            const index = questions30.length;
+            questions30.push({
+              id: index + 1,
+              question: `Additional ${subjectInput} question about ${topicInput}?`,
+              type: index % 2 === 0 ? 'multiple-choice' : 'true-false',
+              options: index % 2 === 0 ? [
+                `Basic concept of ${topicInput}`,
+                `Advanced theory in ${topicInput}`,
+                `Application of ${topicInput}`,
+                `None of the above`
+              ] : undefined,
+              correctAnswer: index % 2 === 0 ? `Basic concept of ${topicInput}` : 'true',
+              explanation: `This covers important concepts in ${topicInput}.`
+            });
+          }
+        }
+        
+        setQuestions(questions30);
+        toast.success(`Generated ${questions30.length} questions successfully!`);
+        
+      } catch (parseError) {
+        console.error('Error parsing AI response:', parseError);
+        throw new Error('Failed to parse AI response');
+      }
+      
     } catch (error) {
       console.error('Error generating questions:', error);
-      // Fallback to sample questions if API fails
+      toast.error('Failed to generate questions. Creating sample questions instead.');
+      // Generate fallback questions
       generateFallbackQuestions(subjectInput, topicInput);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -369,11 +417,13 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       return;
     }
     
+    // Show success dialog first
     setShowSuccessDialog(true);
   };
 
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
+    // Then show results
     setShowResults(true);
   };
 
@@ -401,15 +451,20 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     const fallbackQuestions: Question[] = Array.from({ length: 30 }, (_, i) => ({
       id: i + 1,
       question: i % 2 === 0 
-        ? `Multiple choice question ${i + 1} about ${topicInput} in ${subjectInput}?`
-        : `True or False: Statement ${i + 1} about ${topicInput} in ${subjectInput}.`,
+        ? `What is an important concept in ${topicInput} within ${subjectInput}?`
+        : `${topicInput} is a fundamental part of ${subjectInput}.`,
       type: i % 2 === 0 ? 'multiple-choice' : 'true-false',
-      options: i % 2 === 0 ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-      correctAnswer: i % 2 === 0 ? 'Option A' : 'true',
-      explanation: `This is the explanation for question ${i + 1} about ${topicInput}.`
+      options: i % 2 === 0 ? [
+        `Basic concept of ${topicInput}`,
+        `Advanced theory in ${topicInput}`,
+        `Application of ${topicInput}`,
+        `None of the above`
+      ] : undefined,
+      correctAnswer: i % 2 === 0 ? `Basic concept of ${topicInput}` : 'true',
+      explanation: `This question tests your understanding of ${topicInput} in ${subjectInput}.`
     }));
     setQuestions(fallbackQuestions);
-    setIsLoading(false);
+    toast.success('Sample questions created for demonstration.');
   };
 
   const handleSubjectSubmit = () => {
