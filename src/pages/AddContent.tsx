@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Save, FileText, File } from 'lucide-react';
+import { ArrowLeft, Upload, Save, FileText, File, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,8 +17,10 @@ const AddContent = () => {
   const navigate = useNavigate();
   const { teacherProfile } = useTeacherAuth();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [course, setCourse] = useState<any>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -50,6 +51,77 @@ const AddContent = () => {
       console.error('Error fetching course:', error);
       toast.error('Failed to load course');
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type for notes (documents)
+    if (formData.content_type === 'notes') {
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'text/markdown'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please upload a valid document file (PDF, DOC, DOCX, TXT, MD)');
+        return;
+      }
+    }
+
+    setUploading(true);
+    try {
+      // Create unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${courseId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('course-documents')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('course-documents')
+        .getPublicUrl(fileName);
+
+      setUploadedFile(file);
+      setUploadedFileUrl(publicUrl);
+      setFormData(prev => ({ ...prev, content_url: publicUrl }));
+      toast.success('Document uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload document');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeUploadedFile = async () => {
+    if (uploadedFileUrl && formData.content_url) {
+      try {
+        // Extract file path from URL for deletion
+        const fileName = uploadedFileUrl.split('/').pop();
+        if (fileName) {
+          await supabase.storage
+            .from('course-documents')
+            .remove([`${courseId}/${fileName}`]);
+        }
+      } catch (error) {
+        console.error('Error removing file:', error);
+      }
+    }
+    
+    setUploadedFile(null);
+    setUploadedFileUrl('');
+    setFormData(prev => ({ ...prev, content_url: '' }));
+    toast.success('Document removed');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,37 +155,6 @@ const AddContent = () => {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type for notes (documents)
-    if (formData.content_type === 'note') {
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'text/markdown'
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        toast.error('Please upload a valid document file (PDF, DOC, DOCX, TXT, MD)');
-        return;
-      }
-    }
-
-    try {
-      setUploadedFile(file);
-      const fileName = `${Date.now()}-${file.name}`;
-      setFormData(prev => ({ ...prev, content_url: fileName }));
-      toast.success('Document selected successfully');
-    } catch (error) {
-      console.error('Error handling file:', error);
-      toast.error('Failed to handle file');
-    }
-  };
-
   if (!course) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -138,7 +179,7 @@ const AddContent = () => {
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle>Add Content to {course.title}</CardTitle>
+              <CardTitle>Add Content to {course?.title}</CardTitle>
               <CardDescription>
                 Create new learning materials for your students
               </CardDescription>
@@ -178,14 +219,14 @@ const AddContent = () => {
                       <SelectValue placeholder="Select content type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="note">Notes</SelectItem>
+                      <SelectItem value="notes">Notes</SelectItem>
                       <SelectItem value="video">Video</SelectItem>
                       <SelectItem value="assignment">Assignment</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {formData.content_type === 'note' && (
+                {formData.content_type === 'notes' && (
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="document_upload">Upload Document</Label>
@@ -199,9 +240,9 @@ const AddContent = () => {
                             Supports PDF, DOC, DOCX, TXT, MD files
                           </p>
                           <label htmlFor="document_upload" className="cursor-pointer">
-                            <Button type="button">
+                            <Button type="button" disabled={uploading}>
                               <FileText className="w-4 h-4 mr-2" />
-                              Choose Document
+                              {uploading ? 'Uploading...' : 'Choose Document'}
                             </Button>
                             <Input
                               id="document_upload"
@@ -209,22 +250,34 @@ const AddContent = () => {
                               onChange={handleFileUpload}
                               accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
                               className="hidden"
+                              disabled={uploading}
                             />
                           </label>
                         </div>
                       </div>
                       {uploadedFile && (
                         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <File className="w-5 h-5 text-green-600" />
-                            <div>
-                              <p className="text-sm font-medium text-green-800">
-                                Document selected: {uploadedFile.name}
-                              </p>
-                              <p className="text-xs text-green-600">
-                                Size: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  Document uploaded: {uploadedFile.name}
+                                </p>
+                                <p className="text-xs text-green-600">
+                                  Size: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
                             </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={removeUploadedFile}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -254,11 +307,15 @@ const AddContent = () => {
                         type="file"
                         onChange={handleFileUpload}
                         accept={formData.content_type === 'video' ? 'video/*' : '*'}
+                        disabled={uploading}
                       />
                     </div>
-                    {formData.content_url && (
+                    {uploading && (
+                      <p className="mt-2 text-sm text-blue-600">Uploading...</p>
+                    )}
+                    {uploadedFile && (
                       <p className="mt-2 text-sm text-green-600">
-                        File selected: {formData.content_url}
+                        File uploaded: {uploadedFile.name}
                       </p>
                     )}
                   </div>
@@ -292,7 +349,7 @@ const AddContent = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading || uploading}>
                     {loading ? 'Adding...' : 'Add Content'}
                     <Save className="ml-2 h-4 w-4" />
                   </Button>
