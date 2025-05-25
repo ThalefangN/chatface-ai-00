@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -276,57 +275,52 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       
       console.log('Generating questions for:', { subjectInput, topicInput });
       
-      // Generate random number between 20-30
       const questionCount = Math.floor(Math.random() * 11) + 20; // 20-30 questions
       const theoryQuestionCount = Math.floor(questionCount * 0.2); // 20% theory questions
       const mcAndTfCount = questionCount - theoryQuestionCount;
       
-      const prompt = `Generate exactly ${questionCount} high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
+      const prompt = `Create ${questionCount} educational assessment questions for "${subjectInput}" focusing on "${topicInput}".
 
-Create a mix of:
-- ${mcAndTfCount} multiple-choice (4 options each) and true/false questions
-- ${theoryQuestionCount} theory questions where students provide written answers
+Requirements:
+- ${mcAndTfCount} multiple-choice and true/false questions
+- ${theoryQuestionCount} theory questions requiring written responses
+- Return ONLY a valid JSON array with no additional text
+- Each question must have: id, question, type, correctAnswer, explanation
+- Multiple-choice questions need an "options" array with 4 choices
+- Theory questions should have detailed sample answers in correctAnswer
 
-IMPORTANT: Return ONLY a valid JSON array. No markdown, no backticks, no explanation text.
-
-Format:
+Example format:
 [
   {
     "id": 1,
-    "question": "What is the value of x in the equation 2x + 3 = 11?",
+    "question": "What is the capital of Botswana?",
     "type": "multiple-choice",
-    "options": ["x = 2", "x = 4", "x = 6", "x = 8"],
-    "correctAnswer": "x = 4",
-    "explanation": "Subtract 3 from both sides to get 2x = 8, then divide by 2."
+    "options": ["Gaborone", "Francistown", "Maun", "Kasane"],
+    "correctAnswer": "Gaborone",
+    "explanation": "Gaborone is the capital and largest city of Botswana."
   },
   {
     "id": 2,
-    "question": "A negative number multiplied by a negative number gives a positive result.",
+    "question": "Setswana is the national language of Botswana.",
     "type": "true-false",
     "correctAnswer": "true",
-    "explanation": "The product of two negative numbers is always positive."
+    "explanation": "Setswana is indeed the national language of Botswana alongside English."
   },
   {
     "id": 3,
-    "question": "Explain the fundamental theorem of algebra and provide an example.",
+    "question": "Explain the importance of traditional greetings in Setswana culture.",
     "type": "theory",
-    "correctAnswer": "The fundamental theorem of algebra states that every non-constant polynomial equation has at least one complex root. For example, x² + 1 = 0 has roots x = ±i.",
-    "explanation": "Theory questions allow for detailed explanations and deeper understanding of concepts."
+    "correctAnswer": "Traditional greetings in Setswana culture are essential for showing respect and maintaining social harmony. They demonstrate cultural values, build relationships, and preserve heritage. Common greetings like 'Dumela' show politeness and acknowledgment of others' presence.",
+    "explanation": "This tests understanding of cultural significance and social norms."
   }
 ]
 
-Requirements:
-- Exactly ${questionCount} questions total
-- ${mcAndTfCount} multiple-choice and true/false questions
-- ${theoryQuestionCount} theory questions for written responses
-- Educational explanations for all questions
-- Appropriate difficulty for ${topicInput}
-- Return ONLY the JSON array`;
+Return ONLY the JSON array starting with [ and ending with ].`;
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: prompt,
-          systemPrompt: 'You are an expert assessment creator. Return ONLY valid JSON without any additional text, markdown formatting, or code blocks. The response must start with [ and end with ]. Make sure theory questions have detailed sample answers in correctAnswer field.'
+          systemPrompt: 'You are an expert assessment creator. Generate educational questions and return ONLY a valid JSON array. No markdown, no explanations, just the JSON array starting with [ and ending with ].'
         }
       });
 
@@ -343,57 +337,78 @@ Requirements:
 
       let content = data.content.trim();
       
-      // Remove any markdown formatting or extra text
-      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      // Clean up the response - remove any markdown formatting
+      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
       
-      // Find the JSON array boundaries more precisely
-      const jsonStart = content.indexOf('[');
-      const jsonEnd = content.lastIndexOf(']') + 1;
+      // Find the JSON array more robustly
+      let jsonStart = content.indexOf('[');
+      let jsonEnd = content.lastIndexOf(']');
       
-      if (jsonStart === -1 || jsonEnd === 0) {
-        console.error('No JSON array found in response:', content);
-        throw new Error('No valid JSON array found in AI response');
+      if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+        console.error('No valid JSON array found in response:', content);
+        throw new Error('Invalid response format - no JSON array found');
       }
       
-      content = content.substring(jsonStart, jsonEnd);
-      console.log('Cleaned content for parsing:', content);
+      // Extract just the JSON array
+      const jsonContent = content.substring(jsonStart, jsonEnd + 1);
+      console.log('Extracted JSON content:', jsonContent);
       
       let generatedQuestions;
       try {
-        generatedQuestions = JSON.parse(content);
+        generatedQuestions = JSON.parse(jsonContent);
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
-        console.log('Content that failed to parse:', content);
-        throw new Error(`JSON parsing failed: ${parseError.message}`);
+        console.error('Content that failed to parse:', jsonContent);
+        
+        // Try to fix common JSON issues
+        let fixedContent = jsonContent
+          .replace(/'/g, '"') // Replace single quotes with double quotes
+          .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes around keys
+          .replace(/:\s*([^",\[\]{}]+)([,}])/g, ':"$1"$2'); // Add quotes around unquoted string values;
+        
+        try {
+          generatedQuestions = JSON.parse(fixedContent);
+          console.log('Successfully parsed with fixes');
+        } catch (secondParseError) {
+          console.error('Second parse attempt failed:', secondParseError);
+          throw new Error(`JSON parsing failed: ${parseError.message}`);
+        }
       }
       
       if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
         throw new Error('AI response is not a valid question array');
       }
       
-      // Ensure we have properly formatted questions with correct types
+      // Validate and clean up questions
       const validQuestions: Question[] = generatedQuestions
         .filter(q => q && q.question && q.type && q.correctAnswer && q.explanation)
-        .slice(0, questionCount) // Limit to requested count
-        .map((q: any, index: number) => ({
-          id: index + 1,
-          question: q.question,
-          type: (q.type === 'true-false' || q.type === 'multiple-choice' || q.type === 'theory') ? q.type : 'multiple-choice',
-          options: q.type === 'multiple-choice' ? q.options : undefined,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation
-        }));
+        .slice(0, questionCount)
+        .map((q: any, index: number) => {
+          const questionType = ['multiple-choice', 'true-false', 'theory'].includes(q.type) 
+            ? q.type 
+            : 'multiple-choice';
+            
+          return {
+            id: index + 1,
+            question: String(q.question).trim(),
+            type: questionType,
+            options: questionType === 'multiple-choice' ? (q.options || []) : undefined,
+            correctAnswer: String(q.correctAnswer).trim(),
+            explanation: String(q.explanation).trim()
+          };
+        });
       
       if (validQuestions.length === 0) {
-        throw new Error('No valid questions generated');
+        throw new Error('No valid questions were generated');
       }
       
+      console.log('Successfully generated questions:', validQuestions.length);
       setQuestions(validQuestions);
       toast.success(`Generated ${validQuestions.length} questions successfully!`);
       
     } catch (error) {
       console.error('Error generating questions:', error);
-      toast.error(`Failed to generate AI questions: ${error.message}`);
+      toast.error(`Failed to generate questions: ${error.message || 'Unknown error'}`);
       setQuestions([]);
     } finally {
       setIsLoading(false);
@@ -436,13 +451,11 @@ Requirements:
       return;
     }
     
-    // Show success dialog first
     setShowSuccessDialog(true);
   };
 
   const handleSuccessDialogClose = () => {
     setShowSuccessDialog(false);
-    // Then show results
     setShowResults(true);
   };
 
@@ -450,7 +463,6 @@ Requirements:
     const correctAnswers = questions.filter(q => {
       const userAnswer = userAnswers[q.id];
       if (q.type === 'theory') {
-        // For theory questions, we'll consider them correct if answered (basic check)
         return userAnswer && userAnswer.trim().length > 10;
       }
       return userAnswer === q.correctAnswer;
@@ -502,7 +514,7 @@ Requirements:
                   id="subject"
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
-                  placeholder="e.g., Mathematics, Science, History"
+                  placeholder="e.g., Mathematics, Science, History, Setswana"
                   className="mt-1"
                 />
               </div>
@@ -512,7 +524,7 @@ Requirements:
                   id="topic"
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
-                  placeholder="e.g., Algebra, Physics, World War II"
+                  placeholder="e.g., Algebra, Physics, World War II, Setswana Language"
                   className="mt-1"
                 />
               </div>
@@ -541,8 +553,9 @@ Requirements:
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <PencilLoadingAnimation />
-          <p className="mt-4">Generating assessment questions for {customSubject} - {customTopic}...</p>
+          <p className="mt-4 text-lg font-medium">Generating assessment questions for {customSubject} - {customTopic}...</p>
           <p className="text-sm text-muted-foreground mt-2">This will include 20-30 questions with theory questions</p>
+          <p className="text-xs text-muted-foreground mt-1">Please wait while we create your personalized assessment</p>
         </div>
       </div>
     );
@@ -649,15 +662,20 @@ Requirements:
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              We couldn't generate questions for {customSubject} - {customTopic}. Please try again with a different topic or check your connection.
+              We couldn't generate questions for {customSubject} - {customTopic}. This might be due to:
             </p>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li>Connection issues</li>
+              <li>Invalid subject/topic combination</li>
+              <li>Temporary AI service issues</li>
+            </ul>
             <div className="flex gap-2">
               <Button 
                 onClick={() => generateQuestions(customSubject, customTopic)}
                 className="flex-1"
               >
                 <Target className="w-4 h-4 mr-2" />
-                Retry
+                Retry Generation
               </Button>
               <Button 
                 variant="outline" 
@@ -665,7 +683,7 @@ Requirements:
                 className="flex-1"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                Change Topic
               </Button>
             </div>
           </CardContent>
