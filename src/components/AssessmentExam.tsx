@@ -276,7 +276,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message: `You are an expert assessment creator. Generate exactly 10 high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
+          message: `You are an expert assessment creator. Generate exactly 5 high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
 
           Create a balanced mix of multiple-choice (4 options each) and true/false questions.
           
@@ -302,7 +302,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
           ]
           
           Requirements:
-          - Exactly 10 questions
+          - Exactly 5 questions
           - Mix of multiple-choice and true/false
           - Educational explanations
           - Appropriate difficulty for ${topicInput}
@@ -344,49 +344,28 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
         console.log('Content that failed to parse:', content);
-        
-        // Try to fix common JSON issues
-        let fixedContent = content;
-        
-        // Add missing closing brackets or quotes if needed
-        if (!fixedContent.endsWith(']')) {
-          // Count open vs closed brackets to estimate how many we need
-          const openBrackets = (fixedContent.match(/\[/g) || []).length;
-          const closeBrackets = (fixedContent.match(/\]/g) || []).length;
-          
-          if (openBrackets > closeBrackets) {
-            fixedContent += ']';
-          }
-        }
-        
-        // Try parsing again
-        try {
-          generatedQuestions = JSON.parse(fixedContent);
-        } catch (secondParseError) {
-          console.error('Second parse attempt failed:', secondParseError);
-          throw new Error('Unable to parse AI response as JSON');
-        }
+        throw new Error('Unable to parse AI response as JSON');
       }
       
       if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
         throw new Error('AI response is not a valid question array');
       }
       
-      // Ensure we have properly formatted questions
-      const validQuestions = generatedQuestions
+      // Ensure we have properly formatted questions with correct types
+      const validQuestions: Question[] = generatedQuestions
         .filter(q => q && q.question && q.type && q.correctAnswer && q.explanation)
-        .slice(0, 10) // Limit to 10 questions
+        .slice(0, 5) // Limit to 5 questions
         .map((q: any, index: number) => ({
           id: index + 1,
           question: q.question,
-          type: q.type === 'true-false' ? 'true-false' : 'multiple-choice',
+          type: (q.type === 'true-false' || q.type === 'multiple-choice') ? q.type : 'multiple-choice',
           options: q.type === 'multiple-choice' ? q.options : undefined,
           correctAnswer: q.correctAnswer,
           explanation: q.explanation
         }));
       
-      if (validQuestions.length < 5) {
-        throw new Error('Not enough valid questions generated');
+      if (validQuestions.length === 0) {
+        throw new Error('No valid questions generated');
       }
       
       setQuestions(validQuestions);
@@ -395,8 +374,6 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     } catch (error) {
       console.error('Error generating questions:', error);
       toast.error('Failed to generate AI questions. Please try again.');
-      
-      // Don't fall back to sample questions - let user retry
       setQuestions([]);
     } finally {
       setIsLoading(false);
