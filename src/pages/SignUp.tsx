@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatedForm } from '@/components/ui/modern-animated-sign-in';
+import { toast } from 'sonner';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -27,12 +28,22 @@ const SignUp = () => {
     try {
       const { error } = await signUp(email, password, firstName, lastName);
       if (!error) {
-        navigate('/dashboard');
+        toast.success('Account created successfully! Please check your email to verify your account.');
+        // Don't navigate immediately, let them verify their email first
       } else {
-        console.error('Sign up error:', error);
+        if (error.includes('User already registered')) {
+          toast.error('An account with this email already exists. Please try a different email or sign in instead.');
+        } else if (error.includes('Password should be at least 6 characters')) {
+          toast.error('Password should be at least 6 characters long.');
+        } else if (error.includes('Invalid email')) {
+          toast.error('Please enter a valid email address.');
+        } else {
+          toast.error(error);
+        }
       }
     } catch (error) {
       console.error('Error during sign up:', error);
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +77,7 @@ const SignUp = () => {
         label: 'email',
         required: true,
         type: 'email' as const,
-        placeholder: 'Enter any email (test@example.com)',
+        placeholder: 'Enter your email (user@example.com)',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
           setEmail(event.target.value),
       },
@@ -74,7 +85,7 @@ const SignUp = () => {
         label: 'password',
         required: true,
         type: 'password' as const,
-        placeholder: 'Enter any password (testing123)',
+        placeholder: 'Enter your password',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
           setPassword(event.target.value),
       },

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatedForm } from '@/components/ui/modern-animated-sign-in';
+import { toast } from 'sonner';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -25,12 +26,20 @@ const SignIn = () => {
     try {
       const { error } = await signIn(email, password);
       if (!error) {
+        toast.success('Sign in successful! Welcome back.');
         navigate('/dashboard');
       } else {
-        console.error('Sign in error:', error);
+        if (error.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password. Please try again.');
+        } else if (error.includes('Email not confirmed')) {
+          toast.error('Please check your email and confirm your account before signing in.');
+        } else {
+          toast.error(error);
+        }
       }
     } catch (error) {
       console.error('Error during sign in:', error);
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +61,7 @@ const SignIn = () => {
         label: 'email',
         required: true,
         type: 'email' as const,
-        placeholder: 'Enter any email (test@example.com)',
+        placeholder: 'Enter your email (user@example.com)',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
           setEmail(event.target.value),
       },
@@ -60,7 +69,7 @@ const SignIn = () => {
         label: 'password',
         required: true,
         type: 'password' as const,
-        placeholder: 'Enter any password (testing123)',
+        placeholder: 'Enter your password',
         onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
           setPassword(event.target.value),
       },
