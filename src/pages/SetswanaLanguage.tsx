@@ -2,6 +2,7 @@
 import React from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
+import CourseHeader from "@/components/CourseHeader";
 import CourseContent from "@/components/CourseContent";
 
 const SetswanaLanguage = () => {
@@ -15,7 +16,7 @@ const SetswanaLanguage = () => {
             <h1 className="text-lg font-semibold">Setswana Language Course</h1>
           </header>
           <div className="p-4">
-            <CourseContent
+            <CourseHeader
               title="Setswana Language"
               instructor="Mme Mpho Kebonang"
               rating={4.5}
@@ -23,6 +24,7 @@ const SetswanaLanguage = () => {
               level="PSLE"
               subject="Setswana"
             />
+            <CourseContent courseId="setswana-language" />
           </div>
         </SidebarInset>
       </div>

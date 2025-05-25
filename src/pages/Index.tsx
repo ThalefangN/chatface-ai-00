@@ -5,7 +5,7 @@ import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
 import { PricingSection } from '@/components/ui/pricing-section';
-import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap, GraduationCap, ChalkboardTeacher } from 'lucide-react';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap, GraduationCap } from 'lucide-react';
 
 const features = [
   { 

@@ -2,6 +2,7 @@
 import React from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
+import CourseHeader from "@/components/CourseHeader";
 import CourseContent from "@/components/CourseContent";
 
 const EnglishLiterature = () => {
@@ -15,7 +16,7 @@ const EnglishLiterature = () => {
             <h1 className="text-lg font-semibold">English Literature Course</h1>
           </header>
           <div className="p-4">
-            <CourseContent
+            <CourseHeader
               title="English Literature"
               instructor="Ms. Bontle Ramotswe"
               rating={4.6}
@@ -23,6 +24,7 @@ const EnglishLiterature = () => {
               level="BGCSE"
               subject="English"
             />
+            <CourseContent courseId="english-literature" />
           </div>
         </SidebarInset>
       </div>
