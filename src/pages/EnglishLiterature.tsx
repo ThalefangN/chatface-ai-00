@@ -16,7 +16,7 @@ const EnglishLiterature = () => {
           </header>
           <div className="p-4">
             <CourseContent
-              courseTitle="English Literature"
+              title="English Literature"
               instructor="Ms. Bontle Ramotswe"
               rating={4.6}
               students={203}

@@ -384,7 +384,7 @@ const Index = () => {
                 {/* Become a Tutor Section */}
                 <div className="border-t pt-6">
                   <div className="flex items-center space-x-2 mb-4">
-                    <ChalkboardTeacher className="h-5 w-5 text-green-600" />
+                    <Users className="h-5 w-5 text-green-600" />
                     <h3 className="text-lg font-semibold text-green-600">Become a Tutor</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">

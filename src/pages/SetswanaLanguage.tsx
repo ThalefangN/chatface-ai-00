@@ -16,7 +16,7 @@ const SetswanaLanguage = () => {
           </header>
           <div className="p-4">
             <CourseContent
-              courseTitle="Setswana Language"
+              title="Setswana Language"
               instructor="Mme Mpho Kebonang"
               rating={4.5}
               students={187}
