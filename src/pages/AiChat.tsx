@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -6,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Bot, User, BookOpen, Calculator, Lightbulb, History, HelpCircle, Brain, FileText, Plus, Search } from 'lucide-react';
+import { Send, Bot, User, BookOpen, Calculator, Lightbulb, Brain, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
@@ -18,12 +19,6 @@ interface Message {
   isAI: boolean;
   timestamp: Date;
   hasFollowUpButtons?: boolean;
-}
-
-interface UploadedDocument {
-  id: string;
-  name: string;
-  selected: boolean;
 }
 
 const AiChat = () => {
@@ -38,11 +33,6 @@ const AiChat = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
-  const [documentSummary, setDocumentSummary] = useState({
-    title: 'No Documents Uploaded',
-    description: 'Upload documents to get AI-generated insights and summaries'
-  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -73,40 +63,6 @@ const AiChat = () => {
       };
     }
   };
-
-  const generateDocumentSummary = async (documents: UploadedDocument[]) => {
-    const selectedDocs = documents.filter(doc => doc.selected);
-    if (selectedDocs.length === 0) {
-      setDocumentSummary({
-        title: 'No Documents Selected',
-        description: 'Select documents to get AI-generated insights and summaries'
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-document-summary', {
-        body: { documentNames: selectedDocs.map(doc => doc.name) }
-      });
-
-      if (error) throw error;
-
-      setDocumentSummary({ 
-        title: data.title, 
-        description: data.description 
-      });
-    } catch (error) {
-      console.error('Error generating document summary:', error);
-      setDocumentSummary({
-        title: 'Study Collection',
-        description: 'Comprehensive learning materials'
-      });
-    }
-  };
-
-  useEffect(() => {
-    generateDocumentSummary(uploadedDocuments);
-  }, [uploadedDocuments]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -211,33 +167,6 @@ const AiChat = () => {
     }
   };
 
-  const addDocument = (fileName: string) => {
-    const newDoc: UploadedDocument = {
-      id: Date.now().toString(),
-      name: fileName,
-      selected: true
-    };
-    setUploadedDocuments(prev => [...prev, newDoc]);
-    toast.success(`Added ${fileName} to your document collection`);
-  };
-
-  const toggleDocumentSelection = (docId: string) => {
-    setUploadedDocuments(prev => 
-      prev.map(doc => 
-        doc.id === docId ? { ...doc, selected: !doc.selected } : doc
-      )
-    );
-  };
-
-  const toggleSelectAll = () => {
-    const allSelected = uploadedDocuments.every(doc => doc.selected);
-    setUploadedDocuments(prev => 
-      prev.map(doc => ({ ...doc, selected: !allSelected }))
-    );
-  };
-
-  const selectedDocsCount = uploadedDocuments.filter(doc => doc.selected).length;
-
   const quickPrompts = [
     { icon: Calculator, text: "Help me solve this math problem", color: "bg-blue-500" },
     { icon: BookOpen, text: "Explain this concept", color: "bg-green-500" },
@@ -259,265 +188,162 @@ const AiChat = () => {
             </Badge>
           </header>
           
-          <div className="flex-1 flex h-[calc(100vh-4rem)]">
-            {/* Left Panel - Sources */}
-            <div className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Sources</h2>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-xs"
-                      onClick={() => {
-                        const fileName = prompt('Enter document name (e.g., "document.pdf"):');
-                        if (fileName) addDocument(fileName);
-                      }}
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      <Search className="w-3 h-3 mr-1" />
-                      Discover
-                    </Button>
-                  </div>
-                </div>
-                
-                {uploadedDocuments.length > 0 && (
-                  <>
-                    <div className="mb-6">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                        {documentSummary.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        {documentSummary.description}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {selectedDocsCount} sources
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 mb-4">
-                      <input 
-                        type="checkbox" 
-                        className="rounded" 
-                        checked={uploadedDocuments.every(doc => doc.selected)}
-                        onChange={toggleSelectAll}
-                      />
-                      <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                        Select all sources
-                      </span>
-                    </div>
-                  </>
-                )}
-                
-                {uploadedDocuments.length === 0 && (
-                  <div className="text-center py-8">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      No documents uploaded yet
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        const fileName = prompt('Enter document name (e.g., "document.pdf"):');
-                        if (fileName) addDocument(fileName);
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add your first document
-                    </Button>
-                  </div>
-                )}
-              </div>
-              
-              {uploadedDocuments.length > 0 && (
-                <ScrollArea className="flex-1 p-6">
-                  <div className="space-y-3">
-                    {uploadedDocuments.map((doc) => (
-                      <div 
-                        key={doc.id}
-                        className="flex items-center gap-4 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                        onClick={() => toggleDocumentSelection(doc.id)}
-                      >
-                        <input 
-                          type="checkbox" 
-                          checked={doc.selected}
-                          onChange={() => toggleDocumentSelection(doc.id)}
-                          className="rounded"
-                        />
-                        <FileText className="w-5 h-5 text-red-500" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
-                          {doc.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </div>
-
-            {/* Right Panel - Chat */}
-            <div className="flex-1 flex flex-col">
-              {/* Messages Area */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-3 max-w-4xl mx-auto">
-                  {messages.map((message) => (
-                    <div key={message.id}>
-                      <div className={`flex gap-3 ${message.isAI ? 'justify-start' : 'justify-end'}`}>
-                        {message.isAI && (
-                          <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                            <AvatarFallback className="bg-blue-500 text-white text-xs">
-                              <Bot className="h-3 w-3" />
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        
-                        <Card className={`max-w-[85%] sm:max-w-[75%] ${
-                          message.isAI 
-                            ? 'bg-gray-50 dark:bg-gray-800' 
-                            : 'bg-blue-500 text-white ml-auto'
-                        }`}>
-                          <CardContent className="p-2.5">
-                            <div className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
-                              message.isAI ? 'text-gray-800 dark:text-gray-200' : 'text-white'
-                            }`}>
-                              {message.content.split('\n').map((line, index) => (
-                                <div key={index} className={line.startsWith('•') ? 'ml-2 flex items-start gap-1' : ''}>
-                                  {line.startsWith('•') ? (
-                                    <>
-                                      <HelpCircle className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
-                                      <span>{line.substring(1).trim()}</span>
-                                    </>
-                                  ) : (
-                                    line
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                            <p className={`text-xs mt-1.5 ${
-                              message.isAI 
-                                ? 'text-gray-500' 
-                                : 'text-blue-100'
-                            }`}>
-                              {message.timestamp.toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </p>
-                          </CardContent>
-                        </Card>
-                        
-                        {!message.isAI && (
-                          <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                            <AvatarImage src={user?.user_metadata?.avatar_url} />
-                            <AvatarFallback className="text-xs">
-                              <User className="h-3 w-3" />
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-
-                      {/* Follow-up buttons for AI messages */}
-                      {message.isAI && message.hasFollowUpButtons && (
-                        <div className="flex gap-2 mt-2 ml-10">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleFollowUpClick("Explain any step in more detail")}
-                            disabled={isLoading}
-                            className="text-xs"
-                          >
-                            <HelpCircle className="w-3 h-3 mr-1" />
-                            Explain step in detail
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleFollowUpClick("Create a practice quiz on this topic")}
-                            disabled={isLoading}
-                            className="text-xs"
-                          >
-                            <Brain className="w-3 h-3 mr-1" />
-                            Create practice quiz
-                          </Button>
-                        </div>
+          <div className="flex-1 flex flex-col h-[calc(100vh-4rem)]">
+            {/* Messages Area */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3 max-w-4xl mx-auto">
+                {messages.map((message) => (
+                  <div key={message.id}>
+                    <div className={`flex gap-3 ${message.isAI ? 'justify-start' : 'justify-end'}`}>
+                      {message.isAI && (
+                        <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                          <AvatarFallback className="bg-blue-500 text-white text-xs">
+                            <Bot className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
                       )}
-                    </div>
-                  ))}
-                  
-                  {isLoading && (
-                    <div className="flex gap-3 justify-start">
-                      <Avatar className="h-7 w-7 mt-1">
-                        <AvatarFallback className="bg-blue-500 text-white text-xs">
-                          <Bot className="h-3 w-3" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <Card className="bg-gray-50 dark:bg-gray-800">
+                      
+                      <Card className={`max-w-[85%] sm:max-w-[75%] ${
+                        message.isAI 
+                          ? 'bg-gray-50 dark:bg-gray-800' 
+                          : 'bg-blue-500 text-white ml-auto'
+                      }`}>
                         <CardContent className="p-2.5">
-                          <div className="flex space-x-1">
-                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
+                            message.isAI ? 'text-gray-800 dark:text-gray-200' : 'text-white'
+                          }`}>
+                            {message.content.split('\n').map((line, index) => (
+                              <div key={index} className={line.startsWith('•') ? 'ml-2 flex items-start gap-1' : ''}>
+                                {line.startsWith('•') ? (
+                                  <>
+                                    <HelpCircle className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
+                                    <span>{line.substring(1).trim()}</span>
+                                  </>
+                                ) : (
+                                  line
+                                )}
+                              </div>
+                            ))}
                           </div>
+                          <p className={`text-xs mt-1.5 ${
+                            message.isAI 
+                              ? 'text-gray-500' 
+                              : 'text-blue-100'
+                          }`}>
+                            {message.timestamp.toLocaleTimeString([], { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </p>
                         </CardContent>
                       </Card>
+                      
+                      {!message.isAI && (
+                        <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                          <AvatarImage src={user?.user_metadata?.avatar_url} />
+                          <AvatarFallback className="text-xs">
+                            <User className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
 
-              {/* Quick Prompts - Only show when no messages or few messages */}
-              {messages.length <= 1 && (
-                <div className="p-4 border-t bg-gray-50 dark:bg-gray-800">
-                  <div className="max-w-4xl mx-auto">
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Quick prompts to get started:</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {quickPrompts.map((prompt, index) => (
+                    {/* Follow-up buttons for AI messages */}
+                    {message.isAI && message.hasFollowUpButtons && (
+                      <div className="flex gap-2 mt-2 ml-10">
                         <Button
-                          key={index}
                           variant="outline"
                           size="sm"
-                          className="justify-start text-left h-auto p-2.5"
-                          onClick={() => handleQuickPrompt(prompt.text)}
+                          onClick={() => handleFollowUpClick("Explain any step in more detail")}
                           disabled={isLoading}
+                          className="text-xs"
                         >
-                          <div className={`w-5 h-5 rounded ${prompt.color} flex items-center justify-center mr-2 flex-shrink-0`}>
-                            <prompt.icon className="h-2.5 w-2.5 text-white" />
-                          </div>
-                          <span className="text-xs truncate">{prompt.text}</span>
+                          <HelpCircle className="w-3 h-3 mr-1" />
+                          Explain step in detail
                         </Button>
-                      ))}
-                    </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleFollowUpClick("Create a practice quiz on this topic")}
+                          disabled={isLoading}
+                          className="text-xs"
+                        >
+                          <Brain className="w-3 h-3 mr-1" />
+                          Create practice quiz
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {isLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <Avatar className="h-7 w-7 mt-1">
+                      <AvatarFallback className="bg-blue-500 text-white text-xs">
+                        <Bot className="h-3 w-3" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <Card className="bg-gray-50 dark:bg-gray-800">
+                      <CardContent className="p-2.5">
+                        <div className="flex space-x-1">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            {/* Quick Prompts - Only show when no messages or few messages */}
+            {messages.length <= 1 && (
+              <div className="p-4 border-t bg-gray-50 dark:bg-gray-800">
+                <div className="max-w-4xl mx-auto">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">Quick prompts to get started:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {quickPrompts.map((prompt, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        className="justify-start text-left h-auto p-2.5"
+                        onClick={() => handleQuickPrompt(prompt.text)}
+                        disabled={isLoading}
+                      >
+                        <div className={`w-5 h-5 rounded ${prompt.color} flex items-center justify-center mr-2 flex-shrink-0`}>
+                          <prompt.icon className="h-2.5 w-2.5 text-white" />
+                        </div>
+                        <span className="text-xs truncate">{prompt.text}</span>
+                      </Button>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Input Area */}
-              <div className="p-4 border-t bg-white dark:bg-gray-900">
-                <div className="max-w-4xl mx-auto flex gap-2">
-                  <Textarea
-                    placeholder="Ask me anything about your studies..."
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="min-h-[40px] max-h-28 resize-none flex-1 text-sm"
-                    rows={1}
-                    disabled={isLoading}
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isLoading}
-                    size="icon"
-                    className="h-[40px] w-[40px] flex-shrink-0"
-                  >
-                    <Send className="h-3 w-3" />
-                  </Button>
-                </div>
+            {/* Input Area */}
+            <div className="p-4 border-t bg-white dark:bg-gray-900">
+              <div className="max-w-4xl mx-auto flex gap-2">
+                <Textarea
+                  placeholder="Ask me anything about your studies..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="min-h-[40px] max-h-28 resize-none flex-1 text-sm"
+                  rows={1}
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isLoading}
+                  size="icon"
+                  className="h-[40px] w-[40px] flex-shrink-0"
+                >
+                  <Send className="h-3 w-3" />
+                </Button>
               </div>
             </div>
           </div>
