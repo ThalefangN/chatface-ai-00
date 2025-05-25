@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, FileText, Trophy, Star, Users, DollarSign, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,19 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTeacherAuth } from '@/contexts/TeacherAuthContext';
 
 interface Course {
   id: string;
   title: string;
   subject: string;
-  instructor: string;
+  teacher_profiles?: {
+    first_name: string;
+    last_name: string;
+  };
   price: number;
-  isFree: boolean;
+  is_free: boolean;
   rating: number;
-  students: number;
-  materials: number;
+  students_count: number;
+  materials_count: number;
   description: string;
-  level: string;
+  difficulty_level: string;
 }
 
 interface GradeLevel {
@@ -33,148 +40,118 @@ interface GradeLevel {
 
 const TutorSection = () => {
   const [selectedGrade, setSelectedGrade] = useState<string>('bgcse');
-  const [showAllCourses, setShowAllCourses] = useState<boolean>(false);
+  const [gradeLevels, setGradeLevels] = useState<GradeLevel[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { teacherProfile } = useTeacherAuth();
 
-  const gradeLevels: GradeLevel[] = [
-    {
-      id: 'bgcse',
-      name: 'BGCSE',
-      fullName: 'Botswana General Certificate of Secondary Education',
-      description: 'Form 4-5 students preparing for national examinations',
-      icon: GraduationCap,
-      color: 'bg-blue-500',
-      courses: [
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const { data: courses, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          teacher_profiles (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching courses:', error);
+        return;
+      }
+
+      // Group courses by grade level (for now, we'll use difficulty_level as a proxy)
+      const bgcseCourses = courses?.filter(course => 
+        course.difficulty_level === 'advanced' || course.subject === 'Mathematics' || course.subject === 'English' || course.subject === 'Business Studies'
+      ) || [];
+      
+      const psleCourses = courses?.filter(course => 
+        course.difficulty_level === 'beginner' || course.subject === 'Setswana'
+      ) || [];
+      
+      const jceCourses = courses?.filter(course => 
+        course.difficulty_level === 'intermediate' || course.subject === 'Science' || course.subject === 'History'
+      ) || [];
+
+      const initialGradeLevels = [
         {
-          id: '1',
-          title: 'Advanced Mathematics',
-          subject: 'Mathematics',
-          instructor: 'Mr. Kgosi Motswana',
-          price: 299,
-          isFree: false,
-          rating: 4.8,
-          students: 156,
-          materials: 45,
-          description: 'Comprehensive BGCSE Mathematics preparation covering all topics',
-          level: 'BGCSE'
+          id: 'bgcse',
+          name: 'BGCSE',
+          fullName: 'Botswana General Certificate of Secondary Education',
+          description: 'Form 4-5 students preparing for national examinations',
+          icon: GraduationCap,
+          color: 'bg-blue-500',
+          courses: bgcseCourses
         },
         {
-          id: '2',
-          title: 'English Literature',
-          subject: 'English',
-          instructor: 'Ms. Bontle Ramotswe',
-          price: 0,
-          isFree: true,
-          rating: 4.6,
-          students: 203,
-          materials: 32,
-          description: 'Free BGCSE English Literature course with past papers',
-          level: 'BGCSE'
+          id: 'psle',
+          name: 'PSLE',
+          fullName: 'Primary School Leaving Examination',
+          description: 'Standard 7 students preparing for primary school completion',
+          icon: BookOpen,
+          color: 'bg-green-500',
+          courses: psleCourses
         },
         {
-          id: '3',
-          title: 'Business Studies',
-          subject: 'Business',
-          instructor: 'Mr. Thabo Seretse',
-          price: 199,
-          isFree: false,
-          rating: 4.7,
-          students: 89,
-          materials: 28,
-          description: 'Complete Business Studies curriculum for BGCSE students',
-          level: 'BGCSE'
+          id: 'jce',
+          name: 'JCE',
+          fullName: 'Junior Certificate Examination',
+          description: 'Form 3 students preparing for junior secondary completion',
+          icon: Trophy,
+          color: 'bg-purple-500',
+          courses: jceCourses
         }
-      ]
-    },
-    {
-      id: 'psle',
-      name: 'PSLE',
-      fullName: 'Primary School Leaving Examination',
-      description: 'Standard 7 students preparing for primary school completion',
-      icon: BookOpen,
-      color: 'bg-green-500',
-      courses: [
-        {
-          id: '4',
-          title: 'Primary Mathematics',
-          subject: 'Mathematics',
-          instructor: 'Mrs. Neo Molefe',
-          price: 149,
-          isFree: false,
-          rating: 4.9,
-          students: 234,
-          materials: 38,
-          description: 'Fun and engaging mathematics for Standard 7 students',
-          level: 'PSLE'
-        },
-        {
-          id: '5',
-          title: 'Setswana Language',
-          subject: 'Setswana',
-          instructor: 'Mme Mpho Kebonang',
-          price: 0,
-          isFree: true,
-          rating: 4.5,
-          students: 187,
-          materials: 25,
-          description: 'Free Setswana language course for PSLE preparation',
-          level: 'PSLE'
-        }
-      ]
-    },
-    {
-      id: 'jce',
-      name: 'JCE',
-      fullName: 'Junior Certificate Examination',
-      description: 'Form 3 students preparing for junior secondary completion',
-      icon: Trophy,
-      color: 'bg-purple-500',
-      courses: [
-        {
-          id: '6',
-          title: 'General Science',
-          subject: 'Science',
-          instructor: 'Dr. Keabetswe Phiri',
-          price: 249,
-          isFree: false,
-          rating: 4.7,
-          students: 145,
-          materials: 52,
-          description: 'Comprehensive science course covering all JCE topics',
-          level: 'JCE'
-        },
-        {
-          id: '7',
-          title: 'Social Studies',
-          subject: 'Social Studies',
-          instructor: 'Mr. Gaolathe Mmolawa',
-          price: 0,
-          isFree: true,
-          rating: 4.4,
-          students: 198,
-          materials: 30,
-          description: 'Free Social Studies course with interactive content',
-          level: 'JCE'
-        }
-      ]
+      ];
+
+      setGradeLevels(initialGradeLevels);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const currentGrade = gradeLevels.find(grade => grade.id === selectedGrade);
-  
-  // Get courses from other grade levels to show when "View More Courses" is clicked
-  const otherCourses = gradeLevels
-    .filter(grade => grade.id !== selectedGrade)
-    .flatMap(grade => grade.courses)
-    .slice(0, 6); // Limit to 6 additional courses
 
-  const handleCourseAction = (course: Course) => {
-    if (course.isFree) {
-      // Navigate to course content page for free courses
-      const courseSlug = course.title.toLowerCase().replace(/\s+/g, '-');
-      navigate(`/courses/${courseSlug}`);
+  const handleCourseAction = async (course: Course) => {
+    if (teacherProfile) {
+      // Teacher - navigate to manage course
+      navigate(`/teacher/manage-course/${course.id}`);
+      return;
+    }
+
+    if (course.is_free) {
+      // Student - enroll in free course and navigate to content
+      try {
+        const { error } = await supabase
+          .from('course_enrollments')
+          .upsert({
+            course_id: course.id,
+            user_id: user?.id,
+            is_active: true
+          });
+
+        if (error) {
+          console.error('Error enrolling in course:', error);
+          return;
+        }
+
+        const courseSlug = course.title.toLowerCase().replace(/\s+/g, '-');
+        navigate(`/courses/${courseSlug}`);
+      } catch (error) {
+        console.error('Error enrolling in course:', error);
+      }
     } else {
-      // Handle paid course enrollment (could open payment modal, etc.)
+      // Handle paid course enrollment
       console.log('Enrolling in paid course:', course.title);
     }
   };
@@ -182,6 +159,28 @@ const TutorSection = () => {
   const handleViewMoreCourses = () => {
     navigate('/courses');
   };
+
+  const getInstructorName = (course: Course) => {
+    if (course.teacher_profiles) {
+      return `${course.teacher_profiles.first_name} ${course.teacher_profiles.last_name}`;
+    }
+    return 'StudyBuddy Instructor';
+  };
+
+  const getActionButtonText = (course: Course) => {
+    if (teacherProfile) {
+      return 'Manage Course';
+    }
+    return course.is_free ? 'Start Free Course' : `Enroll for P${course.price}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-6">
@@ -249,7 +248,7 @@ const TutorSection = () => {
                       {grade.courses.length} Courses Available
                     </Badge>
                     <Badge variant="outline" className="text-xs">
-                      {grade.courses.filter(c => c.isFree).length} Free Courses
+                      {grade.courses.filter(c => c.is_free).length} Free Courses
                     </Badge>
                   </div>
                 </CardContent>
@@ -273,10 +272,10 @@ const TutorSection = () => {
                             {course.title}
                           </CardTitle>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            by {course.instructor}
+                            by {getInstructorName(course)}
                           </p>
                         </div>
-                        {course.isFree ? (
+                        {course.is_free ? (
                           <Badge className="bg-green-100 text-green-800 text-xs">Free</Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">P{course.price}</Badge>
@@ -297,11 +296,11 @@ const TutorSection = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="w-3 h-3" />
-                          <span>{course.students}</span>
+                          <span>{course.students_count}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <FileText className="w-3 h-3" />
-                          <span>{course.materials}</span>
+                          <span>{course.materials_count}</span>
                         </div>
                       </div>
 
@@ -321,10 +320,10 @@ const TutorSection = () => {
                       {/* Action Button */}
                       <Button 
                         className="w-full text-xs sm:text-sm h-8" 
-                        variant={course.isFree ? "default" : "outline"}
+                        variant={course.is_free && !teacherProfile ? "default" : "outline"}
                         onClick={() => handleCourseAction(course)}
                       >
-                        {course.isFree ? 'Start Free Course' : `Enroll for P${course.price}`}
+                        {getActionButtonText(course)}
                       </Button>
                     </CardContent>
                   </Card>

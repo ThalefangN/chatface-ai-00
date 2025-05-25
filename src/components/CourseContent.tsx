@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,8 @@ import {
   CheckCircle,
   Circle
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CourseContentProps {
   courseTitle: string;
@@ -27,6 +28,28 @@ interface CourseContentProps {
   students: number;
   level: string;
   subject: string;
+  courseId?: string;
+}
+
+interface CourseContentItem {
+  id: string;
+  title: string;
+  description: string;
+  content_type: 'note' | 'video' | 'assignment';
+  content_url?: string;
+  content_text?: string;
+  duration_minutes?: number;
+  is_downloadable: boolean;
+  created_at: string;
+}
+
+interface Grade {
+  id: string;
+  assignment_title: string;
+  grade: number;
+  max_grade: number;
+  feedback?: string;
+  graded_at: string;
 }
 
 const CourseContent = ({ 
@@ -35,10 +58,70 @@ const CourseContent = ({
   rating, 
   students, 
   level, 
-  subject 
+  subject,
+  courseId 
 }: CourseContentProps) => {
   const [activeTab, setActiveTab] = useState('notes');
   const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
+  const [courseContent, setCourseContent] = useState<CourseContentItem[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (courseId) {
+      fetchCourseContent();
+      fetchGrades();
+    } else {
+      // Use default mock data if no courseId
+      setLoading(false);
+    }
+  }, [courseId]);
+
+  const fetchCourseContent = async () => {
+    if (!courseId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('course_content')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('order_index');
+
+      if (error) {
+        console.error('Error fetching course content:', error);
+        return;
+      }
+
+      setCourseContent(data || []);
+    } catch (error) {
+      console.error('Error fetching course content:', error);
+    }
+  };
+
+  const fetchGrades = async () => {
+    if (!courseId || !user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('course_grades')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('student_id', user.id)
+        .order('graded_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching grades:', error);
+        return;
+      }
+
+      setGrades(data || []);
+    } catch (error) {
+      console.error('Error fetching grades:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleItemCompletion = (itemId: string) => {
     const newCompleted = new Set(completedItems);
@@ -50,108 +133,88 @@ const CourseContent = ({
     setCompletedItems(newCompleted);
   };
 
-  const courseNotes = [
+  // Default mock data for when no courseId is provided
+  const defaultNotes = [
     {
       id: 'note1',
       title: 'Introduction to Course Content',
-      duration: '15 min read',
-      description: 'Overview of the course structure and learning objectives'
+      description: 'Overview of the course structure and learning objectives',
+      content_type: 'note' as const,
+      duration_minutes: 15,
+      is_downloadable: true,
+      created_at: new Date().toISOString()
     },
     {
       id: 'note2',
       title: 'Chapter 1: Basic Concepts',
-      duration: '25 min read',
-      description: 'Fundamental concepts and definitions'
-    },
-    {
-      id: 'note3',
-      title: 'Chapter 2: Practical Applications',
-      duration: '30 min read',
-      description: 'Real-world examples and case studies'
-    },
-    {
-      id: 'note4',
-      title: 'Chapter 3: Advanced Topics',
-      duration: '35 min read',
-      description: 'Deep dive into complex concepts'
+      description: 'Fundamental concepts and definitions',
+      content_type: 'note' as const,
+      duration_minutes: 25,
+      is_downloadable: true,
+      created_at: new Date().toISOString()
     }
   ];
 
-  const courseVideos = [
+  const defaultVideos = [
     {
       id: 'video1',
       title: 'Course Introduction',
-      duration: '12:30',
-      description: 'Welcome and course overview'
-    },
-    {
-      id: 'video2',
-      title: 'Lesson 1: Getting Started',
-      duration: '18:45',
-      description: 'Basic concepts and fundamentals'
-    },
-    {
-      id: 'video3',
-      title: 'Lesson 2: Practical Examples',
-      duration: '22:15',
-      description: 'Working through real examples'
-    },
-    {
-      id: 'video4',
-      title: 'Lesson 3: Advanced Techniques',
-      duration: '28:10',
-      description: 'Complex problem-solving methods'
+      description: 'Welcome and course overview',
+      content_type: 'video' as const,
+      duration_minutes: 12,
+      is_downloadable: false,
+      created_at: new Date().toISOString()
     }
   ];
 
-  const assignments = [
+  const defaultAssignments = [
     {
       id: 'assign1',
       title: 'Assignment 1: Basic Exercises',
-      dueDate: 'Due in 5 days',
-      status: 'pending',
-      grade: null
-    },
-    {
-      id: 'assign2',
-      title: 'Assignment 2: Case Study Analysis',
-      dueDate: 'Due in 12 days',
-      status: 'pending',
-      grade: null
-    },
-    {
-      id: 'assign3',
-      title: 'Final Project',
-      dueDate: 'Due in 20 days',
-      status: 'pending',
-      grade: null
+      description: 'Complete the exercises in chapter 1',
+      content_type: 'assignment' as const,
+      is_downloadable: false,
+      created_at: new Date().toISOString()
     }
   ];
 
-  const grades = [
+  const defaultGrades = [
     {
-      item: 'Quiz 1',
-      score: 85,
-      maxScore: 100,
-      date: '2024-01-15'
-    },
-    {
-      item: 'Assignment 1',
-      score: 92,
-      maxScore: 100,
-      date: '2024-01-20'
-    },
-    {
-      item: 'Midterm Exam',
-      score: 78,
-      maxScore: 100,
-      date: '2024-01-25'
+      id: 'grade1',
+      assignment_title: 'Quiz 1',
+      grade: 85,
+      max_grade: 100,
+      graded_at: '2024-01-15'
     }
   ];
 
-  const totalItems = courseNotes.length + courseVideos.length + assignments.length;
+  const getContentByType = (type: 'note' | 'video' | 'assignment') => {
+    if (courseContent.length > 0) {
+      return courseContent.filter(content => content.content_type === type);
+    }
+    
+    // Return default data based on type
+    switch (type) {
+      case 'note': return defaultNotes;
+      case 'video': return defaultVideos;
+      case 'assignment': return defaultAssignments;
+      default: return [];
+    }
+  };
+
+  const currentGrades = grades.length > 0 ? grades : defaultGrades;
+
+  const totalItems = getContentByType('note').length + getContentByType('video').length + getContentByType('assignment').length;
   const completedCount = completedItems.size;
-  const progressPercentage = (completedCount / totalItems) * 100;
+  const progressPercentage = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -237,7 +300,7 @@ const CourseContent = ({
           >
             <h3 className="text-lg font-semibold mb-4">Course Notes</h3>
             <div className="space-y-3">
-              {courseNotes.map((note, index) => (
+              {getContentByType('note').map((note, index) => (
                 <motion.div
                   key={note.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -266,13 +329,17 @@ const CourseContent = ({
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <Clock className="w-3 h-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{note.duration}</span>
+                            <span className="text-xs text-gray-500">
+                              {note.duration_minutes ? `${note.duration_minutes} min read` : 'Reading time varies'}
+                            </span>
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">
-                          <Download className="w-3 h-3 mr-1" />
-                          Download
-                        </Button>
+                        {note.is_downloadable && (
+                          <Button size="sm" variant="outline">
+                            <Download className="w-3 h-3 mr-1" />
+                            Download
+                          </Button>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -291,7 +358,7 @@ const CourseContent = ({
           >
             <h3 className="text-lg font-semibold mb-4">Video Lessons</h3>
             <div className="space-y-3">
-              {courseVideos.map((video, index) => (
+              {getContentByType('video').map((video, index) => (
                 <motion.div
                   key={video.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -323,7 +390,7 @@ const CourseContent = ({
                           </p>
                           <div className="flex items-center gap-2 mt-2">
                             <Clock className="w-3 h-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{video.duration}</span>
+                            <span className="text-xs text-gray-500">{video.duration_minutes}</span>
                           </div>
                         </div>
                         <Button size="sm">
@@ -348,7 +415,7 @@ const CourseContent = ({
           >
             <h3 className="text-lg font-semibold mb-4">Assignments</h3>
             <div className="space-y-3">
-              {assignments.map((assignment, index) => (
+              {getContentByType('assignment').map((assignment, index) => (
                 <motion.div
                   key={assignment.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -374,13 +441,13 @@ const CourseContent = ({
                               {assignment.title}
                             </h4>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {assignment.dueDate}
+                              {assignment.created_at}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">
-                            {assignment.status}
+                            Pending
                           </Badge>
                           <Button size="sm" variant="outline">
                             View Details
@@ -404,9 +471,9 @@ const CourseContent = ({
           >
             <h3 className="text-lg font-semibold mb-4">Grades</h3>
             <div className="space-y-3">
-              {grades.map((grade, index) => (
+              {currentGrades.map((grade, index) => (
                 <motion.div
-                  key={index}
+                  key={grade.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -416,21 +483,26 @@ const CourseContent = ({
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="font-medium text-gray-900 dark:text-white">
-                            {grade.item}
+                            {grade.assignment_title}
                           </h4>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {grade.date}
+                            {grade.graded_at}
                           </p>
+                          {grade.feedback && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              {grade.feedback}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold">
-                            <span className={grade.score >= 80 ? 'text-green-600' : grade.score >= 60 ? 'text-yellow-600' : 'text-red-600'}>
-                              {grade.score}
+                            <span className={grade.grade >= grade.max_grade * 0.8 ? 'text-green-600' : grade.grade >= grade.max_grade * 0.6 ? 'text-yellow-600' : 'text-red-600'}>
+                              {grade.grade}
                             </span>
-                            <span className="text-gray-500">/{grade.maxScore}</span>
+                            <span className="text-gray-500">/{grade.max_grade}</span>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {Math.round((grade.score / grade.maxScore) * 100)}%
+                            {Math.round((grade.grade / grade.max_grade) * 100)}%
                           </div>
                         </div>
                       </div>
@@ -440,13 +512,13 @@ const CourseContent = ({
               ))}
             </div>
             
-            {grades.length > 0 && (
+            {currentGrades.length > 0 && (
               <Card className="bg-gray-50 dark:bg-gray-800">
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Overall Average:</span>
                     <span className="text-lg font-bold text-blue-600">
-                      {Math.round(grades.reduce((acc, grade) => acc + (grade.score / grade.maxScore) * 100, 0) / grades.length)}%
+                      {Math.round(currentGrades.reduce((acc, grade) => acc + (grade.grade / grade.max_grade) * 100, 0) / currentGrades.length)}%
                     </span>
                   </div>
                 </CardContent>

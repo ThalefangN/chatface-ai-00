@@ -220,6 +220,59 @@ export type Database = {
         }
         Relationships: []
       }
+      course_content: {
+        Row: {
+          content_text: string | null
+          content_type: string
+          content_url: string | null
+          course_id: string
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_downloadable: boolean | null
+          order_index: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_text?: string | null
+          content_type: string
+          content_url?: string | null
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_downloadable?: boolean | null
+          order_index?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content_text?: string | null
+          content_type?: string
+          content_url?: string | null
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_downloadable?: boolean | null
+          order_index?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_content_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_enrollments: {
         Row: {
           completion_date: string | null
@@ -258,6 +311,50 @@ export type Database = {
           },
         ]
       }
+      course_grades: {
+        Row: {
+          assignment_title: string
+          course_id: string
+          created_at: string
+          feedback: string | null
+          grade: number
+          graded_at: string
+          id: string
+          max_grade: number
+          student_id: string
+        }
+        Insert: {
+          assignment_title: string
+          course_id: string
+          created_at?: string
+          feedback?: string | null
+          grade: number
+          graded_at?: string
+          id?: string
+          max_grade?: number
+          student_id: string
+        }
+        Update: {
+          assignment_title?: string
+          course_id?: string
+          created_at?: string
+          feedback?: string | null
+          grade?: number
+          graded_at?: string
+          id?: string
+          max_grade?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_grades_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
@@ -266,7 +363,13 @@ export type Database = {
           estimated_hours: number | null
           id: string
           is_active: boolean | null
+          is_free: boolean | null
+          materials_count: number | null
+          price: number | null
+          rating: number | null
+          students_count: number | null
           subject: string
+          teacher_id: string | null
           title: string
           updated_at: string
         }
@@ -277,7 +380,13 @@ export type Database = {
           estimated_hours?: number | null
           id?: string
           is_active?: boolean | null
+          is_free?: boolean | null
+          materials_count?: number | null
+          price?: number | null
+          rating?: number | null
+          students_count?: number | null
           subject: string
+          teacher_id?: string | null
           title: string
           updated_at?: string
         }
@@ -288,11 +397,25 @@ export type Database = {
           estimated_hours?: number | null
           id?: string
           is_active?: boolean | null
+          is_free?: boolean | null
+          materials_count?: number | null
+          price?: number | null
+          rating?: number | null
+          students_count?: number | null
           subject?: string
+          teacher_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       learning_progress: {
         Row: {
@@ -420,6 +543,45 @@ export type Database = {
           is_ai?: boolean
           session_id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      teacher_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          specialization: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          specialization?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          specialization?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
