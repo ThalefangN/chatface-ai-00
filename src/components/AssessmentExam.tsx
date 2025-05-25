@@ -28,6 +28,12 @@ interface Question {
   explanation: string;
 }
 
+interface TheoryEvaluation {
+  isCorrect: boolean;
+  feedback: string;
+  score: number; // 0-100
+}
+
 interface AssessmentExamProps {
   subject: string;
   onBack: () => void;
@@ -262,8 +268,10 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
+  const [theoryEvaluations, setTheoryEvaluations] = useState<{ [key: number]: TheoryEvaluation }>({});
   const [showResults, setShowResults] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const [showSubjectInput, setShowSubjectInput] = useState(true);
   const [customSubject, setCustomSubject] = useState('');
   const [customTopic, setCustomTopic] = useState('');
@@ -415,6 +423,97 @@ Return ONLY the JSON array starting with [ and ending with ].`;
     }
   };
 
+  const evaluateTheoryAnswer = async (question: Question, userAnswer: string): Promise<TheoryEvaluation> => {
+    try {
+      const evaluationPrompt = `
+Evaluate this student's answer to a theory question:
+
+Question: ${question.question}
+Student Answer: "${userAnswer}"
+Expected Answer: "${question.correctAnswer}"
+
+Please evaluate if the student's answer is correct or demonstrates understanding of the concept. Consider:
+1. Is the answer relevant to the question?
+2. Does it show understanding of the key concepts?
+3. Is it a meaningful attempt (not random letters, "I don't know", etc.)?
+4. How well does it align with the expected answer?
+
+Respond with ONLY a JSON object in this exact format:
+{
+  "isCorrect": true/false,
+  "feedback": "Brief explanation of why the answer is correct/incorrect",
+  "score": 0-100
+}
+
+Be strict in evaluation - random letters, "I don't know", or completely irrelevant answers should score 0.
+Partially correct answers should score 30-70 depending on accuracy.
+Fully correct answers should score 80-100.`;
+
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+        body: {
+          message: evaluationPrompt,
+          systemPrompt: 'You are an expert educational evaluator. Respond ONLY with valid JSON. Be strict and fair in your evaluation.'
+        }
+      });
+
+      if (error) throw error;
+
+      // Clean and parse the AI response
+      let content = data.content.trim();
+      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      // Find JSON object
+      let jsonStart = content.indexOf('{');
+      let jsonEnd = content.lastIndexOf('}');
+      
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('No valid JSON found in response');
+      }
+      
+      const jsonContent = content.substring(jsonStart, jsonEnd + 1);
+      const evaluation = JSON.parse(jsonContent);
+      
+      // Validate the response structure
+      if (typeof evaluation.isCorrect !== 'boolean' || 
+          typeof evaluation.feedback !== 'string' || 
+          typeof evaluation.score !== 'number') {
+        throw new Error('Invalid evaluation response structure');
+      }
+      
+      return {
+        isCorrect: evaluation.isCorrect,
+        feedback: evaluation.feedback,
+        score: Math.max(0, Math.min(100, evaluation.score)) // Ensure score is 0-100
+      };
+      
+    } catch (error) {
+      console.error('Error evaluating theory answer:', error);
+      
+      // Fallback evaluation for very obvious cases
+      const trimmedAnswer = userAnswer.trim().toLowerCase();
+      
+      // Check for obviously wrong answers
+      if (trimmedAnswer.length < 5 || 
+          trimmedAnswer === "i don't know" || 
+          trimmedAnswer === "idk" ||
+          /^[^a-zA-Z]*$/.test(trimmedAnswer) || // Only special characters/numbers
+          /^(.)\1{4,}/.test(trimmedAnswer)) { // Repeated characters like "aaaaa"
+        return {
+          isCorrect: false,
+          feedback: "Answer appears to be incomplete or not a genuine attempt. Please provide a meaningful response that addresses the question.",
+          score: 0
+        };
+      }
+      
+      // If we can't evaluate properly, give partial credit for a genuine attempt
+      return {
+        isCorrect: false,
+        feedback: "Unable to fully evaluate answer. Please review the expected answer for comparison.",
+        score: 30
+      };
+    }
+  };
+
   const handleAnswerChange = (answer: string) => {
     setUserAnswers(prev => ({
       ...prev,
@@ -442,7 +541,7 @@ Return ONLY the JSON array starting with [ and ending with ].`;
     }
   };
 
-  const finishAssessment = () => {
+  const finishAssessment = async () => {
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswer = userAnswers[currentQuestion.id];
     
@@ -451,7 +550,33 @@ Return ONLY the JSON array starting with [ and ending with ].`;
       return;
     }
     
-    setShowSuccessDialog(true);
+    setIsEvaluating(true);
+    
+    try {
+      // Evaluate all theory questions
+      const evaluations: { [key: number]: TheoryEvaluation } = {};
+      
+      for (const question of questions) {
+        if (question.type === 'theory') {
+          const userAnswer = userAnswers[question.id];
+          if (userAnswer) {
+            console.log(`Evaluating theory question ${question.id}:`, userAnswer);
+            const evaluation = await evaluateTheoryAnswer(question, userAnswer);
+            evaluations[question.id] = evaluation;
+            console.log(`Evaluation result:`, evaluation);
+          }
+        }
+      }
+      
+      setTheoryEvaluations(evaluations);
+      setShowSuccessDialog(true);
+      
+    } catch (error) {
+      console.error('Error during assessment evaluation:', error);
+      toast.error('Error evaluating assessment. Please try again.');
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   const handleSuccessDialogClose = () => {
@@ -460,18 +585,39 @@ Return ONLY the JSON array starting with [ and ending with ].`;
   };
 
   const calculateResults = () => {
-    const correctAnswers = questions.filter(q => {
+    let correctAnswers = 0;
+    let totalPoints = 0;
+    let earnedPoints = 0;
+    
+    questions.forEach(q => {
       const userAnswer = userAnswers[q.id];
+      totalPoints += 100; // Each question worth 100 points
+      
       if (q.type === 'theory') {
-        return userAnswer && userAnswer.trim().length > 10;
+        const evaluation = theoryEvaluations[q.id];
+        if (evaluation) {
+          earnedPoints += evaluation.score;
+          if (evaluation.isCorrect) {
+            correctAnswers++;
+          }
+        }
+      } else {
+        // Multiple choice and true/false
+        if (userAnswer === q.correctAnswer) {
+          correctAnswers++;
+          earnedPoints += 100;
+        }
       }
-      return userAnswer === q.correctAnswer;
-    }).length;
+    });
+    
+    const percentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
     
     return {
       correct: correctAnswers,
       total: questions.length,
-      percentage: Math.round((correctAnswers / questions.length) * 100)
+      percentage,
+      earnedPoints,
+      totalPoints
     };
   };
 
@@ -582,8 +728,11 @@ Return ONLY the JSON array starting with [ and ending with ].`;
               <div className="text-2xl font-semibold mb-2">
                 {results.correct}/{results.total} Correct
               </div>
-              <div className="text-xl text-muted-foreground mb-4">
+              <div className="text-xl text-muted-foreground mb-2">
                 Score: {results.percentage}%
+              </div>
+              <div className="text-sm text-muted-foreground mb-4">
+                Points: {results.earnedPoints}/{results.totalPoints}
               </div>
               <div className={`text-lg ${gradeInfo.color} font-medium mb-4`}>
                 {gradeInfo.message}
@@ -594,9 +743,16 @@ Return ONLY the JSON array starting with [ and ending with ].`;
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {questions.map((question) => {
                 const userAnswer = userAnswers[question.id];
-                const isCorrect = question.type === 'theory' 
-                  ? userAnswer && userAnswer.trim().length > 10
-                  : userAnswer === question.correctAnswer;
+                let isCorrect = false;
+                let feedback = '';
+                
+                if (question.type === 'theory') {
+                  const evaluation = theoryEvaluations[question.id];
+                  isCorrect = evaluation?.isCorrect || false;
+                  feedback = evaluation?.feedback || '';
+                } else {
+                  isCorrect = userAnswer === question.correctAnswer;
+                }
                 
                 return (
                   <Card key={question.id} className={`border ${isCorrect ? 'border-green-200' : 'border-red-200'}`}>
@@ -615,16 +771,29 @@ Return ONLY the JSON array starting with [ and ending with ].`;
                           <p className="text-sm text-muted-foreground mb-1">
                             Your answer: {userAnswer || 'Not answered'}
                           </p>
-                          {question.type !== 'theory' && (
+                          
+                          {question.type === 'theory' ? (
+                            <>
+                              {feedback && (
+                                <p className={`text-sm mb-2 ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                                  AI Feedback: {feedback}
+                                </p>
+                              )}
+                              <p className="text-sm text-blue-600 mb-2">
+                                Sample answer: {question.correctAnswer}
+                              </p>
+                              {theoryEvaluations[question.id] && (
+                                <p className="text-sm text-gray-600">
+                                  Score: {theoryEvaluations[question.id].score}/100
+                                </p>
+                              )}
+                            </>
+                          ) : (
                             <p className="text-sm text-green-600 mb-2">
                               Correct answer: {question.correctAnswer}
                             </p>
                           )}
-                          {question.type === 'theory' && (
-                            <p className="text-sm text-blue-600 mb-2">
-                              Sample answer: {question.correctAnswer}
-                            </p>
-                          )}
+                          
                           <p className="text-sm text-gray-600">
                             {question.explanation}
                           </p>
@@ -801,9 +970,10 @@ Return ONLY the JSON array starting with [ and ending with ].`;
           {currentQuestionIndex === questions.length - 1 ? (
             <Button 
               onClick={finishAssessment}
+              disabled={(!currentAnswer || currentAnswer.trim() === '') || isEvaluating}
               className={(!currentAnswer || currentAnswer.trim() === '') ? 'opacity-50' : ''}
             >
-              Finish Assessment
+              {isEvaluating ? 'Evaluating...' : 'Finish Assessment'}
             </Button>
           ) : (
             <Button 
@@ -829,7 +999,7 @@ Return ONLY the JSON array starting with [ and ending with ].`;
             <AlertDialogDescription className="text-center">
               <span>
                 Congratulations! You have successfully completed your {customSubject} assessment on {customTopic}. 
-                Click below to view your results and detailed feedback.
+                {isEvaluating ? ' We are still evaluating your theory answers...' : ' Click below to view your results and detailed feedback.'}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -837,8 +1007,9 @@ Return ONLY the JSON array starting with [ and ending with ].`;
             <AlertDialogAction 
               className="w-full bg-[#2563eb] hover:bg-[#2563eb]/90"
               onClick={handleSuccessDialogClose}
+              disabled={isEvaluating}
             >
-              View Results
+              {isEvaluating ? 'Evaluating...' : 'View Results'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
