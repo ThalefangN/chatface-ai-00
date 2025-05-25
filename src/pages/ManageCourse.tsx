@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit, Trash2, Users, BookOpen, Video, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Users, BookOpen, Video, FileText, File, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ interface CourseContent {
   description: string | null;
   content_type: 'note' | 'video' | 'assignment';
   content_url: string | null;
+  content_text: string | null;
   duration_minutes: number | null;
   is_downloadable: boolean;
   created_at: string;
@@ -100,13 +101,27 @@ const ManageCourse = () => {
   const videos = content.filter(item => item.content_type === 'video');
   const assignments = content.filter(item => item.content_type === 'assignment');
 
+  const getFileIcon = (fileName: string | null) => {
+    if (!fileName) return FileText;
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return File;
+      case 'doc':
+      case 'docx':
+        return FileText;
+      default:
+        return FileText;
+    }
+  };
+
   const renderContentList = (items: CourseContent[], type: string) => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{type}</h3>
         <Button onClick={() => navigate(`/teacher/add-content/${courseId}`)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add {type.slice(0, -1)}
+          Add {type === 'Notes' ? 'Note' : type.slice(0, -1)}
         </Button>
       </div>
       
@@ -117,38 +132,71 @@ const ManageCourse = () => {
           </CardContent>
         </Card>
       ) : (
-        items.map((item) => (
-          <Card key={item.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">{item.title}</CardTitle>
-                  {item.description && <CardDescription>{item.description}</CardDescription>}
+        items.map((item) => {
+          const FileIcon = getFileIcon(item.content_url);
+          return (
+            <Card key={item.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileIcon className="h-5 w-5 text-blue-500" />
+                      <CardTitle className="text-lg">{item.title}</CardTitle>
+                    </div>
+                    {item.description && <CardDescription>{item.description}</CardDescription>}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary" className="capitalize">
+                      {item.content_type === 'note' ? 'Notes' : item.content_type}
+                    </Badge>
+                    {item.is_downloadable && (
+                      <Badge variant="outline" className="text-green-600">
+                        <Download className="h-3 w-3 mr-1" />
+                        Downloadable
+                      </Badge>
+                    )}
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => deleteContent(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary">{item.content_type}</Badge>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => deleteContent(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            {item.duration_minutes && (
+              </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Duration: {item.duration_minutes} minutes
-                </p>
+                <div className="space-y-3">
+                  {item.content_url && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                      <File className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">
+                        Document: {item.content_url}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {item.content_text && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-700 line-clamp-3">
+                        {item.content_text}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {item.duration_minutes && (
+                    <p className="text-sm text-muted-foreground">
+                      Duration: {item.duration_minutes} minutes
+                    </p>
+                  )}
+                </div>
               </CardContent>
-            )}
-          </Card>
-        ))
+            </Card>
+          );
+        })
       )}
     </div>
   );

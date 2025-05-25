@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Upload, Save } from 'lucide-react';
+import { ArrowLeft, Upload, Save, FileText, File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ const AddContent = () => {
   const { teacherProfile } = useTeacherAuth();
   const [loading, setLoading] = useState(false);
   const [course, setCourse] = useState<any>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -86,12 +87,27 @@ const AddContent = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type for notes (documents)
+    if (formData.content_type === 'note') {
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'text/markdown'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please upload a valid document file (PDF, DOC, DOCX, TXT, MD)');
+        return;
+      }
+    }
+
     try {
-      // For now, we'll just set a placeholder URL
-      // In production, you'd upload to Supabase Storage
+      setUploadedFile(file);
       const fileName = `${Date.now()}-${file.name}`;
       setFormData(prev => ({ ...prev, content_url: fileName }));
-      toast.success('File selected successfully');
+      toast.success('Document selected successfully');
     } catch (error) {
       console.error('Error handling file:', error);
       toast.error('Failed to handle file');
@@ -162,7 +178,7 @@ const AddContent = () => {
                       <SelectValue placeholder="Select content type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="note">Note</SelectItem>
+                      <SelectItem value="note">Notes</SelectItem>
                       <SelectItem value="video">Video</SelectItem>
                       <SelectItem value="assignment">Assignment</SelectItem>
                     </SelectContent>
@@ -170,15 +186,63 @@ const AddContent = () => {
                 </div>
 
                 {formData.content_type === 'note' && (
-                  <div>
-                    <Label htmlFor="content_text">Content Text</Label>
-                    <Textarea
-                      id="content_text"
-                      value={formData.content_text}
-                      onChange={(e) => setFormData(prev => ({ ...prev, content_text: e.target.value }))}
-                      placeholder="Enter the note content"
-                      rows={8}
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="document_upload">Upload Document</Label>
+                      <div className="mt-2">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            Upload your document
+                          </h3>
+                          <p className="text-gray-500 mb-4">
+                            Supports PDF, DOC, DOCX, TXT, MD files
+                          </p>
+                          <label htmlFor="document_upload" className="cursor-pointer">
+                            <Button type="button">
+                              <FileText className="w-4 h-4 mr-2" />
+                              Choose Document
+                            </Button>
+                            <Input
+                              id="document_upload"
+                              type="file"
+                              onChange={handleFileUpload}
+                              accept=".pdf,.doc,.docx,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                      {uploadedFile && (
+                        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <File className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="text-sm font-medium text-green-800">
+                                Document selected: {uploadedFile.name}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                Size: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="content_text">Content Text (Optional)</Label>
+                      <Textarea
+                        id="content_text"
+                        value={formData.content_text}
+                        onChange={(e) => setFormData(prev => ({ ...prev, content_text: e.target.value }))}
+                        placeholder="Enter additional note content or leave empty if uploading document"
+                        rows={6}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Add text content here or upload a document above
+                      </p>
+                    </div>
                   </div>
                 )}
 
