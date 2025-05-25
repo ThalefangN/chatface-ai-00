@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -37,9 +38,6 @@ const LearningSession = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // OpenAI API Key
-  const OPENAI_API_KEY = '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';
 
   const subjectMap = {
     'foundation': {
@@ -77,49 +75,23 @@ const LearningSession = () => {
     scrollToBottom();
   }, [messages]);
 
-  const formatAIResponse = (text: string) => {
-    let cleanText = text.replace(/\*/g, '');
-    const isMathSolution = /\d+[\+\-\*\/\=]|\bsolution\b|\bsolve\b|\banswer\b/i.test(cleanText);
-    
-    return {
-      content: cleanText,
-      hasFollowUpButtons: isMathSolution
-    };
-  };
-
   const sendMessageToAI = async (messageContent: string) => {
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a helpful AI study assistant for ${currentSubject.title}. Focus on educational content and provide clear step-by-step solutions. When solving problems, offer to provide additional explanation or create practice questions. Keep responses concise but comprehensive.`
-            },
-            {
-              role: 'user',
-              content: messageContent
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 400,
-        }),
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+        body: { 
+          message: messageContent,
+          systemPrompt: `You are a helpful AI study assistant for ${currentSubject.title}. Focus on educational content and provide clear step-by-step solutions. When solving problems, offer to provide additional explanation or create practice questions. Keep responses concise but comprehensive.`
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
+      if (error) throw error;
 
-      const data = await response.json();
-      return formatAIResponse(data.choices[0].message.content);
+      return {
+        content: data.content,
+        hasFollowUpButtons: data.hasFollowUpButtons
+      };
     } catch (error) {
-      console.error('Error calling OpenAI API:', error);
+      console.error('Error calling AI chat function:', error);
       return {
         content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
         hasFollowUpButtons: false

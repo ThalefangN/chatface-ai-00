@@ -10,6 +10,7 @@ import { Send, Bot, User, BookOpen, Calculator, Lightbulb, History, HelpCircle, 
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -44,9 +45,6 @@ const AiChat = () => {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // OpenAI API Key - directly embedded
-  const OPENAI_API_KEY = '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';
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -55,53 +53,20 @@ const AiChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Generate AI summary based on uploaded documents
-  const formatAIResponse = (text: string) => {
-    // Remove asterisks and clean up formatting
-    let cleanText = text.replace(/\*/g, '');
-    
-    // Check if this appears to be a math solution
-    const isMathSolution = /\d+[\+\-\*\/\=]|\bsolution\b|\bsolve\b|\banswer\b/i.test(cleanText);
-    
-    return {
-      content: cleanText,
-      hasFollowUpButtons: isMathSolution
-    };
-  };
-
   const sendMessageToAI = async (messageContent: string) => {
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful AI study assistant focused exclusively on educational content. When solving math problems, provide clear step-by-step solutions without using asterisks for formatting. Use simple text formatting and line breaks for clarity. Keep responses concise but comprehensive. Always offer to provide additional explanation or create practice questions after solving problems. If someone asks about non-educational topics, politely redirect them back to academic subjects.'
-            },
-            {
-              role: 'user',
-              content: messageContent
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 400,
-        }),
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+        body: { message: messageContent }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
+      if (error) throw error;
 
-      const data = await response.json();
-      return formatAIResponse(data.choices[0].message.content);
+      return {
+        content: data.content,
+        hasFollowUpButtons: data.hasFollowUpButtons
+      };
     } catch (error) {
-      console.error('Error calling OpenAI API:', error);
+      console.error('Error calling AI chat function:', error);
       return {
         content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. In the meantime, feel free to ask me about any academic subjects you need help with!",
         hasFollowUpButtons: false
@@ -120,39 +85,22 @@ const AiChat = () => {
     }
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'Based on the document names provided, generate a concise title and description for the study collection. Focus on the main academic subject. Return in format: "Title: [title]\nDescription: [description]"'
-            },
-            {
-              role: 'user',
-              content: `Generate a title and description for these documents: ${selectedDocs.map(doc => doc.name).join(', ')}`
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 100,
-        }),
+      const { data, error } = await supabase.functions.invoke('ai-document-summary', {
+        body: { documentNames: selectedDocs.map(doc => doc.name) }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices[0].message.content;
-        const lines = content.split('\n');
-        const title = lines[0]?.replace('Title: ', '') || 'Study Collection';
-        const description = lines[1]?.replace('Description: ', '') || 'Comprehensive learning materials';
-        setDocumentSummary({ title, description });
-      }
+      if (error) throw error;
+
+      setDocumentSummary({ 
+        title: data.title, 
+        description: data.description 
+      });
     } catch (error) {
       console.error('Error generating document summary:', error);
+      setDocumentSummary({
+        title: 'Study Collection',
+        description: 'Comprehensive learning materials'
+      });
     }
   };
 
