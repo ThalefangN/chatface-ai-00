@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, XCircle, ArrowLeft, ArrowRight, BookOpen, Target, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface Question {
   id: number;
   question: string;
-  type: 'multiple-choice' | 'true-false';
+  type: 'multiple-choice' | 'true-false' | 'theory';
   options?: string[];
   correctAnswer: string;
   explanation: string;
@@ -275,9 +276,16 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       
       console.log('Generating questions for:', { subjectInput, topicInput });
       
-      const prompt = `Generate exactly 5 high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
+      // Generate random number between 20-30
+      const questionCount = Math.floor(Math.random() * 11) + 20; // 20-30 questions
+      const theoryQuestionCount = Math.floor(questionCount * 0.2); // 20% theory questions
+      const mcAndTfCount = questionCount - theoryQuestionCount;
+      
+      const prompt = `Generate exactly ${questionCount} high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
 
-Create a balanced mix of multiple-choice (4 options each) and true/false questions.
+Create a mix of:
+- ${mcAndTfCount} multiple-choice (4 options each) and true/false questions
+- ${theoryQuestionCount} theory questions where students provide written answers
 
 IMPORTANT: Return ONLY a valid JSON array. No markdown, no backticks, no explanation text.
 
@@ -297,20 +305,28 @@ Format:
     "type": "true-false",
     "correctAnswer": "true",
     "explanation": "The product of two negative numbers is always positive."
+  },
+  {
+    "id": 3,
+    "question": "Explain the fundamental theorem of algebra and provide an example.",
+    "type": "theory",
+    "correctAnswer": "The fundamental theorem of algebra states that every non-constant polynomial equation has at least one complex root. For example, x² + 1 = 0 has roots x = ±i.",
+    "explanation": "Theory questions allow for detailed explanations and deeper understanding of concepts."
   }
 ]
 
 Requirements:
-- Exactly 5 questions
-- Mix of multiple-choice and true/false
-- Educational explanations
+- Exactly ${questionCount} questions total
+- ${mcAndTfCount} multiple-choice and true/false questions
+- ${theoryQuestionCount} theory questions for written responses
+- Educational explanations for all questions
 - Appropriate difficulty for ${topicInput}
 - Return ONLY the JSON array`;
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: prompt,
-          systemPrompt: 'You are an expert assessment creator. Return ONLY valid JSON without any additional text, markdown formatting, or code blocks. The response must start with [ and end with ].'
+          systemPrompt: 'You are an expert assessment creator. Return ONLY valid JSON without any additional text, markdown formatting, or code blocks. The response must start with [ and end with ]. Make sure theory questions have detailed sample answers in correctAnswer field.'
         }
       });
 
@@ -358,11 +374,11 @@ Requirements:
       // Ensure we have properly formatted questions with correct types
       const validQuestions: Question[] = generatedQuestions
         .filter(q => q && q.question && q.type && q.correctAnswer && q.explanation)
-        .slice(0, 5) // Limit to 5 questions
+        .slice(0, questionCount) // Limit to requested count
         .map((q: any, index: number) => ({
           id: index + 1,
           question: q.question,
-          type: (q.type === 'true-false' || q.type === 'multiple-choice') ? q.type : 'multiple-choice',
+          type: (q.type === 'true-false' || q.type === 'multiple-choice' || q.type === 'theory') ? q.type : 'multiple-choice',
           options: q.type === 'multiple-choice' ? q.options : undefined,
           correctAnswer: q.correctAnswer,
           explanation: q.explanation
@@ -395,7 +411,7 @@ Requirements:
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswer = userAnswers[currentQuestion.id];
     
-    if (!currentAnswer) {
+    if (!currentAnswer || currentAnswer.trim() === '') {
       toast.error('Please answer the current question before proceeding to the next one.');
       return;
     }
@@ -415,7 +431,7 @@ Requirements:
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswer = userAnswers[currentQuestion.id];
     
-    if (!currentAnswer) {
+    if (!currentAnswer || currentAnswer.trim() === '') {
       toast.error('Please answer the current question before finishing the assessment.');
       return;
     }
@@ -431,9 +447,15 @@ Requirements:
   };
 
   const calculateResults = () => {
-    const correctAnswers = questions.filter(q => 
-      userAnswers[q.id] === q.correctAnswer
-    ).length;
+    const correctAnswers = questions.filter(q => {
+      const userAnswer = userAnswers[q.id];
+      if (q.type === 'theory') {
+        // For theory questions, we'll consider them correct if answered (basic check)
+        return userAnswer && userAnswer.trim().length > 10;
+      }
+      return userAnswer === q.correctAnswer;
+    }).length;
+    
     return {
       correct: correctAnswers,
       total: questions.length,
@@ -520,6 +542,7 @@ Requirements:
         <div className="text-center">
           <PencilLoadingAnimation />
           <p className="mt-4">Generating assessment questions for {customSubject} - {customTopic}...</p>
+          <p className="text-sm text-muted-foreground mt-2">This will include 20-30 questions with theory questions</p>
         </div>
       </div>
     );
@@ -535,7 +558,7 @@ Requirements:
           <CardHeader>
             <CardTitle className="text-center">Assessment Results</CardTitle>
             <div className="text-center text-sm text-muted-foreground">
-              {customSubject} - {customTopic}
+              {customSubject} - {customTopic} ({questions.length} questions)
             </div>
           </CardHeader>
           <CardContent>
@@ -558,7 +581,9 @@ Requirements:
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {questions.map((question) => {
                 const userAnswer = userAnswers[question.id];
-                const isCorrect = userAnswer === question.correctAnswer;
+                const isCorrect = question.type === 'theory' 
+                  ? userAnswer && userAnswer.trim().length > 10
+                  : userAnswer === question.correctAnswer;
                 
                 return (
                   <Card key={question.id} className={`border ${isCorrect ? 'border-green-200' : 'border-red-200'}`}>
@@ -570,13 +595,23 @@ Requirements:
                           <XCircle className="h-5 w-5 text-red-600 mt-1 flex-shrink-0" />
                         )}
                         <div className="flex-1">
-                          <p className="font-medium mb-2">Q{question.id}: {question.question}</p>
+                          <p className="font-medium mb-2">
+                            Q{question.id}: {question.question}
+                            {question.type === 'theory' && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Theory</span>}
+                          </p>
                           <p className="text-sm text-muted-foreground mb-1">
                             Your answer: {userAnswer || 'Not answered'}
                           </p>
-                          <p className="text-sm text-green-600 mb-2">
-                            Correct answer: {question.correctAnswer}
-                          </p>
+                          {question.type !== 'theory' && (
+                            <p className="text-sm text-green-600 mb-2">
+                              Correct answer: {question.correctAnswer}
+                            </p>
+                          )}
+                          {question.type === 'theory' && (
+                            <p className="text-sm text-blue-600 mb-2">
+                              Sample answer: {question.correctAnswer}
+                            </p>
+                          )}
                           <p className="text-sm text-gray-600">
                             {question.explanation}
                           </p>
@@ -650,7 +685,7 @@ Requirements:
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold">{customSubject} Assessment</h1>
-              <p className="text-sm text-muted-foreground">{customTopic}</p>
+              <p className="text-sm text-muted-foreground">{customTopic} ({questions.length} questions)</p>
             </div>
             <Button variant="outline" onClick={onBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -671,42 +706,64 @@ Requirements:
 
         <Card>
           <CardHeader>
-            <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Question {currentQuestionIndex + 1}
+              {currentQuestion.type === 'theory' && (
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Theory Question</span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <p className="text-lg">{currentQuestion.question}</p>
               
-              <RadioGroup
-                value={currentAnswer || ''}
-                onValueChange={handleAnswerChange}
-              >
-                {currentQuestion.type === 'multiple-choice' ? (
-                  currentQuestion.options?.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option} id={`option-${index}`} />
-                      <Label htmlFor={`option-${index}`} className="cursor-pointer">
-                        {option}
-                      </Label>
-                    </div>
-                  ))
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="true" id="true" />
-                      <Label htmlFor="true" className="cursor-pointer">True</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="false" id="false" />
-                      <Label htmlFor="false" className="cursor-pointer">False</Label>
-                    </div>
-                  </>
-                )}
-              </RadioGroup>
+              {currentQuestion.type === 'theory' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="theory-answer">Your Answer:</Label>
+                  <Textarea
+                    id="theory-answer"
+                    placeholder="Type your detailed answer here..."
+                    value={currentAnswer || ''}
+                    onChange={(e) => handleAnswerChange(e.target.value)}
+                    className="min-h-[120px]"
+                    rows={5}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Provide a detailed explanation for this theory question.
+                  </p>
+                </div>
+              ) : (
+                <RadioGroup
+                  value={currentAnswer || ''}
+                  onValueChange={handleAnswerChange}
+                >
+                  {currentQuestion.type === 'multiple-choice' ? (
+                    currentQuestion.options?.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option} id={`option-${index}`} />
+                        <Label htmlFor={`option-${index}`} className="cursor-pointer">
+                          {option}
+                        </Label>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="true" />
+                        <Label htmlFor="true" className="cursor-pointer">True</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="false" />
+                        <Label htmlFor="false" className="cursor-pointer">False</Label>
+                      </div>
+                    </>
+                  )}
+                </RadioGroup>
+              )}
               
-              {!currentAnswer && (
+              {(!currentAnswer || currentAnswer.trim() === '') && (
                 <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
-                  Please select an answer to proceed to the next question.
+                  Please provide an answer to proceed to the next question.
                 </p>
               )}
             </div>
@@ -726,14 +783,14 @@ Requirements:
           {currentQuestionIndex === questions.length - 1 ? (
             <Button 
               onClick={finishAssessment}
-              className={!currentAnswer ? 'opacity-50' : ''}
+              className={(!currentAnswer || currentAnswer.trim() === '') ? 'opacity-50' : ''}
             >
               Finish Assessment
             </Button>
           ) : (
             <Button 
               onClick={goToNextQuestion}
-              className={!currentAnswer ? 'opacity-50' : ''}
+              className={(!currentAnswer || currentAnswer.trim() === '') ? 'opacity-50' : ''}
             >
               Next
               <ArrowRight className="h-4 w-4 ml-2" />
