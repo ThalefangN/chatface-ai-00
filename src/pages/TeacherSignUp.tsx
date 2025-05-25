@@ -121,6 +121,15 @@ const TeacherSignUp = () => {
             isLoading={isLoading}
             googleLogin='Sign up with Google'
           />
+          
+          <div className="mt-6 text-center text-sm">
+            <p className="text-muted-foreground">
+              Want to join as a student?{' '}
+              <Link to="/sign-up" className="text-blue-500 hover:underline">
+                Student Sign Up
+              </Link>
+            </p>
+          </div>
         </div>
       </main>
     </div>

@@ -1,238 +1,242 @@
 
-import React, { useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Upload, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useTeacherAuth } from '@/contexts/TeacherAuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useTeacherAuth } from '@/contexts/TeacherAuthContext';
 import { toast } from 'sonner';
 
 const AddContent = () => {
-  const { courseId } = useParams();
+  const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const contentType = searchParams.get('type') as 'note' | 'video' | 'assignment';
   const { teacherProfile } = useTeacherAuth();
   const [loading, setLoading] = useState(false);
+  const [course, setCourse] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    content_type: '',
     content_text: '',
     content_url: '',
-    duration_minutes: 0,
-    is_downloadable: false,
+    duration_minutes: '',
+    is_downloadable: false
   });
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  useEffect(() => {
+    if (courseId) {
+      fetchCourse();
+    }
+  }, [courseId]);
+
+  const fetchCourse = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', courseId)
+        .single();
+
+      if (error) throw error;
+      setCourse(data);
+    } catch (error) {
+      console.error('Error fetching course:', error);
+      toast.error('Failed to load course');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!courseId || !contentType) {
-      toast.error('Invalid course or content type');
-      return;
-    }
+    if (!courseId || !teacherProfile) return;
 
     setLoading(true);
-
     try {
-      // Get the highest order_index for this course
-      const { data: existingContent } = await supabase
-        .from('course_content')
-        .select('order_index')
-        .eq('course_id', courseId)
-        .order('order_index', { ascending: false })
-        .limit(1);
-
-      const nextOrderIndex = existingContent && existingContent.length > 0 
-        ? existingContent[0].order_index + 1 
-        : 0;
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('course_content')
         .insert({
           course_id: courseId,
-          content_type: contentType,
-          order_index: nextOrderIndex,
-          ...formData,
-        })
-        .select()
-        .single();
+          title: formData.title,
+          description: formData.description || null,
+          content_type: formData.content_type,
+          content_text: formData.content_text || null,
+          content_url: formData.content_url || null,
+          duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
+          is_downloadable: formData.is_downloadable
+        });
 
-      if (error) {
-        console.error('Error creating content:', error);
-        toast.error('Failed to create content');
-        return;
-      }
+      if (error) throw error;
 
-      // Update materials count
-      const { error: updateError } = await supabase
-        .from('courses')
-        .update({ 
-          materials_count: supabase.raw('materials_count + 1') 
-        })
-        .eq('id', courseId);
-
-      if (updateError) {
-        console.error('Error updating materials count:', updateError);
-      }
-
-      toast.success(`${contentType} created successfully!`);
+      toast.success('Content added successfully!');
       navigate(`/teacher/manage-course/${courseId}`);
     } catch (error) {
-      console.error('Error creating content:', error);
-      toast.error('Failed to create content');
+      console.error('Error adding content:', error);
+      toast.error('Failed to add content');
     } finally {
       setLoading(false);
     }
   };
 
-  const getContentTypeLabel = () => {
-    switch (contentType) {
-      case 'note': return 'Note';
-      case 'video': return 'Video';
-      case 'assignment': return 'Assignment';
-      default: return 'Content';
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // For now, we'll just set a placeholder URL
+      // In production, you'd upload to Supabase Storage
+      const fileName = `${Date.now()}-${file.name}`;
+      setFormData(prev => ({ ...prev, content_url: fileName }));
+      toast.success('File selected successfully');
+    } catch (error) {
+      console.error('Error handling file:', error);
+      toast.error('Failed to handle file');
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate(`/teacher/manage-course/${courseId}`)}
-              className="mr-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Course
-            </Button>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Add {getContentTypeLabel()}
-            </h1>
-          </div>
-        </div>
-      </header>
+  if (!course) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <Link 
+            to={`/teacher/manage-course/${courseId}`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to course management
+          </Link>
+        </div>
+
+        <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle>Add New {getContentTypeLabel()}</CardTitle>
+              <CardTitle>Add Content to {course.title}</CardTitle>
+              <CardDescription>
+                Create new learning materials for your students
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
+                <div>
+                  <Label htmlFor="title">Content Title</Label>
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder={`e.g., ${contentType === 'note' ? 'Chapter 1: Introduction' : contentType === 'video' ? 'Lesson 1: Getting Started' : 'Assignment 1: Basic Exercises'}`}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="e.g., Introduction to Algebra"
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder={`Describe this ${contentType}...`}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description of the content"
                     rows={3}
                   />
                 </div>
 
-                {contentType === 'note' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="content_text">Content *</Label>
+                <div>
+                  <Label htmlFor="content_type">Content Type</Label>
+                  <Select
+                    value={formData.content_type}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, content_type: value }))}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select content type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="note">Note</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="assignment">Assignment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.content_type === 'note' && (
+                  <div>
+                    <Label htmlFor="content_text">Content Text</Label>
                     <Textarea
                       id="content_text"
                       value={formData.content_text}
-                      onChange={(e) => handleInputChange('content_text', e.target.value)}
-                      placeholder="Enter the note content here..."
-                      rows={10}
-                      required
+                      onChange={(e) => setFormData(prev => ({ ...prev, content_text: e.target.value }))}
+                      placeholder="Enter the note content"
+                      rows={8}
                     />
                   </div>
                 )}
 
-                {(contentType === 'video' || contentType === 'assignment') && (
-                  <div className="space-y-2">
-                    <Label htmlFor="content_url">{contentType === 'video' ? 'Video URL' : 'Assignment File URL'}</Label>
-                    <Input
-                      id="content_url"
-                      value={formData.content_url}
-                      onChange={(e) => handleInputChange('content_url', e.target.value)}
-                      placeholder={contentType === 'video' ? 'https://youtube.com/watch?v=...' : 'https://example.com/assignment.pdf'}
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duration (minutes)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      value={formData.duration_minutes}
-                      onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 0)}
-                      placeholder="e.g., 15"
-                      min="0"
-                    />
-                  </div>
-
-                  {contentType === 'note' && (
-                    <div className="flex items-center space-x-3 pt-8">
-                      <Switch
-                        id="is_downloadable"
-                        checked={formData.is_downloadable}
-                        onCheckedChange={(checked) => handleInputChange('is_downloadable', checked)}
+                {(formData.content_type === 'video' || formData.content_type === 'assignment') && (
+                  <div>
+                    <Label htmlFor="file_upload">Upload File</Label>
+                    <div className="mt-2">
+                      <Input
+                        type="file"
+                        onChange={handleFileUpload}
+                        accept={formData.content_type === 'video' ? 'video/*' : '*'}
                       />
-                      <Label htmlFor="is_downloadable">Downloadable</Label>
                     </div>
-                  )}
+                    {formData.content_url && (
+                      <p className="mt-2 text-sm text-green-600">
+                        File selected: {formData.content_url}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="duration">Duration (minutes)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={formData.duration_minutes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, duration_minutes: e.target.value }))}
+                    placeholder="Estimated reading/viewing time"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="downloadable"
+                    checked={formData.is_downloadable}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_downloadable: checked }))}
+                  />
+                  <Label htmlFor="downloadable">Allow students to download this content</Label>
                 </div>
 
                 <div className="flex justify-end space-x-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => navigate(`/teacher/manage-course/${courseId}`)}
                   >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={loading}>
-                    {loading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    ) : (
-                      <Save className="w-4 h-4 mr-2" />
-                    )}
-                    Add {getContentTypeLabel()}
+                    {loading ? 'Adding...' : 'Add Content'}
+                    <Save className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

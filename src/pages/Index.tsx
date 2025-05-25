@@ -5,7 +5,7 @@ import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
 import { PricingSection } from '@/components/ui/pricing-section';
-import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap } from 'lucide-react';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap, GraduationCap, ChalkboardTeacher } from 'lucide-react';
 
 const features = [
   { 
@@ -310,6 +310,7 @@ const TIERS = [
       "1-on-1 tutoring sessions",
     ],
     cta: "Go Premium",
+    highlighted: true,
   },
   {
     id: "institution",
@@ -328,7 +329,6 @@ const TIERS = [
       "API access",
     ],
     cta: "Contact Sales",
-    highlighted: true,
   },
 ];
 
@@ -372,7 +372,7 @@ const Index = () => {
                 Practice, learn, and improve with StudyBuddy. Get real-time feedback, explanations, and study help through natural voice conversations.
               </p>
               
-              <div className="pt-4">
+              <div className="pt-4 space-y-4">
                 <Link 
                   to="/sign-up" 
                   className="group inline-flex items-center justify-center rounded-md bg-blue-500 px-6 py-3 text-white font-medium hover:bg-blue-600 transition-colors"
@@ -380,6 +380,32 @@ const Index = () => {
                   Start Learning
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
+
+                {/* Become a Tutor Section */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <ChalkboardTeacher className="h-5 w-5 text-green-600" />
+                    <h3 className="text-lg font-semibold text-green-600">Become a Tutor</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Share your knowledge and earn by creating courses for students worldwide.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Link 
+                      to="/teacher-sign-up" 
+                      className="inline-flex items-center justify-center rounded-md bg-green-600 px-4 py-2 text-sm text-white font-medium hover:bg-green-700 transition-colors"
+                    >
+                      <GraduationCap className="mr-2 h-4 w-4" />
+                      Become a Teacher
+                    </Link>
+                    <Link 
+                      to="/teacher-sign-in" 
+                      className="inline-flex items-center justify-center rounded-md border border-green-600 px-4 py-2 text-sm text-green-600 font-medium hover:bg-green-50 transition-colors"
+                    >
+                      Teacher Sign In
+                    </Link>
+                  </div>
+                </div>
               </div>
               
               <div className="flex items-center space-x-4 pt-4 text-sm text-muted-foreground">
