@@ -14,8 +14,6 @@ import {
 } from "lucide-react";
 import TutorSection from "./TutorSection";
 import AssessmentExam from "./AssessmentExam";
-import MindMapDialog from "./MindMapDialog";
-import DocumentSummarySection from "./DocumentSummarySection";
 
 interface LearningContentProps {
   subject: string;
@@ -184,17 +182,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
         }
       ]
     },
-    mastery: {
-      title: "Document Mastery: Upload & Analyze",
-      icon: <FileText className="w-5 h-5 text-white" />,
-      description: "Upload documents and get AI-powered summaries and insights",
-      sources: [],
-      mindMapNodes: [],
-      actions: [
-        { label: "Upload Document", icon: <FileEdit className="w-4 h-4" />, variant: "default" }
-      ],
-      studioCards: []
-    },
     assessment: {
       title: "Knowledge Assessment: Gap Analysis",
       icon: <BarChart3 className="w-5 h-5 text-white" />,
@@ -312,47 +299,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
     );
   }
 
-  // Special layout for mastery page
-  if (subjectType === 'mastery') {
-    return (
-      <div className="w-full h-full bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex flex-col">
-        {/* Header */}
-        <div className="border-b border-gray-200/60 dark:border-gray-700/60 p-4 lg:p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 lg:gap-4 min-w-0 flex-1">
-              <div className="w-6 h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                {currentConfig.icon}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate">
-                  {currentConfig.title}
-                </h1>
-                <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">
-                  {currentConfig.description}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all duration-200 hidden sm:flex">
-                <Share className="w-4 h-4 mr-2" />
-                Share
-              </Button>
-              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all duration-200">
-                <SettingsIcon className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Settings</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Document Summary Section */}
-        <div className="flex-1 p-4 lg:p-6">
-          <DocumentSummarySection />
-        </div>
-      </div>
-    );
-  }
-
   const handleMindMapClick = () => {
     setShowMindMap(true);
   };
@@ -404,7 +350,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left Panel - Sources */}
         <div className="w-full lg:w-80 border-b lg:border-r lg:border-b-0 border-gray-200/60 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col max-h-64 lg:max-h-none">
-          {/* ... keep existing code (sources panel) the same ... */}
           <div className="p-4 lg:p-6 border-b border-gray-200/60 dark:border-gray-700/60">
             <div className="flex items-center justify-between mb-4 lg:mb-6">
               <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Sources</h2>
@@ -449,7 +394,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
 
         {/* Center Panel - Chat */}
         <div className="flex-1 flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
-          {/* ... keep existing code (center panel) the same ... */}
           <div className="p-4 lg:p-6 border-b border-gray-200/60 dark:border-gray-700/60">
             <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Chat</h2>
           </div>
@@ -537,7 +481,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
 
         {/* Right Panel - Studio */}
         <div className="w-full lg:w-80 border-t lg:border-l lg:border-t-0 border-gray-200/60 dark:border-gray-700/60 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col max-h-96 lg:max-h-none">
-          {/* ... keep existing code (studio panel) the same ... */}
           <div className="p-4 lg:p-6 border-b border-gray-200/60 dark:border-gray-700/60">
             <h2 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">Studio</h2>
           </div>
@@ -613,12 +556,6 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
           </ScrollArea>
         </div>
       </div>
-
-      {/* Mind Map Dialog */}
-      <MindMapDialog 
-        open={showMindMap} 
-        onOpenChange={setShowMindMap}
-      />
     </div>
   );
 };

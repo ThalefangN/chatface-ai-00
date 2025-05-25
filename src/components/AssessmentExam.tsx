@@ -283,53 +283,52 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       
       console.log('Generating questions for:', { subjectInput, topicInput });
       
-      const questionCount = Math.floor(Math.random() * 11) + 15; // 15-25 questions (reduced from 20-30)
+      const questionCount = Math.floor(Math.random() * 11) + 20; // 20-30 questions
       const theoryQuestionCount = Math.floor(questionCount * 0.2); // 20% theory questions
       const mcAndTfCount = questionCount - theoryQuestionCount;
       
-      const prompt = `Create exactly ${questionCount} educational assessment questions for "${subjectInput}" focusing on "${topicInput}".
+      const prompt = `Create ${questionCount} educational assessment questions for "${subjectInput}" focusing on "${topicInput}".
 
-CRITICAL REQUIREMENTS:
-- Generate exactly ${mcAndTfCount} multiple-choice and true/false questions
-- Generate exactly ${theoryQuestionCount} theory questions requiring written responses
-- Return ONLY a valid JSON array - no markdown, no explanations, no extra text
-- Each question MUST have: id, question, type, correctAnswer, explanation
-- Multiple-choice questions MUST have an "options" array with exactly 4 choices
+Requirements:
+- ${mcAndTfCount} multiple-choice and true/false questions
+- ${theoryQuestionCount} theory questions requiring written responses
+- Return ONLY a valid JSON array with no additional text
+- Each question must have: id, question, type, correctAnswer, explanation
+- Multiple-choice questions need an "options" array with 4 choices
 - Theory questions should have detailed sample answers in correctAnswer
-- Ensure JSON is complete and not truncated
 
-STRICT JSON FORMAT - Return ONLY this array:
+Example format:
 [
   {
     "id": 1,
-    "question": "What is 2 + 2?",
+    "question": "What is the capital of Botswana?",
     "type": "multiple-choice",
-    "options": ["3", "4", "5", "6"],
-    "correctAnswer": "4",
-    "explanation": "Basic addition: 2 + 2 equals 4."
+    "options": ["Gaborone", "Francistown", "Maun", "Kasane"],
+    "correctAnswer": "Gaborone",
+    "explanation": "Gaborone is the capital and largest city of Botswana."
   },
   {
     "id": 2,
-    "question": "True or False: 2 + 2 = 4",
+    "question": "Setswana is the national language of Botswana.",
     "type": "true-false",
     "correctAnswer": "true",
-    "explanation": "This is a basic addition fact."
+    "explanation": "Setswana is indeed the national language of Botswana alongside English."
   },
   {
     "id": 3,
-    "question": "Explain the importance of addition in mathematics.",
+    "question": "Explain the importance of traditional greetings in Setswana culture.",
     "type": "theory",
-    "correctAnswer": "Addition is fundamental to mathematics as it forms the basis for all arithmetic operations. It helps in counting, combining quantities, and solving real-world problems.",
-    "explanation": "This tests understanding of mathematical fundamentals."
+    "correctAnswer": "Traditional greetings in Setswana culture are essential for showing respect and maintaining social harmony. They demonstrate cultural values, build relationships, and preserve heritage. Common greetings like 'Dumela' show politeness and acknowledgment of others' presence.",
+    "explanation": "This tests understanding of cultural significance and social norms."
   }
 ]
 
-Generate exactly ${questionCount} questions. Return ONLY the JSON array.`;
+Return ONLY the JSON array starting with [ and ending with ].`;
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: prompt,
-          systemPrompt: 'You are an expert assessment creator. Generate educational questions and return ONLY a valid JSON array. No markdown, no explanations, just the JSON array starting with [ and ending with ]. Ensure the response is complete and not truncated.'
+          systemPrompt: 'You are an expert assessment creator. Generate educational questions and return ONLY a valid JSON array. No markdown, no explanations, just the JSON array starting with [ and ending with ].'
         }
       });
 
@@ -368,7 +367,20 @@ Generate exactly ${questionCount} questions. Return ONLY the JSON array.`;
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
         console.error('Content that failed to parse:', jsonContent);
-        throw new Error(`JSON parsing failed: ${parseError.message}`);
+        
+        // Try to fix common JSON issues
+        let fixedContent = jsonContent
+          .replace(/'/g, '"') // Replace single quotes with double quotes
+          .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes around keys
+          .replace(/:\s*([^",\[\]{}]+)([,}])/g, ':"$1"$2'); // Add quotes around unquoted string values;
+        
+        try {
+          generatedQuestions = JSON.parse(fixedContent);
+          console.log('Successfully parsed with fixes');
+        } catch (secondParseError) {
+          console.error('Second parse attempt failed:', secondParseError);
+          throw new Error(`JSON parsing failed: ${parseError.message}`);
+        }
       }
       
       if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
@@ -404,19 +416,7 @@ Generate exactly ${questionCount} questions. Return ONLY the JSON array.`;
       
     } catch (error) {
       console.error('Error generating questions:', error);
-      let errorMessage = 'Unknown error';
-      
-      if (error.message.includes('truncated')) {
-        errorMessage = 'Response was too long and got cut off. Try requesting fewer questions.';
-      } else if (error.message.includes('JSON parsing failed')) {
-        errorMessage = 'Failed to parse AI response. The response may be incomplete or malformed.';
-      } else if (error.message.includes('API Error')) {
-        errorMessage = 'Connection error. Please check your internet connection and try again.';
-      } else {
-        errorMessage = error.message || 'Failed to generate questions';
-      }
-      
-      toast.error(`Failed to generate questions: ${errorMessage}`);
+      toast.error(`Failed to generate questions: ${error.message || 'Unknown error'}`);
       setQuestions([]);
     } finally {
       setIsLoading(false);
@@ -700,7 +700,7 @@ Fully correct answers should score 80-100.`;
         <div className="text-center">
           <PencilLoadingAnimation />
           <p className="mt-4 text-lg font-medium">Generating assessment questions for {customSubject} - {customTopic}...</p>
-          <p className="text-sm text-muted-foreground mt-2">This will include 15-25 questions with theory questions</p>
+          <p className="text-sm text-muted-foreground mt-2">This will include 20-30 questions with theory questions</p>
           <p className="text-xs text-muted-foreground mt-1">Please wait while we create your personalized assessment</p>
         </div>
       </div>
