@@ -5,7 +5,7 @@ import { FeatureSteps } from '@/components/ui/feature-steps';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import RadialOrbitalTimeline from '@/components/ui/radial-orbital-timeline';
 import { PricingSection } from '@/components/ui/pricing-section';
-import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap, GraduationCap } from 'lucide-react';
+import { ArrowRight, MicIcon, Users, BookOpen, Award, CheckCircle, TrendingUp, Video, Globe, Calendar, Code, FileText, User, Clock, Upload, Brain, Search, Shield, Lightbulb, FileCheck, MessageSquare, Target, Zap, GraduationCap, MapPin, ClipboardCheck } from 'lucide-react';
 
 const features = [
   { 
@@ -16,19 +16,25 @@ const features = [
   },
   { 
     step: 'Step 2',
-    title: 'Get Explanations',
-    content: 'Receive clear, detailed explanations tailored to your learning level and pace.',
+    title: 'AI-Powered Assessments',
+    content: 'Take intelligent assessments that adapt to your knowledge level and identify areas for improvement with instant feedback.',
     image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?q=80&w=2070&auto=format&fit=crop'
   },
   { 
     step: 'Step 3',
-    title: 'Practice & Improve',
-    content: 'Practice with interactive exercises and track your progress as you master new concepts.',
+    title: 'AI Mindmaps & Visual Learning',
+    content: 'Generate interactive mindmaps and visual study guides that help you understand complex topics and connections.',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2070&auto=format&fit=crop'
+  },
+  { 
+    step: 'Step 4',
+    title: 'BGCSE, JCE & PSLE Preparation',
+    content: 'Master Botswana curriculum with targeted practice for BGCSE, JCE, and PSLE exams with past papers and exam strategies.',
+    image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=2070&auto=format&fit=crop'
   },
 ];
 
-// How StudyBuddy Works Features - Updated layout to match Advanced Learning Features
+// How StudyBuddy Works Features - Updated with new features
 const studyBuddyWorksFeatures = [
   {
     title: "Voice Interaction",
@@ -41,30 +47,30 @@ const studyBuddyWorksFeatures = [
     hasPersistentHover: true,
   },
   {
-    title: "Get Explanations",
-    meta: "Tailored learning",
-    description: "Receive clear, detailed explanations tailored to your learning level and pace",
-    icon: <MessageSquare className="w-4 h-4 text-emerald-500" />,
+    title: "AI-Powered Assessments",
+    meta: "Intelligent testing",
+    description: "Take adaptive assessments that identify your strengths and areas for improvement with instant feedback",
+    icon: <ClipboardCheck className="w-4 h-4 text-emerald-500" />,
     status: "Active",
-    tags: ["Explanations", "Personalized"],
+    tags: ["Assessment", "AI", "Feedback"],
     colSpan: 1,
   },
   {
-    title: "Practice & Improve",
-    meta: "Interactive exercises",
-    description: "Practice with interactive exercises and track your progress as you master new concepts",
-    icon: <Target className="w-4 h-4 text-purple-500" />,
+    title: "AI Mindmaps & Visual Learning",
+    meta: "Interactive visualization",
+    description: "Generate dynamic mindmaps and visual study guides that help you understand complex topics and connections",
+    icon: <MapPin className="w-4 h-4 text-purple-500" />,
     status: "Enhanced",
-    tags: ["Practice", "Progress"],
+    tags: ["Mindmaps", "Visual", "Learning"],
     colSpan: 2,
   },
   {
-    title: "Learning Progress Timeline",
-    meta: "Structured path",
-    description: "Experience a structured learning path designed to maximize your academic success with AI-powered guidance",
-    icon: <Calendar className="w-4 h-4 text-orange-500" />,
+    title: "BGCSE, JCE & PSLE Preparation",
+    meta: "Botswana curriculum",
+    description: "Master local curriculum with targeted practice for BGCSE, JCE, and PSLE exams including past papers",
+    icon: <Award className="w-4 h-4 text-orange-500" />,
     status: "Active",
-    tags: ["Timeline", "Progress"],
+    tags: ["BGCSE", "JCE", "PSLE"],
     colSpan: 1,
   },
 ];
@@ -558,9 +564,14 @@ const Index = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <Logo size="sm" />
-            <p className="text-sm text-muted-foreground mt-4 md:mt-0">
-              © {new Date().getFullYear()} StudyBuddy. All rights reserved.
-            </p>
+            <div className="text-center md:text-right mt-4 md:mt-0">
+              <p className="text-sm text-muted-foreground">
+                © {new Date().getFullYear()} StudyBuddy. All rights reserved.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                A product of DevGenBotswana
+              </p>
+            </div>
           </div>
         </div>
       </footer>
