@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Function to clean markdown formatting from text
+function cleanMarkdownFormatting(text: string): string {
+  // Remove ** bold formatting
+  let cleaned = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  
+  // Remove ### headers
+  cleaned = cleaned.replace(/###\s*/g, '');
+  
+  // Remove ## headers
+  cleaned = cleaned.replace(/##\s*/g, '');
+  
+  // Remove # headers
+  cleaned = cleaned.replace(/#\s*/g, '');
+  
+  // Clean up any remaining asterisks that might be used for emphasis
+  cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');
+  
+  return cleaned;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -58,7 +78,10 @@ serve(async (req) => {
       throw new Error('Invalid response format from OpenAI')
     }
 
-    const content = data.choices[0].message.content
+    let content = data.choices[0].message.content
+
+    // Clean markdown formatting from the content
+    content = cleanMarkdownFormatting(content)
 
     // Check if this is a request for assessment questions (JSON format)
     const isAssessmentRequest = message.includes('Generate exactly') && message.includes('questions for the subject')
