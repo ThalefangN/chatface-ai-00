@@ -272,110 +272,132 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     try {
       setIsLoading(true);
       
+      console.log('Generating questions for:', { subjectInput, topicInput });
+      
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message: `Generate exactly 30 assessment questions for the subject "${subjectInput}" and topic "${topicInput}". 
+          message: `You are an expert assessment creator. Generate exactly 10 high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
+
+          Create a balanced mix of multiple-choice (4 options each) and true/false questions.
           
-          Create a mix of multiple-choice (4 options each) and true/false questions about ${topicInput} in ${subjectInput}.
+          IMPORTANT: Return ONLY a valid JSON array. No markdown, no backticks, no explanation text.
           
-          Return ONLY a valid JSON array with this exact structure (no markdown formatting, no backticks, no explanation):
+          Format:
           [
             {
               "id": 1,
-              "question": "What is 2 + 2?",
+              "question": "What is the value of x in the equation 2x + 3 = 11?",
               "type": "multiple-choice",
-              "options": ["3", "4", "5", "6"],
-              "correctAnswer": "4",
-              "explanation": "2 + 2 equals 4 because addition combines quantities."
+              "options": ["x = 2", "x = 4", "x = 6", "x = 8"],
+              "correctAnswer": "x = 4",
+              "explanation": "Subtract 3 from both sides to get 2x = 8, then divide by 2."
             },
             {
               "id": 2,
-              "question": "The sum of two even numbers is always even.",
+              "question": "A negative number multiplied by a negative number gives a positive result.",
               "type": "true-false",
               "correctAnswer": "true",
-              "explanation": "When you add two even numbers, the result is always even."
+              "explanation": "The product of two negative numbers is always positive."
             }
           ]
           
           Requirements:
-          - Exactly 30 questions total
+          - Exactly 10 questions
           - Mix of multiple-choice and true/false
-          - Each multiple-choice has exactly 4 options
-          - True/false questions have correctAnswer as "true" or "false"
-          - All questions have clear, educational explanations
-          - Questions should be appropriate difficulty level
-          - Return ONLY the JSON array, no other text`,
-          systemPrompt: 'You are an expert assessment creator. You must return ONLY valid JSON without any markdown formatting, code blocks, or additional text. The response should start with [ and end with ].'
+          - Educational explanations
+          - Appropriate difficulty for ${topicInput}
+          - Return ONLY the JSON array`,
+          systemPrompt: 'You are an expert assessment creator. Return ONLY valid JSON without any additional text, markdown formatting, or code blocks. The response must start with [ and end with ].'
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Raw AI response:', data);
+      
+      if (!data || !data.content) {
+        throw new Error('No content received from AI');
+      }
 
       let content = data.content.trim();
       
-      // Clean up any markdown formatting that might slip through
+      // Remove any markdown formatting
       content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       
-      // Remove any text before the JSON array
+      // Find the JSON array boundaries
       const jsonStart = content.indexOf('[');
       const jsonEnd = content.lastIndexOf(']') + 1;
       
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        content = content.substring(jsonStart, jsonEnd);
+      if (jsonStart === -1 || jsonEnd === 0) {
+        throw new Error('No valid JSON array found in response');
       }
       
-      console.log('Cleaned AI response:', content);
+      content = content.substring(jsonStart, jsonEnd);
+      console.log('Cleaned content for parsing:', content);
       
+      let generatedQuestions;
       try {
-        const generatedQuestions = JSON.parse(content);
+        generatedQuestions = JSON.parse(content);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        console.log('Content that failed to parse:', content);
         
-        if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
-          throw new Error('Invalid questions format');
-        }
+        // Try to fix common JSON issues
+        let fixedContent = content;
         
-        // Ensure we have exactly 30 questions and proper formatting
-        const questions30 = generatedQuestions.slice(0, 30).map((q: any, index: number) => ({
-          id: index + 1,
-          question: q.question || `Question ${index + 1}`,
-          type: q.type || (index % 2 === 0 ? 'multiple-choice' : 'true-false'),
-          options: q.type === 'multiple-choice' ? (q.options || ['Option A', 'Option B', 'Option C', 'Option D']) : undefined,
-          correctAnswer: q.correctAnswer || (q.type === 'true-false' ? 'true' : 'Option A'),
-          explanation: q.explanation || `This is the explanation for question ${index + 1}.`
-        }));
-        
-        if (questions30.length < 30) {
-          // Fill remaining questions if needed
-          while (questions30.length < 30) {
-            const index = questions30.length;
-            questions30.push({
-              id: index + 1,
-              question: `Additional ${subjectInput} question about ${topicInput}?`,
-              type: index % 2 === 0 ? 'multiple-choice' : 'true-false',
-              options: index % 2 === 0 ? [
-                `Basic concept of ${topicInput}`,
-                `Advanced theory in ${topicInput}`,
-                `Application of ${topicInput}`,
-                `None of the above`
-              ] : undefined,
-              correctAnswer: index % 2 === 0 ? `Basic concept of ${topicInput}` : 'true',
-              explanation: `This covers important concepts in ${topicInput}.`
-            });
+        // Add missing closing brackets or quotes if needed
+        if (!fixedContent.endsWith(']')) {
+          // Count open vs closed brackets to estimate how many we need
+          const openBrackets = (fixedContent.match(/\[/g) || []).length;
+          const closeBrackets = (fixedContent.match(/\]/g) || []).length;
+          
+          if (openBrackets > closeBrackets) {
+            fixedContent += ']';
           }
         }
         
-        setQuestions(questions30);
-        toast.success(`Generated ${questions30.length} questions successfully!`);
-        
-      } catch (parseError) {
-        console.error('Error parsing AI response:', parseError);
-        throw new Error('Failed to parse AI response');
+        // Try parsing again
+        try {
+          generatedQuestions = JSON.parse(fixedContent);
+        } catch (secondParseError) {
+          console.error('Second parse attempt failed:', secondParseError);
+          throw new Error('Unable to parse AI response as JSON');
+        }
       }
+      
+      if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
+        throw new Error('AI response is not a valid question array');
+      }
+      
+      // Ensure we have properly formatted questions
+      const validQuestions = generatedQuestions
+        .filter(q => q && q.question && q.type && q.correctAnswer && q.explanation)
+        .slice(0, 10) // Limit to 10 questions
+        .map((q: any, index: number) => ({
+          id: index + 1,
+          question: q.question,
+          type: q.type === 'true-false' ? 'true-false' : 'multiple-choice',
+          options: q.type === 'multiple-choice' ? q.options : undefined,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation
+        }));
+      
+      if (validQuestions.length < 5) {
+        throw new Error('Not enough valid questions generated');
+      }
+      
+      setQuestions(validQuestions);
+      toast.success(`Generated ${validQuestions.length} questions successfully!`);
       
     } catch (error) {
       console.error('Error generating questions:', error);
-      toast.error('Failed to generate questions. Creating sample questions instead.');
-      // Generate fallback questions
-      generateFallbackQuestions(subjectInput, topicInput);
+      toast.error('Failed to generate AI questions. Please try again.');
+      
+      // Don't fall back to sample questions - let user retry
+      setQuestions([]);
     } finally {
       setIsLoading(false);
     }
@@ -447,30 +469,12 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
     return { grade: 'F', color: 'text-red-500', message: 'Poor performance. Please review and try again.' };
   };
 
-  const generateFallbackQuestions = (subjectInput: string, topicInput: string) => {
-    const fallbackQuestions: Question[] = Array.from({ length: 30 }, (_, i) => ({
-      id: i + 1,
-      question: i % 2 === 0 
-        ? `What is an important concept in ${topicInput} within ${subjectInput}?`
-        : `${topicInput} is a fundamental part of ${subjectInput}.`,
-      type: i % 2 === 0 ? 'multiple-choice' : 'true-false',
-      options: i % 2 === 0 ? [
-        `Basic concept of ${topicInput}`,
-        `Advanced theory in ${topicInput}`,
-        `Application of ${topicInput}`,
-        `None of the above`
-      ] : undefined,
-      correctAnswer: i % 2 === 0 ? `Basic concept of ${topicInput}` : 'true',
-      explanation: `This question tests your understanding of ${topicInput} in ${subjectInput}.`
-    }));
-    setQuestions(fallbackQuestions);
-    toast.success('Sample questions created for demonstration.');
-  };
-
   const handleSubjectSubmit = () => {
     if (customSubject.trim() && customTopic.trim()) {
       setShowSubjectInput(false);
       generateQuestions(customSubject, customTopic);
+    } else {
+      toast.error('Please enter both subject and topic');
     }
   };
 
@@ -610,6 +614,43 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
               <div className="text-sm text-muted-foreground">
                 Great work on completing the assessment!
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (questions.length === 0 && !isLoading && !showSubjectInput) {
+    return (
+      <div className="max-w-md mx-auto mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              Failed to Generate Questions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              We couldn't generate questions for {customSubject} - {customTopic}. Please try again with a different topic or check your connection.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => generateQuestions(customSubject, customTopic)}
+                className="flex-1"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowSubjectInput(true)}
+                className="flex-1"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
             </div>
           </CardContent>
         </Card>
