@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -274,46 +275,48 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       
       console.log('Generating questions for:', { subjectInput, topicInput });
       
+      const prompt = `Generate exactly 5 high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
+
+Create a balanced mix of multiple-choice (4 options each) and true/false questions.
+
+IMPORTANT: Return ONLY a valid JSON array. No markdown, no backticks, no explanation text.
+
+Format:
+[
+  {
+    "id": 1,
+    "question": "What is the value of x in the equation 2x + 3 = 11?",
+    "type": "multiple-choice",
+    "options": ["x = 2", "x = 4", "x = 6", "x = 8"],
+    "correctAnswer": "x = 4",
+    "explanation": "Subtract 3 from both sides to get 2x = 8, then divide by 2."
+  },
+  {
+    "id": 2,
+    "question": "A negative number multiplied by a negative number gives a positive result.",
+    "type": "true-false",
+    "correctAnswer": "true",
+    "explanation": "The product of two negative numbers is always positive."
+  }
+]
+
+Requirements:
+- Exactly 5 questions
+- Mix of multiple-choice and true/false
+- Educational explanations
+- Appropriate difficulty for ${topicInput}
+- Return ONLY the JSON array`;
+
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message: `You are an expert assessment creator. Generate exactly 5 high-quality assessment questions for the subject "${subjectInput}" and topic "${topicInput}".
-
-          Create a balanced mix of multiple-choice (4 options each) and true/false questions.
-          
-          IMPORTANT: Return ONLY a valid JSON array. No markdown, no backticks, no explanation text.
-          
-          Format:
-          [
-            {
-              "id": 1,
-              "question": "What is the value of x in the equation 2x + 3 = 11?",
-              "type": "multiple-choice",
-              "options": ["x = 2", "x = 4", "x = 6", "x = 8"],
-              "correctAnswer": "x = 4",
-              "explanation": "Subtract 3 from both sides to get 2x = 8, then divide by 2."
-            },
-            {
-              "id": 2,
-              "question": "A negative number multiplied by a negative number gives a positive result.",
-              "type": "true-false",
-              "correctAnswer": "true",
-              "explanation": "The product of two negative numbers is always positive."
-            }
-          ]
-          
-          Requirements:
-          - Exactly 5 questions
-          - Mix of multiple-choice and true/false
-          - Educational explanations
-          - Appropriate difficulty for ${topicInput}
-          - Return ONLY the JSON array`,
+          message: prompt,
           systemPrompt: 'You are an expert assessment creator. Return ONLY valid JSON without any additional text, markdown formatting, or code blocks. The response must start with [ and end with ].'
         }
       });
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw error;
+        throw new Error(`API Error: ${error.message}`);
       }
 
       console.log('Raw AI response:', data);
@@ -324,15 +327,16 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
 
       let content = data.content.trim();
       
-      // Remove any markdown formatting
+      // Remove any markdown formatting or extra text
       content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       
-      // Find the JSON array boundaries
+      // Find the JSON array boundaries more precisely
       const jsonStart = content.indexOf('[');
       const jsonEnd = content.lastIndexOf(']') + 1;
       
       if (jsonStart === -1 || jsonEnd === 0) {
-        throw new Error('No valid JSON array found in response');
+        console.error('No JSON array found in response:', content);
+        throw new Error('No valid JSON array found in AI response');
       }
       
       content = content.substring(jsonStart, jsonEnd);
@@ -344,7 +348,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
         console.log('Content that failed to parse:', content);
-        throw new Error('Unable to parse AI response as JSON');
+        throw new Error(`JSON parsing failed: ${parseError.message}`);
       }
       
       if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
@@ -373,7 +377,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
       
     } catch (error) {
       console.error('Error generating questions:', error);
-      toast.error('Failed to generate AI questions. Please try again.');
+      toast.error(`Failed to generate AI questions: ${error.message}`);
       setQuestions([]);
     } finally {
       setIsLoading(false);
