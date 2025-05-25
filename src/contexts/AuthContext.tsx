@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
   user: User | null;
@@ -28,125 +29,88 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for mock user in localStorage for bypass authentication
-    const mockUser = localStorage.getItem('mockUser');
-    if (mockUser) {
-      try {
-        const parsedUser = JSON.parse(mockUser);
-        // Create a minimal user object that matches the User type
-        const minimalUser = {
-          id: parsedUser.id || 'test-user-id',
-          email: parsedUser.email || 'test@example.com',
-          user_metadata: {
-            first_name: parsedUser.firstName || '',
-            last_name: parsedUser.lastName || '',
-          },
-          app_metadata: {},
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          phone: '',
-          email_confirmed_at: new Date().toISOString(),
-          confirmed_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-          role: 'authenticated',
-          updated_at: new Date().toISOString(),
-          identities: [],
-          factors: [],
-        } as User;
-        setUser(minimalUser);
-      } catch (error) {
-        console.log('Error parsing mock user:', error);
-        localStorage.removeItem('mockUser');
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    );
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Accept any email and password for testing
-      if (email && password) {
-        const minimalUser = {
-          id: 'test-user-id',
-          email,
-          user_metadata: {
-            first_name: '',
-            last_name: '',
-          },
-          app_metadata: {},
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          phone: '',
-          email_confirmed_at: new Date().toISOString(),
-          confirmed_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-          role: 'authenticated',
-          updated_at: new Date().toISOString(),
-          identities: [],
-          factors: [],
-        } as User;
-        
-        localStorage.setItem('mockUser', JSON.stringify({ email, id: 'test-user-id' }));
-        setUser(minimalUser);
-        return { error: null };
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        return { error: error.message };
       }
-      return { error: 'Email and password are required' };
+      
+      return { error: null };
     } catch (error) {
       console.error('Error during sign in:', error);
-      return { error };
+      return { error: 'An unexpected error occurred' };
     }
   };
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
-      // Accept any email and password for testing
-      if (email && password) {
-        const minimalUser = {
-          id: 'test-user-id',
-          email,
-          user_metadata: {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
             first_name: firstName || '',
             last_name: lastName || '',
-          },
-          app_metadata: {},
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          phone: '',
-          email_confirmed_at: new Date().toISOString(),
-          confirmed_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-          role: 'authenticated',
-          updated_at: new Date().toISOString(),
-          identities: [],
-          factors: [],
-        } as User;
-        
-        localStorage.setItem('mockUser', JSON.stringify({ 
-          email, 
-          id: 'test-user-id', 
-          firstName,
-          lastName 
-        }));
-        setUser(minimalUser);
-        return { error: null };
+          }
+        }
+      });
+      
+      if (error) {
+        return { error: error.message };
       }
-      return { error: 'Email and password are required' };
+      
+      return { error: null };
     } catch (error) {
       console.error('Error during sign up:', error);
-      return { error };
+      return { error: 'An unexpected error occurred' };
     }
   };
 
   const signOut = async () => {
-    localStorage.removeItem('mockUser');
-    setUser(null);
-    setSession(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error('Error during sign out:', error);
+    }
   };
 
   const resetPassword = async (email: string) => {
-    // Mock implementation for testing
-    console.log('Password reset requested for:', email);
-    return { error: null };
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        return { error: error.message };
+      }
+      return { error: null };
+    } catch (error) {
+      console.error('Error during password reset:', error);
+      return { error: 'An unexpected error occurred' };
+    }
   };
 
   const value = {

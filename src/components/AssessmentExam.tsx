@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Question {
   id: number;
@@ -267,71 +268,48 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
   const [customTopic, setCustomTopic] = useState('');
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  // OpenAI API Key - directly embedded
-  const OPENAI_API_KEY = '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';
-
   const generateQuestions = async (subjectInput: string, topicInput: string) => {
     try {
       setIsLoading(true);
-      const prompt = `Generate exactly 30 assessment questions for the subject "${subjectInput}" and topic "${topicInput}". 
       
-      Mix multiple-choice (4 options) and true/false questions. 
-      
-      Return ONLY a valid JSON array with this exact structure (no markdown formatting, no backticks):
-      [
-        {
-          "id": 1,
-          "question": "What is the question text?",
-          "type": "multiple-choice",
-          "options": ["Option A", "Option B", "Option C", "Option D"],
-          "correctAnswer": "Option A",
-          "explanation": "Explanation of why this is correct"
-        },
-        {
-          "id": 2,
-          "question": "True or false statement?",
-          "type": "true-false",
-          "correctAnswer": "true",
-          "explanation": "Explanation of the answer"
-        }
-      ]
-      
-      Make sure:
-      - Questions are educational and appropriate
-      - Each multiple-choice has exactly 4 options
-      - True/false questions have correctAnswer as "true" or "false"
-      - All questions have clear explanations
-      - Return exactly 30 questions`;
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+        body: {
+          message: `Generate exactly 30 assessment questions for the subject "${subjectInput}" and topic "${topicInput}". 
+          
+          Mix multiple-choice (4 options) and true/false questions. 
+          
+          Return ONLY a valid JSON array with this exact structure (no markdown formatting, no backticks):
+          [
             {
-              role: 'system',
-              content: 'You are an expert assessment creator. Return only valid JSON without any markdown formatting or code blocks.'
+              "id": 1,
+              "question": "What is the question text?",
+              "type": "multiple-choice",
+              "options": ["Option A", "Option B", "Option C", "Option D"],
+              "correctAnswer": "Option A",
+              "explanation": "Explanation of why this is correct"
             },
             {
-              role: 'user',
-              content: prompt
+              "id": 2,
+              "question": "True or false statement?",
+              "type": "true-false",
+              "correctAnswer": "true",
+              "explanation": "Explanation of the answer"
             }
-          ],
-          temperature: 0.7,
-          max_tokens: 4000,
-        }),
+          ]
+          
+          Make sure:
+          - Questions are educational and appropriate
+          - Each multiple-choice has exactly 4 options
+          - True/false questions have correctAnswer as "true" or "false"
+          - All questions have clear explanations
+          - Return exactly 30 questions`,
+          systemPrompt: 'You are an expert assessment creator. Return only valid JSON without any markdown formatting or code blocks.'
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate questions');
-      }
+      if (error) throw error;
 
-      const data = await response.json();
-      let content = data.choices[0].message.content.trim();
+      let content = data.content.trim();
       
       // Clean up any markdown formatting
       content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -522,7 +500,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
           </CardHeader>
           <CardContent>
             <div className="text-center mb-6">
-              <div className="text-6xl font-bold mb-2 ${gradeInfo.color}">
+              <div className={`text-6xl font-bold mb-2 ${gradeInfo.color}`}>
                 {gradeInfo.grade}
               </div>
               <div className="text-2xl font-semibold mb-2">
@@ -531,7 +509,7 @@ const AssessmentExam: React.FC<AssessmentExamProps> = ({ subject, onBack }) => {
               <div className="text-xl text-muted-foreground mb-4">
                 Score: {results.percentage}%
               </div>
-              <div className="text-lg ${gradeInfo.color} font-medium mb-4">
+              <div className={`text-lg ${gradeInfo.color} font-medium mb-4`}>
                 {gradeInfo.message}
               </div>
               <Progress value={results.percentage} className="w-full max-w-md mx-auto" />
