@@ -38,6 +38,51 @@ function cleanJsonContent(content: string): string {
     
     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
       cleaned = cleaned.substring(startIndex, endIndex + 1);
+    } else {
+      throw new Error('No valid JSON array found in response');
+    }
+    
+    // Fix incomplete JSON by checking if it ends properly
+    if (!cleaned.endsWith(']')) {
+      // Find the last complete object
+      let lastCompleteIndex = -1;
+      let braceCount = 0;
+      let inString = false;
+      let escapeNext = false;
+      
+      for (let i = 0; i < cleaned.length; i++) {
+        const char = cleaned[i];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              lastCompleteIndex = i;
+            }
+          }
+        }
+      }
+      
+      if (lastCompleteIndex > -1) {
+        cleaned = cleaned.substring(0, lastCompleteIndex + 1) + ']';
+      }
     }
     
     // Fix common JSON issues
@@ -50,13 +95,15 @@ function cleanJsonContent(content: string): string {
       // Fix missing commas after arrays
       .replace(/]\s*\n\s*}/g, ']\n  }')
       // Remove trailing commas
-      .replace(/,(\s*[}\]])/g, '$1')
-      // Ensure proper escaping of quotes in strings
-      .replace(/([^\\])"/g, '$1\\"')
-      .replace(/^"/g, '\\"');
+      .replace(/,(\s*[}\]])/g, '$1');
     
     // Try to parse and re-stringify to ensure valid JSON
     const parsed = JSON.parse(cleaned);
+    
+    if (!Array.isArray(parsed)) {
+      throw new Error('Response is not a valid array');
+    }
+    
     return JSON.stringify(parsed);
   } catch (error) {
     console.error('JSON cleaning failed:', error);
@@ -95,7 +142,7 @@ serve(async (req) => {
           {
             role: 'system',
             content: isAssessmentRequest 
-              ? 'You are a helpful AI that generates valid JSON assessment questions. Always respond with properly formatted JSON arrays containing question objects. Ensure all JSON is valid and complete.'
+              ? 'You are a helpful AI that generates valid JSON assessment questions. Always respond with properly formatted JSON arrays containing question objects. Ensure all JSON is valid and complete. Do not truncate responses.'
               : (systemPrompt || 'You are a helpful AI study assistant.')
           },
           {
@@ -104,7 +151,7 @@ serve(async (req) => {
           }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000, // Increased token limit to prevent truncation
       }),
     })
 
@@ -122,6 +169,15 @@ serve(async (req) => {
     }
 
     let content = data.choices[0].message.content
+
+    // Check if response was truncated
+    if (data.choices[0].finish_reason === 'length') {
+      console.warn('Response was truncated due to max_tokens limit');
+      // For assessment requests, this is critical
+      if (isAssessmentRequest) {
+        throw new Error('Response was truncated. Please try requesting fewer questions.');
+      }
+    }
 
     // Handle assessment questions differently
     if (isAssessmentRequest) {
