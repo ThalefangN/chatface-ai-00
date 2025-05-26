@@ -1,21 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ChangePasswordDialog from '@/components/ChangePasswordDialog';
+import ProfileImageUpload from '@/components/ProfileImageUpload';
+import ProfileForm from '@/components/ProfileForm';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   User, 
   Mail, 
@@ -27,22 +26,23 @@ import {
   Bell,
   Shield,
   Settings as SettingsIcon,
-  Edit,
-  Camera
+  Edit
 } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState({
-    name: user?.user_metadata?.full_name || 'Student User',
+    first_name: '',
+    last_name: '',
     email: user?.email || '',
-    bio: 'Passionate learner exploring mathematics and science',
-    grade: '12th Grade',
+    bio: '',
+    grade_level: '12th Grade',
     school: 'Virtual Academy',
     subjects: ['Mathematics', 'Physics', 'Chemistry'],
-    avatarUrl: user?.user_metadata?.avatar_url || ''
+    profile_image_url: ''
   });
 
   const [settings, setSettings] = useState({
@@ -67,31 +67,90 @@ const Profile = () => {
     { name: 'Perfect Score', description: 'Get 100% on any assessment', earned: false }
   ];
 
-  const gradeOptions = [
-    'PSLE',
-    'JCE',
-    'BGCSE',
-    '10th Grade',
-    '11th Grade',
-    '12th Grade'
-  ];
+  useEffect(() => {
+    fetchProfile();
+  }, [user]);
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Create a preview URL for the uploaded image
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setProfile(prev => ({ ...prev, avatarUrl: result }));
-        toast({
-          title: "Photo uploaded",
-          description: "Your profile photo has been updated",
+  const fetchProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setProfile({
+          first_name: data.first_name || '',
+          last_name: data.last_name || '',
+          email: user.email || '',
+          bio: data.bio || '',
+          grade_level: data.grade_level || '12th Grade',
+          school: data.school || 'Virtual Academy',
+          subjects: data.subjects || ['Mathematics', 'Physics', 'Chemistry'],
+          profile_image_url: data.profile_image_url || ''
         });
-      };
-      reader.readAsDataURL(file);
+      } else {
+        // Create profile if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            first_name: user.user_metadata?.first_name || '',
+            last_name: user.user_metadata?.last_name || '',
+            email: user.email
+          });
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handleImageUpdate = (url: string) => {
+    setProfile(prev => ({ ...prev, profile_image_url: url }));
+  };
+
+  const handleProfileUpdate = (updatedProfile: any) => {
+    setProfile(prev => ({ ...prev, ...updatedProfile }));
+  };
+
+  const fullName = `${profile.first_name} ${profile.last_name}`.trim() || 'Student User';
+
+  if (isLoading) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <SidebarInset className="flex-1">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-2 sm:px-4">
+              <SidebarTrigger className="-ml-1" />
+              <h1 className="text-sm sm:text-lg font-semibold">Profile & Settings</h1>
+            </header>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -116,29 +175,16 @@ const Profile = () => {
                 <Card>
                   <CardHeader>
                     <div className="flex flex-col items-center sm:flex-row sm:items-center gap-4">
-                      <div className="relative">
-                        <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-                          <AvatarImage src={profile.avatarUrl} />
-                          <AvatarFallback className="text-lg">
-                            {profile.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        {isEditing && (
-                          <label className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
-                            <Camera className="h-3 w-3" />
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handlePhotoUpload}
-                              className="hidden"
-                            />
-                          </label>
-                        )}
-                      </div>
+                      <ProfileImageUpload
+                        currentImageUrl={profile.profile_image_url}
+                        userName={fullName}
+                        onImageUpdate={handleImageUpdate}
+                        isEditing={isEditing}
+                      />
                       <div className="flex-1 space-y-2 text-center sm:text-left">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <CardTitle className="text-lg sm:text-xl">{profile.name}</CardTitle>
-                          <Badge variant="secondary">{profile.grade}</Badge>
+                          <CardTitle className="text-lg sm:text-xl">{fullName}</CardTitle>
+                          <Badge variant="secondary">{profile.grade_level}</Badge>
                         </div>
                         <CardDescription className="flex items-center justify-center sm:justify-start gap-2">
                           <Mail className="h-4 w-4" />
@@ -167,75 +213,20 @@ const Profile = () => {
                   <CardHeader>
                     <CardTitle className="text-base sm:text-lg">Profile Information</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          value={profile.name}
-                          onChange={(e) => setProfile({...profile, name: e.target.value})}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="grade">Grade Level</Label>
-                        {isEditing ? (
-                          <Select 
-                            value={profile.grade} 
-                            onValueChange={(value) => setProfile({...profile, grade: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select grade level" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {gradeOptions.map((grade) => (
-                                <SelectItem key={grade} value={grade}>
-                                  {grade}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            id="grade"
-                            value={profile.grade}
-                            disabled={true}
-                          />
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={profile.bio}
-                        onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                        disabled={!isEditing}
-                        rows={3}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Subjects</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.subjects.map((subject, index) => (
-                          <Badge key={index} variant="outline">
-                            {subject}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                      <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                        <Button size="sm" className="w-full sm:w-auto">Save Changes</Button>
-                        <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="w-full sm:w-auto">
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
+                  <CardContent>
+                    <ProfileForm
+                      profile={{
+                        first_name: profile.first_name,
+                        last_name: profile.last_name,
+                        grade_level: profile.grade_level,
+                        bio: profile.bio,
+                        school: profile.school,
+                        subjects: profile.subjects
+                      }}
+                      onProfileUpdate={handleProfileUpdate}
+                      isEditing={isEditing}
+                      onEditToggle={() => setIsEditing(!isEditing)}
+                    />
                   </CardContent>
                 </Card>
 
@@ -346,8 +337,6 @@ const Profile = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    
-                    
                     <div className="flex items-center justify-between">
                       <div className="flex-1 pr-4">
                         <Label htmlFor="email-notifications" className="text-sm font-medium">Email Notifications</Label>
