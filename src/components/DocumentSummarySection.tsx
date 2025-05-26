@@ -113,28 +113,28 @@ const DocumentSummarySection: React.FC = () => {
   };
 
   return (
-    <div className="flex gap-6 h-full">
-      {/* Left Panel - Document Upload */}
-      <div className="w-1/2 flex flex-col">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
+      {/* Document Upload Panel */}
+      <div className="w-full lg:w-1/2 flex flex-col order-1">
         <Card className="flex-1">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <FileText className="w-5 h-5" />
               Document Upload
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col h-full">
+          <CardContent className="flex flex-col h-full space-y-4">
             {/* Upload Area */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
-              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center">
+              <Upload className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                 Upload your document
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500 mb-3 sm:mb-4 text-sm">
                 Drag and drop or click to browse
               </p>
               <label htmlFor="document-upload" className="cursor-pointer">
-                <Button disabled={isUploading}>
+                <Button disabled={isUploading} size="sm">
                   {isUploading ? 'Uploading...' : 'Choose File'}
                 </Button>
                 <input
@@ -148,22 +148,23 @@ const DocumentSummarySection: React.FC = () => {
             </div>
 
             {/* Topic Input */}
-            <div className="mb-4">
+            <div>
               <div className="flex gap-2">
                 <Input
                   placeholder="Or enter a topic to get summary..."
                   value={topicQuery}
                   onChange={(e) => setTopicQuery(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 text-sm"
+                  size="sm"
                 />
-                <Button onClick={generateSummary} disabled={isGeneratingSummary}>
+                <Button onClick={generateSummary} disabled={isGeneratingSummary} size="sm" className="flex-shrink-0">
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
             {/* Uploaded Files */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="space-y-2">
                 {uploadedFiles.map((file) => (
                   <motion.div
@@ -176,8 +177,8 @@ const DocumentSummarySection: React.FC = () => {
                     onClick={() => setSelectedFile(file)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-blue-500" />
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">{file.name}</span>
                       </div>
                       <Button
@@ -187,7 +188,7 @@ const DocumentSummarySection: React.FC = () => {
                           e.stopPropagation();
                           removeFile(file.id);
                         }}
-                        className="w-6 h-6 p-0"
+                        className="w-6 h-6 p-0 flex-shrink-0"
                       >
                         <X className="w-3 h-3" />
                       </Button>
@@ -200,12 +201,12 @@ const DocumentSummarySection: React.FC = () => {
         </Card>
       </div>
 
-      {/* Right Panel - AI Summary */}
-      <div className="w-1/2 flex flex-col">
+      {/* AI Summary Panel */}
+      <div className="w-full lg:w-1/2 flex flex-col order-2">
         <Card className="flex-1">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <Bot className="w-5 h-5 text-blue-500" />
                 AI Summary
               </CardTitle>
@@ -218,17 +219,17 @@ const DocumentSummarySection: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="flex-1">
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-full min-h-[300px] lg:min-h-[400px]">
               {isGeneratingSummary ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-gray-500">Generating summary...</p>
+                    <p className="text-gray-500 text-sm">Generating summary...</p>
                   </div>
                 </div>
               ) : aiSummary ? (
                 <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
                     {aiSummary}
                   </div>
                 </div>
@@ -236,7 +237,7 @@ const DocumentSummarySection: React.FC = () => {
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="text-center">
                     <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>Upload a document or enter a topic to generate a summary</p>
+                    <p className="text-sm">Upload a document or enter a topic to generate a summary</p>
                   </div>
                 </div>
               )}

@@ -162,7 +162,7 @@ const TutorSection = () => {
     
     const psleCourses = staticCourses.filter(course => 
       course.difficulty_level === 'beginner' || 
-      course.subject === 'Mathematics' && course.title.includes('Primary')
+      (course.subject === 'Mathematics' && course.title.includes('Primary'))
     );
     
     const jceCourses = staticCourses.filter(course => 
@@ -320,14 +320,8 @@ const TutorSection = () => {
           }
         }
 
-        const courseRoutes: { [key: string]: string } = {
-          'English Literature Basics': '/courses/english-literature',
-          'Primary Math Excellence': '/courses/setswana-language',
-          'Science Foundations': '/courses/social-studies',
-        };
-
-        const routePath = courseRoutes[course.title] || '/courses/english-literature';
-        navigate(routePath);
+        // Navigate to course content page for all courses
+        navigate(`/courses/view/${course.id}`);
       } catch (error) {
         console.error('Error enrolling in course:', error);
       }

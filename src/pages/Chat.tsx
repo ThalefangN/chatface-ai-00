@@ -160,54 +160,54 @@ const Chat = () => {
         </SidebarBody>
       </Sidebar>
 
-      <div className="flex flex-1">
-        <div className="p-2 md:p-6 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full overflow-hidden">
-          <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col">
+      <div className="flex flex-1 w-full min-w-0">
+        <div className="p-2 md:p-6 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full min-w-0 overflow-hidden">
+          <div className="w-full h-full bg-white dark:bg-gray-900 flex flex-col min-w-0">
             {/* Header Section */}
-            <div className="border-b border-gray-200 dark:border-gray-700 p-6">
+            <div className="border-b border-gray-200 dark:border-gray-700 p-3 sm:p-6 flex-shrink-0">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-white" />
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
                 </div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-white truncate">
                   Study Chat
                 </h1>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">
                 Chat with other students and get help with your studies
               </p>
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 p-6 overflow-hidden flex flex-col">
-              <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
+            <div className="flex-1 p-3 sm:p-6 overflow-hidden flex flex-col min-w-0">
+              <div className="w-full flex flex-col h-full min-w-0">
                 {/* Messages Area */}
-                <div className="flex-1 overflow-auto mb-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex-1 overflow-auto mb-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700 min-w-0">
                   <div className="space-y-4">
                     {messages.map((msg) => (
                       <motion.div
                         key={msg.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
+                        className={`flex items-start gap-2 sm:gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''} min-w-0`}
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                           msg.sender === 'user' 
                             ? 'bg-blue-500' 
                             : 'bg-green-500'
                         }`}>
                           {msg.sender === 'user' ? (
-                            <User className="w-4 h-4 text-white" />
+                            <User className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                           ) : (
-                            <Bot className="w-4 h-4 text-white" />
+                            <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                           )}
                         </div>
-                        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        <div className={`max-w-[75%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg break-words ${
                           msg.sender === 'user'
                             ? 'bg-blue-500 text-white'
                             : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600'
                         }`}>
-                          <p className="text-sm">{msg.text}</p>
+                          <p className="text-xs sm:text-sm word-wrap">{msg.text}</p>
                         </div>
                       </motion.div>
                     ))}
@@ -215,21 +215,22 @@ const Chat = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 min-w-0 flex-shrink-0">
                   <input
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Type your message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="flex-1 min-w-0 px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                   />
                   <Button 
                     onClick={handleSendMessage}
                     disabled={!message.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0 px-3 sm:px-4"
+                    size="sm"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3 h-3 sm:w-4 sm:h-4" />
                   </Button>
                 </div>
               </div>
