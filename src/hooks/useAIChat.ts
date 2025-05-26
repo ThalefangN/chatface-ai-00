@@ -23,35 +23,46 @@ export const useAIChat = (sessionId: string | null) => {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
   
   // Initialize SpeechRecognition API
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   
-  // Fetch messages for the current session
+  // Fetch messages for the current session with retry logic
   const initializeChat = useCallback(async () => {
     if (!sessionId) return;
     
-    try {
-      console.log('Fetching messages for session:', sessionId);
-      const { data, error } = await supabase
-        .from('session_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
+    const attemptFetch = async (attempt: number): Promise<void> => {
+      try {
+        console.log(`Attempting to fetch messages (attempt ${attempt + 1})`);
+        const { data, error } = await supabase
+          .from('session_messages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('created_at', { ascending: true });
+          
+        if (error) throw error;
+        if (data) {
+          setMessages(data);
+          console.log(`Successfully loaded ${data.length} messages`);
+        }
         
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
+      } catch (error) {
+        console.error(`Error fetching messages (attempt ${attempt + 1}):`, error);
+        
+        if (attempt < maxRetries - 1) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`Retrying in ${delay}ms...`);
+          setTimeout(() => attemptFetch(attempt + 1), delay);
+        } else {
+          console.error('Max retries reached for fetching messages');
+          toast.error('Failed to load messages. Please refresh the page.');
+        }
       }
-      
-      if (data) {
-        setMessages(data);
-        console.log(`Successfully loaded ${data.length} messages`);
-      }
-      
-    } catch (error) {
-      console.error('Error in initializeChat:', error);
-    }
+    };
+    
+    await attemptFetch(0);
   }, [sessionId]);
   
   // Initialize audio element for playing AI responses
@@ -74,7 +85,7 @@ export const useAIChat = (sessionId: string | null) => {
     };
   }, []);
   
-  // Send message to the AI with improved error handling
+  // Send message to the AI with retry logic
   const sendMessage = async (message: string) => {
     if (!sessionId) {
       toast.error('No active session');
@@ -83,118 +94,152 @@ export const useAIChat = (sessionId: string | null) => {
     
     if (!message.trim()) return;
     
-    try {
-      console.log('Sending message:', message.substring(0, 50) + '...');
-      setIsLoading(true);
-      
-      // Add user message to the UI immediately
-      const userMessage: Message = {
-        content: message,
-        is_ai: false
-      };
-      
-      setMessages(prev => [...prev, userMessage]);
-      
-      // Send message to the Edge Function with a reasonable timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      
-      const { data, error } = await supabase.functions.invoke('ai-coach', {
-        body: { 
-          message,
-          sessionId,
-          userId: (await supabase.auth.getUser()).data.user?.id
+    const attemptSend = async (attempt: number): Promise<void> => {
+      try {
+        console.log(`Sending message (attempt ${attempt + 1}): "${message.substring(0, 50)}..."`);
+        setIsLoading(true);
+        
+        // Add user message to the UI immediately
+        const userMessage: Message = {
+          content: message,
+          is_ai: false
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        
+        // Send message to the Edge Function with timeout using Promise.race
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 30000)
+        );
+        
+        const invokePromise = supabase.functions.invoke('ai-coach', {
+          body: { 
+            message,
+            sessionId,
+            userId: (await supabase.auth.getUser()).data.user?.id
+          }
+        });
+        
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+        
+        if (error) throw error;
+        
+        console.log('AI response received successfully');
+        
+        // If there's a speech response, play it
+        if (data.audioResponse) {
+          playAudioResponse(data.audioResponse);
         }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (error) {
-        console.error('AI response error:', error);
-        throw error;
+        
+        retryCountRef.current = 0; // Reset retry count on success
+        
+      } catch (error) {
+        console.error(`Error sending message (attempt ${attempt + 1}):`, error);
+        
+        if (attempt < maxRetries - 1) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+          console.log(`Retrying message send in ${delay}ms...`);
+          setTimeout(() => attemptSend(attempt + 1), delay);
+        } else {
+          console.error('Max retries reached for sending message');
+          toast.error('Failed to send message. Please try again.');
+          
+          // Add error message to chat
+          const errorMessage: Message = {
+            content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
+            is_ai: true
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      
-      console.log('AI response received successfully');
-      
-      // If there's a speech response, play it
-      if (data?.audioResponse) {
-        playAudioResponse(data.audioResponse);
-      }
-      
-    } catch (error) {
-      console.error('Error sending message:', error);
-      
-      // Add error message to chat
-      const errorMessage: Message = {
-        content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
-        is_ai: true
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      
-      toast.error('Failed to send message. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    
+    await attemptSend(0);
   };
   
-  // Process and send audio to the AI
+  // Process and send audio to the AI with retry logic
   const sendAudioMessage = async (audioBlob: Blob) => {
     if (!sessionId) {
       toast.error('No active session');
       return;
     }
     
-    try {
-      console.log('Sending audio message');
-      setIsLoading(true);
-      
-      // Convert blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      
-      reader.onloadend = async () => {
-        try {
-          // Extract base64 data (remove data URL prefix)
-          const base64data = reader.result?.toString().split(',')[1];
-          
-          if (!base64data) {
-            throw new Error('Failed to convert audio to base64');
-          }
-          
-          // Send audio to the Edge Function
-          const { data, error } = await supabase.functions.invoke('ai-coach', {
-            body: { 
-              audioData: base64data,
-              sessionId,
-              userId: (await supabase.auth.getUser()).data.user?.id
+    const attemptSendAudio = async (attempt: number): Promise<void> => {
+      try {
+        console.log(`Sending audio message (attempt ${attempt + 1})`);
+        setIsLoading(true);
+        
+        // Convert blob to base64
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        
+        reader.onloadend = async () => {
+          try {
+            // Extract base64 data (remove data URL prefix)
+            const base64data = reader.result?.toString().split(',')[1];
+            
+            if (!base64data) {
+              throw new Error('Failed to convert audio to base64');
             }
-          });
-          
-          if (error) throw error;
-          
-          console.log('Audio message processed successfully');
-          
-          // If there's a speech response, play it
-          if (data?.audioResponse) {
-            playAudioResponse(data.audioResponse);
+            
+            // Send audio to the Edge Function with timeout using Promise.race
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), 45000)
+            );
+            
+            const invokePromise = supabase.functions.invoke('ai-coach', {
+              body: { 
+                audioData: base64data,
+                sessionId,
+                userId: (await supabase.auth.getUser()).data.user?.id
+              }
+            });
+            
+            const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+            
+            if (error) throw error;
+            
+            console.log('Audio message processed successfully');
+            
+            // If there's a speech response, play it
+            if (data.audioResponse) {
+              playAudioResponse(data.audioResponse);
+            }
+            
+          } catch (error) {
+            console.error(`Error processing audio (attempt ${attempt + 1}):`, error);
+            
+            if (attempt < maxRetries - 1) {
+              const delay = Math.pow(2, attempt) * 1000;
+              console.log(`Retrying audio send in ${delay}ms...`);
+              setTimeout(() => attemptSendAudio(attempt + 1), delay);
+            } else {
+              console.error('Max retries reached for audio message');
+              toast.error('Failed to process audio message. Please try again.');
+            }
+          } finally {
+            setIsLoading(false);
           }
-          
-        } catch (error) {
-          console.error('Error processing audio:', error);
-          toast.error('Failed to process audio message. Please try again.');
-        } finally {
-          setIsLoading(false);
+        };
+        
+      } catch (error) {
+        console.error(`Error sending audio message (attempt ${attempt + 1}):`, error);
+        setIsLoading(false);
+        
+        if (attempt < maxRetries - 1) {
+          setTimeout(() => attemptSendAudio(attempt + 1), 2000);
+        } else {
+          toast.error('Failed to send audio message. Please try again.');
         }
-      };
-      
-    } catch (error) {
-      console.error('Error sending audio message:', error);
-      setIsLoading(false);
-      toast.error('Failed to send audio message. Please try again.');
-    }
+      }
+    };
+    
+    await attemptSendAudio(0);
   };
   
-  // Play audio response from the AI
+  // Play audio response from the AI with error handling
   const playAudioResponse = (base64Audio: string) => {
     try {
       console.log('Playing AI audio response');
@@ -221,7 +266,7 @@ export const useAIChat = (sessionId: string | null) => {
         audioElementRef.current.onended = () => {
           console.log('AI audio finished playing');
           setIsSpeaking(false);
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(url); // Clean up URL
         };
         
         audioElementRef.current.play()
@@ -237,7 +282,7 @@ export const useAIChat = (sessionId: string | null) => {
     }
   };
   
-  // Start voice recognition
+  // Start voice recognition with error handling
   const startListening = async () => {
     try {
       console.log('Starting voice recognition');
@@ -282,7 +327,7 @@ export const useAIChat = (sessionId: string | null) => {
     }
   };
   
-  // Stop voice recognition
+  // Stop voice recognition with cleanup
   const stopListening = () => {
     console.log('Stopping voice recognition');
     setIsListening(false);

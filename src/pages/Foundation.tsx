@@ -45,6 +45,47 @@ const Foundation = () => {
     }
   };
 
+  const generateWithRetry = async (message: string, attempt = 0): Promise<string> => {
+    const maxRetries = 3;
+    
+    try {
+      console.log(`Attempting to generate content (attempt ${attempt + 1})`);
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 45000)
+      );
+      
+      const invokePromise = supabase.functions.invoke('ai-study-chat', {
+        body: {
+          message,
+          systemPrompt: 'You are a helpful AI study assistant. Provide clear, comprehensive content based on the user request. Format your response in a readable way with proper structure.'
+        }
+      });
+
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+
+      if (error) throw error;
+      
+      if (data && data.content) {
+        console.log('Content generated successfully');
+        return data.content;
+      } else {
+        throw new Error('No content received from AI');
+      }
+    } catch (error) {
+      console.error(`Error generating content (attempt ${attempt + 1}):`, error);
+      
+      if (attempt < maxRetries - 1) {
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`Retrying content generation in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return generateWithRetry(message, attempt + 1);
+      }
+      
+      throw error;
+    }
+  };
+
   const generateMindMap = async () => {
     if (!topic.trim() && !uploadedFile) {
       toast.error('Please enter a topic or upload a document');
@@ -53,357 +94,138 @@ const Foundation = () => {
 
     setIsGenerating(true);
     try {
-      console.log('Generating mind map for topic:', topic);
-      
-      let message = '';
-      if (uploadedFile) {
-        const fileContent = await uploadedFile.text();
-        message = `Create a comprehensive mind map for this document content: ${fileContent.substring(0, 2000)}...`;
-      } else {
-        message = `Create a comprehensive mind map for the topic: "${topic}"
-        ${context ? `Additional context: ${context}` : ''}`;
-      }
-
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: {
-          message,
-          systemPrompt: 'You are a mind map generator. Create a detailed, hierarchical mind map structure with the main topic as root and multiple levels of subtopics. Make each node meaningful and educational.'
-        }
-      });
-
-      if (error) {
-        console.error('Mind map generation error:', error);
-        throw error;
-      }
-
-      // Create a comprehensive mind map structure based on the topic
-      const topicTitle = topic || 'Document Analysis';
+      // Create a sample mind map structure
       const sampleMindMap: MindMapNode = {
         id: 'root',
-        title: topicTitle,
+        title: topic || 'Document Analysis',
         x: 50,
-        y: 40,
+        y: 50,
         expanded: true,
         level: 0,
         color: '#3B82F6',
         children: [
           {
-            id: 'fundamentals',
-            title: 'Core Fundamentals',
-            x: 20,
-            y: 20,
+            id: 'branch1',
+            title: 'Key Concepts',
+            x: 25,
+            y: 25,
             expanded: false,
             level: 1,
             color: '#10B981',
             parentId: 'root',
             children: [
               {
-                id: 'definitions',
-                title: 'Key Definitions',
-                x: 10,
-                y: 10,
+                id: 'sub1-1',
+                title: 'Definition',
+                x: 15,
+                y: 15,
                 expanded: false,
                 level: 2,
                 color: '#F59E0B',
-                parentId: 'fundamentals',
-                children: [
-                  {
-                    id: 'basic-terms',
-                    title: 'Basic Terminology',
-                    x: 5,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#EF4444',
-                    parentId: 'definitions',
-                    children: []
-                  },
-                  {
-                    id: 'advanced-terms',
-                    title: 'Advanced Concepts',
-                    x: 15,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#EF4444',
-                    parentId: 'definitions',
-                    children: []
-                  }
-                ]
+                parentId: 'branch1',
+                children: []
               },
               {
-                id: 'principles',
-                title: 'Core Principles',
-                x: 30,
-                y: 10,
+                id: 'sub1-2',
+                title: 'Examples',
+                x: 35,
+                y: 15,
                 expanded: false,
                 level: 2,
                 color: '#F59E0B',
-                parentId: 'fundamentals',
-                children: [
-                  {
-                    id: 'theory',
-                    title: 'Theoretical Foundation',
-                    x: 25,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#EF4444',
-                    parentId: 'principles',
-                    children: []
-                  },
-                  {
-                    id: 'practice',
-                    title: 'Practical Application',
-                    x: 35,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#EF4444',
-                    parentId: 'principles',
-                    children: []
-                  }
-                ]
+                parentId: 'branch1',
+                children: []
               }
             ]
           },
           {
-            id: 'applications',
-            title: 'Real-World Applications',
-            x: 80,
-            y: 20,
+            id: 'branch2',
+            title: 'Applications',
+            x: 75,
+            y: 25,
             expanded: false,
             level: 1,
             color: '#8B5CF6',
             parentId: 'root',
             children: [
               {
-                id: 'case-studies',
+                id: 'sub2-1',
+                title: 'Real World Uses',
+                x: 85,
+                y: 15,
+                expanded: false,
+                level: 2,
+                color: '#EF4444',
+                parentId: 'branch2',
+                children: []
+              },
+              {
+                id: 'sub2-2',
                 title: 'Case Studies',
-                x: 90,
-                y: 10,
+                x: 65,
+                y: 15,
                 expanded: false,
                 level: 2,
-                color: '#EC4899',
-                parentId: 'applications',
-                children: [
-                  {
-                    id: 'success-stories',
-                    title: 'Success Stories',
-                    x: 95,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#06B6D4',
-                    parentId: 'case-studies',
-                    children: []
-                  },
-                  {
-                    id: 'lessons-learned',
-                    title: 'Lessons Learned',
-                    x: 85,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#06B6D4',
-                    parentId: 'case-studies',
-                    children: []
-                  }
-                ]
-              },
-              {
-                id: 'industry-use',
-                title: 'Industry Usage',
-                x: 70,
-                y: 10,
-                expanded: false,
-                level: 2,
-                color: '#EC4899',
-                parentId: 'applications',
-                children: [
-                  {
-                    id: 'current-trends',
-                    title: 'Current Trends',
-                    x: 75,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#06B6D4',
-                    parentId: 'industry-use',
-                    children: []
-                  },
-                  {
-                    id: 'future-outlook',
-                    title: 'Future Outlook',
-                    x: 65,
-                    y: 5,
-                    expanded: false,
-                    level: 3,
-                    color: '#06B6D4',
-                    parentId: 'industry-use',
-                    children: []
-                  }
-                ]
+                color: '#EF4444',
+                parentId: 'branch2',
+                children: []
               }
             ]
           },
           {
-            id: 'methodology',
-            title: 'Methods & Techniques',
-            x: 20,
-            y: 70,
-            expanded: false,
-            level: 1,
-            color: '#84CC16',
-            parentId: 'root',
-            children: [
-              {
-                id: 'approaches',
-                title: 'Different Approaches',
-                x: 10,
-                y: 80,
-                expanded: false,
-                level: 2,
-                color: '#F97316',
-                parentId: 'methodology',
-                children: [
-                  {
-                    id: 'traditional',
-                    title: 'Traditional Methods',
-                    x: 5,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#DC2626',
-                    parentId: 'approaches',
-                    children: []
-                  },
-                  {
-                    id: 'modern',
-                    title: 'Modern Techniques',
-                    x: 15,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#DC2626',
-                    parentId: 'approaches',
-                    children: []
-                  }
-                ]
-              },
-              {
-                id: 'tools',
-                title: 'Tools & Resources',
-                x: 30,
-                y: 80,
-                expanded: false,
-                level: 2,
-                color: '#F97316',
-                parentId: 'methodology',
-                children: [
-                  {
-                    id: 'software',
-                    title: 'Software Tools',
-                    x: 25,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#DC2626',
-                    parentId: 'tools',
-                    children: []
-                  },
-                  {
-                    id: 'frameworks',
-                    title: 'Frameworks',
-                    x: 35,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#DC2626',
-                    parentId: 'tools',
-                    children: []
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: 'resources',
-            title: 'Learning Resources',
-            x: 80,
-            y: 70,
+            id: 'branch3',
+            title: 'Related Topics',
+            x: 25,
+            y: 75,
             expanded: false,
             level: 1,
             color: '#EC4899',
             parentId: 'root',
             children: [
               {
-                id: 'books',
-                title: 'Recommended Books',
-                x: 90,
-                y: 80,
+                id: 'sub3-1',
+                title: 'Connections',
+                x: 15,
+                y: 85,
                 expanded: false,
                 level: 2,
-                color: '#6366F1',
-                parentId: 'resources',
-                children: [
-                  {
-                    id: 'beginner-books',
-                    title: 'Beginner Level',
-                    x: 95,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#14B8A6',
-                    parentId: 'books',
-                    children: []
-                  },
-                  {
-                    id: 'advanced-books',
-                    title: 'Advanced Level',
-                    x: 85,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#14B8A6',
-                    parentId: 'books',
-                    children: []
-                  }
-                ]
+                color: '#06B6D4',
+                parentId: 'branch3',
+                children: []
+              }
+            ]
+          },
+          {
+            id: 'branch4',
+            title: 'Resources',
+            x: 75,
+            y: 75,
+            expanded: false,
+            level: 1,
+            color: '#84CC16',
+            parentId: 'root',
+            children: [
+              {
+                id: 'sub4-1',
+                title: 'Books',
+                x: 85,
+                y: 85,
+                expanded: false,
+                level: 2,
+                color: '#F97316',
+                parentId: 'branch4',
+                children: []
               },
               {
-                id: 'online-resources',
-                title: 'Online Resources',
-                x: 70,
-                y: 80,
+                id: 'sub4-2',
+                title: 'Online Sources',
+                x: 65,
+                y: 85,
                 expanded: false,
                 level: 2,
-                color: '#6366F1',
-                parentId: 'resources',
-                children: [
-                  {
-                    id: 'websites',
-                    title: 'Educational Websites',
-                    x: 75,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#14B8A6',
-                    parentId: 'online-resources',
-                    children: []
-                  },
-                  {
-                    id: 'videos',
-                    title: 'Video Tutorials',
-                    x: 65,
-                    y: 85,
-                    expanded: false,
-                    level: 3,
-                    color: '#14B8A6',
-                    parentId: 'online-resources',
-                    children: []
-                  }
-                ]
+                color: '#F97316',
+                parentId: 'branch4',
+                children: []
               }
             ]
           }
@@ -411,8 +233,7 @@ const Foundation = () => {
       };
 
       setMindMapData(sampleMindMap);
-      toast.success('Interactive mind map generated successfully!');
-      console.log('Mind map generated with', sampleMindMap.children.length, 'main branches');
+      toast.success('Mind map generated successfully!');
       
     } catch (error) {
       console.error('Error generating mind map:', error);
@@ -427,7 +248,6 @@ const Foundation = () => {
 
     const updateNode = (node: MindMapNode): MindMapNode => {
       if (node.id === nodeId) {
-        console.log('Toggling node:', nodeId, 'expanded:', !node.expanded);
         return { ...node, expanded: !node.expanded };
       }
       return {
@@ -445,7 +265,7 @@ const Foundation = () => {
       left: `${node.x}%`,
       top: `${node.y}%`,
       transform: 'translate(-50%, -50%)',
-      zIndex: 10 + node.level
+      zIndex: 10
     };
 
     return (
@@ -461,13 +281,10 @@ const Foundation = () => {
           const endX = (child.x / 100) * rect.width;
           const endY = (child.y / 100) * rect.height;
           
-          // Calculate control points for smooth curves
           const midX = (startX + endX) / 2;
           const midY = (startY + endY) / 2;
-          const controlX1 = startX + (midX - startX) * 0.5;
-          const controlY1 = startY;
-          const controlX2 = endX - (endX - midX) * 0.5;
-          const controlY2 = endY;
+          
+          const path = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
           
           return (
             <svg
@@ -476,12 +293,11 @@ const Foundation = () => {
               style={{ zIndex: 5 }}
             >
               <path
-                d={`M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`}
+                d={path}
                 stroke={node.color}
-                strokeWidth="3"
+                strokeWidth="2"
                 fill="none"
-                opacity="0.8"
-                strokeLinecap="round"
+                opacity="0.7"
               />
             </svg>
           );
@@ -490,30 +306,21 @@ const Foundation = () => {
         {/* Render the node container */}
         <div style={nodeStyle}>
           <Card 
-            className={`cursor-pointer transition-all duration-300 hover:shadow-lg border-2 min-w-[140px] max-w-[220px] hover:scale-105`}
-            style={{ 
-              borderColor: node.color, 
-              backgroundColor: `${node.color}15`,
-              borderRadius: '12px'
-            }}
+            className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 min-w-[120px] max-w-[200px]`}
+            style={{ borderColor: node.color, backgroundColor: `${node.color}10` }}
             onClick={() => toggleNode(node.id)}
           >
             <CardContent className="p-3">
               <div className="flex items-center gap-2">
                 <div 
-                  className="w-4 h-4 rounded-full flex-shrink-0 shadow-sm"
+                  className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: node.color }}
                 />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200 flex-1 text-center leading-tight">
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200 flex-1 text-center">
                   {node.title}
                 </span>
                 {node.children.length > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-5 h-5 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
-                    style={{ color: node.color }}
-                  >
+                  <Button variant="ghost" size="sm" className="w-4 h-4 p-0 flex-shrink-0">
                     {node.expanded ? 
                       <Minus className="w-3 h-3" /> : 
                       <Plus className="w-3 h-3" />
@@ -565,16 +372,8 @@ const Foundation = () => {
         Make it sound natural and engaging for audio learning.`;
       }
 
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: {
-          message,
-          systemPrompt: 'You are a podcast script writer. Create engaging, conversational content that is perfect for audio learning. Use natural speech patterns and include clear transitions.'
-        }
-      });
-
-      if (error) throw error;
-      
-      setGeneratedContent(data.content);
+      const result = await generateWithRetry(message);
+      setGeneratedContent(result);
       toast.success('Study podcast script generated successfully!');
       
     } catch (error) {
@@ -630,7 +429,7 @@ const Foundation = () => {
           <div className="flex-1 p-6 max-w-6xl mx-auto">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-2">AI-Powered Learning Tools</h2>
-              <p className="text-gray-600">Generate interactive mind maps and study podcasts to enhance your learning experience</p>
+              <p className="text-gray-600">Generate mind maps and study podcasts to enhance your learning experience</p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -652,7 +451,7 @@ const Foundation = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Brain className="w-5 h-5 text-purple-500" />
-                        Generate Interactive Mind Map
+                        Generate Mind Map
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -660,7 +459,7 @@ const Foundation = () => {
                         <Label htmlFor="topic">Topic</Label>
                         <Input
                           id="topic"
-                          placeholder="e.g., Machine Learning, Ancient History, Calculus"
+                          placeholder="e.g., Photosynthesis, World War II, Algebra"
                           value={topic}
                           onChange={(e) => setTopic(e.target.value)}
                         />
@@ -703,12 +502,12 @@ const Foundation = () => {
                       <Button 
                         onClick={generateMindMap}
                         disabled={isGenerating || (!topic.trim() && !uploadedFile)}
-                        className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
+                        className="w-full"
                       >
                         {isGenerating ? (
                           <>
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Generating Interactive Mind Map...
+                            Generating Mind Map...
                           </>
                         ) : (
                           <>
@@ -745,9 +544,6 @@ const Foundation = () => {
                         <div className="relative w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg overflow-hidden">
                           <svg ref={svgRef} className="absolute inset-0 w-full h-full" />
                           {renderMindMapNode(mindMapData, svgRef)}
-                          <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
-                            Click on + to expand topics
-                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center h-full text-gray-500">
