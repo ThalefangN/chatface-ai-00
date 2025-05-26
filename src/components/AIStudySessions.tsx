@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, PlusCircle, BookOpen, FileText, Brain } from 'lucide-react';
-import DocumentSummaryUpload from '@/components/DocumentSummaryUpload';
+import DocumentSummarySection from '@/components/DocumentSummarySection';
 import CreateCourseDialog from '@/components/CreateCourseDialog';
 import CourseViewer from '@/components/CourseViewer';
 
@@ -42,7 +42,7 @@ const AIStudySessions = () => {
             ← Back to Study Sessions
           </Button>
         </div>
-        <DocumentSummaryUpload />
+        <DocumentSummarySection />
       </div>
     );
   }
