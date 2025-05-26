@@ -7,24 +7,31 @@ import { ChevronDown, ChevronRight, ArrowLeft, PlusCircle, CheckCircle } from 'l
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import LessonViewer from '@/components/LessonViewer';
 
-interface Course {
-  id: string;
-  name: string;
-  gradeLevel: string;
-  objectives: string[];
-  currentLesson: number;
-  totalLessons: number;
-}
-
 interface CourseViewerProps {
-  course: Course;
-  onBack: () => void;
+  courseId: string;
 }
 
-const CourseViewer: React.FC<CourseViewerProps> = ({ course, onBack }) => {
+const CourseViewer: React.FC<CourseViewerProps> = ({ courseId }) => {
   const [expandedObjectives, setExpandedObjectives] = useState<number[]>([]);
   const [showLesson, setShowLesson] = useState(false);
   const [currentLessonNum, setCurrentLessonNum] = useState(1);
+
+  // Create a mock course object based on the courseId for now
+  const course = {
+    id: courseId,
+    name: courseId === 'static-3' ? 'English Literature Basics' : 'Course',
+    gradeLevel: 'BGCSE',
+    objectives: [
+      'Understanding fundamental concepts and principles',
+      'Applying knowledge through practical exercises',
+      'Developing critical thinking and analysis skills',
+      'Preparing for assessments and evaluations',
+      'Connecting learning to real-world applications in Botswana',
+      'Building problem-solving capabilities'
+    ],
+    currentLesson: 1,
+    totalLessons: 6
+  };
 
   const toggleObjective = (index: number) => {
     setExpandedObjectives(prev => 
@@ -53,6 +60,10 @@ const CourseViewer: React.FC<CourseViewerProps> = ({ course, onBack }) => {
     setShowLesson(true);
   };
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
   if (showLesson) {
     return (
       <LessonViewer 
@@ -68,7 +79,7 @@ const CourseViewer: React.FC<CourseViewerProps> = ({ course, onBack }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
+        <Button variant="ghost" onClick={handleBack} className="flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
           Back to Study Sessions
         </Button>
