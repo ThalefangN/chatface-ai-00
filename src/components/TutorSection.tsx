@@ -35,6 +35,9 @@ interface GradeLevel {
   icon: React.ElementType;
   color: string;
   courses: Course[];
+  totalCourses: number;
+  freeCourses: number;
+  premiumCourses: number;
 }
 
 // Static course data that will always be available
@@ -155,29 +158,14 @@ const TutorSection = () => {
     const bgcseCourses = staticCourses.filter(course => 
       course.difficulty_level === 'advanced' || 
       ['Mathematics', 'English', 'Business Studies', 'English Literature'].includes(course.subject)
-    ).slice(0, 3);
+    );
     
     const psleCourses = staticCourses.filter(course => 
       course.difficulty_level === 'beginner' || 
       course.subject === 'Mathematics' && course.title.includes('Primary')
-    ).slice(0, 3);
+    );
     
     const jceCourses = staticCourses.filter(course => 
-      course.difficulty_level === 'intermediate' || 
-      ['Science', 'Social Studies'].includes(course.subject)
-    ).slice(0, 3);
-
-    const allBgcseCourses = staticCourses.filter(course => 
-      course.difficulty_level === 'advanced' || 
-      ['Mathematics', 'English', 'Business Studies', 'English Literature'].includes(course.subject)
-    );
-    
-    const allPsleCourses = staticCourses.filter(course => 
-      course.difficulty_level === 'beginner' || 
-      course.subject === 'Mathematics' && course.title.includes('Primary')
-    );
-    
-    const allJceCourses = staticCourses.filter(course => 
       course.difficulty_level === 'intermediate' || 
       ['Science', 'Social Studies'].includes(course.subject)
     );
@@ -190,10 +178,10 @@ const TutorSection = () => {
         description: 'Form 4-5 students preparing for national examinations',
         icon: GraduationCap,
         color: 'bg-blue-500',
-        courses: bgcseCourses,
-        totalCourses: allBgcseCourses.length,
-        freeCourses: allBgcseCourses.filter(c => c.is_free).length,
-        premiumCourses: allBgcseCourses.filter(c => !c.is_free).length
+        courses: bgcseCourses.slice(0, 3),
+        totalCourses: bgcseCourses.length,
+        freeCourses: bgcseCourses.filter(c => c.is_free).length,
+        premiumCourses: bgcseCourses.filter(c => !c.is_free).length
       },
       {
         id: 'psle',
@@ -202,10 +190,10 @@ const TutorSection = () => {
         description: 'Standard 7 students preparing for primary school completion',
         icon: BookOpen,
         color: 'bg-green-500',
-        courses: psleCourses,
-        totalCourses: allPsleCourses.length,
-        freeCourses: allPsleCourses.filter(c => c.is_free).length,
-        premiumCourses: allPsleCourses.filter(c => !c.is_free).length
+        courses: psleCourses.slice(0, 3),
+        totalCourses: psleCourses.length,
+        freeCourses: psleCourses.filter(c => c.is_free).length,
+        premiumCourses: psleCourses.filter(c => !c.is_free).length
       },
       {
         id: 'jce',
@@ -214,10 +202,10 @@ const TutorSection = () => {
         description: 'Form 3 students preparing for junior secondary completion',
         icon: Trophy,
         color: 'bg-purple-500',
-        courses: jceCourses,
-        totalCourses: allJceCourses.length,
-        freeCourses: allJceCourses.filter(c => c.is_free).length,
-        premiumCourses: allJceCourses.filter(c => !c.is_free).length
+        courses: jceCourses.slice(0, 3),
+        totalCourses: jceCourses.length,
+        freeCourses: jceCourses.filter(c => c.is_free).length,
+        premiumCourses: jceCourses.filter(c => !c.is_free).length
       }
     ];
 
