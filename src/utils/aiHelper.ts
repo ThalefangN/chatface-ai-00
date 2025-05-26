@@ -136,7 +136,7 @@ export const generateStudyContent = async (
     - Key takeaways and summaries
     - Discussion questions for reflection
     
-    Make it sound natural and engaging for audio learning.`,
+    Make it sound natural and engaging for audio learning. Keep the script under 1000 words for better audio generation.`,
     
     explanation: `Provide a clear, comprehensive explanation of: "${topic}". ${additionalContext || ''}
     
@@ -170,7 +170,7 @@ export const generateStudyContent = async (
     const fallbacks = {
       mindmap: `# ${topic} - Mind Map\n\n## Main Concepts\n- Key concept 1\n  - Supporting detail\n  - Example\n- Key concept 2\n  - Supporting detail\n  - Application\n\n## Important Points\n- Essential information about ${topic}\n- Practical applications\n- Common misconceptions to avoid\n\n## Study Tips\n- Review regularly\n- Practice with examples\n- Connect to real-world situations`,
       
-      podcast: `# Study Podcast: ${topic}\n\n## Introduction\nWelcome to your study session on ${topic}! Today we'll explore the key concepts and help you understand this important topic.\n\n## Main Content\n${topic} is an important subject that connects to many areas of study. Let's break it down into manageable parts.\n\n## Key Takeaways\n- Understanding ${topic} helps with broader learning\n- Practice and repetition are key to mastery\n- Apply concepts to real situations\n\n## Conclusion\nKeep practicing and stay curious about ${topic}!`,
+      podcast: `# Study Podcast: ${topic}\n\n## Introduction\nWelcome to your study session on ${topic}! Today we'll explore the key concepts and help you understand this important topic.\n\n## Main Content\n${topic} is an important subject that connects to many areas of study. Let's break it down into manageable parts and explore the fundamental concepts that will help you succeed.\n\n## Key Takeaways\n- Understanding ${topic} helps with broader learning\n- Practice and repetition are key to mastery\n- Apply concepts to real situations\n\n## Conclusion\nKeep practicing and stay curious about ${topic}! Remember, every expert was once a beginner.`,
       
       explanation: `# Understanding ${topic}\n\n${topic} is an important concept that students need to master. Here's a clear breakdown:\n\n## What is ${topic}?\n${topic} refers to [basic definition and explanation].\n\n## Why is it important?\nUnderstanding ${topic} helps students because it forms the foundation for more advanced concepts.\n\n## Key points to remember:\n- Main concept 1\n- Main concept 2\n- Main concept 3\n\n## Practice suggestion:\nTry applying these concepts to real-world examples you encounter daily.`,
       

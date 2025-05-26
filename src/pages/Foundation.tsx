@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -8,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Headphones, Upload, FileText, Download, Mic, Play, Pause, Volume2, Video } from 'lucide-react';
+import { Brain, Headphones, Upload, FileText, Download, Mic, Play, Pause, Volume2, Video, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateStudyContent } from '@/utils/aiHelper';
 
 const Foundation = () => {
   const [activeTab, setActiveTab] = useState('mindmap');
@@ -23,8 +25,12 @@ const Foundation = () => {
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const ELEVENLABS_API_KEY = 'sk_41fe04dabe3cec32f4ae370fd8f94ccd2332e19e05fc4aa6';
+  const VOICE_ID = '9BWtsMINqrJLrRacOk9x'; // Aria voice
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -66,6 +72,47 @@ const Foundation = () => {
     }
   };
 
+  const generateElevenLabsAudio = async (text: string): Promise<string> => {
+    try {
+      setIsGeneratingAudio(true);
+      console.log('Generating audio with ElevenLabs...');
+
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVENLABS_API_KEY,
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.8,
+            style: 0.0,
+            use_speaker_boost: true
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`ElevenLabs API error: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      console.log('Audio generated successfully');
+      return audioUrl;
+    } catch (error) {
+      console.error('Error generating audio:', error);
+      throw error;
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  };
+
   const generateMindMap = async () => {
     if (!topic.trim() && !uploadedFile) {
       toast.error('Please enter a topic or upload a document');
@@ -74,33 +121,12 @@ const Foundation = () => {
 
     setIsGenerating(true);
     try {
-      let message = '';
+      const result = await generateStudyContent(
+        topic || 'Document Analysis',
+        'mindmap',
+        uploadedFile ? await uploadedFile.text() : context
+      );
       
-      if (uploadedFile) {
-        const fileContent = await uploadedFile.text();
-        message = `Create a comprehensive mind map outline for this document content: ${fileContent.substring(0, 3000)}... 
-        
-        Format the mind map as a structured outline with:
-        - Main topic as the center
-        - Primary branches (3-5 main categories)
-        - Secondary branches (2-4 sub-topics per main category)
-        - Key points and details for each branch
-        
-        Use clear hierarchical structure with bullet points and indentation.`;
-      } else {
-        message = `Create a comprehensive mind map outline for the topic: "${topic}"
-        ${context ? `Additional context: ${context}` : ''}
-        
-        Format the mind map as a structured outline with:
-        - Main topic as the center
-        - Primary branches (3-5 main categories)
-        - Secondary branches (2-4 sub-topics per main category)
-        - Key points and details for each branch
-        
-        Use clear hierarchical structure with bullet points and indentation.`;
-      }
-
-      const result = await generateWithAI(message);
       setGeneratedContent(result);
       toast.success('Mind map generated successfully!');
       
@@ -121,49 +147,32 @@ const Foundation = () => {
 
     setIsGenerating(true);
     try {
-      let message = '';
+      const result = await generateStudyContent(
+        topic || 'Document Analysis',
+        'podcast',
+        uploadedFile ? await uploadedFile.text() : context
+      );
       
-      if (uploadedFile) {
-        const fileContent = await uploadedFile.text();
-        message = `Create an engaging study podcast script based on this document: ${fileContent.substring(0, 3000)}...
-        
-        Format as a conversational podcast with:
-        - Engaging introduction
-        - Main content broken into digestible segments
-        - Key takeaways and summaries
-        - Discussion questions for reflection
-        
-        Make it sound natural and engaging for ${podcastFormat} learning.`;
-      } else {
-        message = `Create an engaging study podcast script about: "${topic}"
-        ${context ? `Additional context: ${context}` : ''}
-        
-        Format as a conversational podcast with:
-        - Engaging introduction
-        - Main content broken into digestible segments
-        - Key takeaways and summaries
-        - Discussion questions for reflection
-        
-        Make it sound natural and engaging for ${podcastFormat} learning.`;
-      }
-
-      const result = await generateWithAI(message);
       setGeneratedContent(result);
       
-      // Simulate generating audio/video URLs (in a real implementation, you'd call a text-to-speech or video generation service)
+      // Generate actual audio using ElevenLabs
       if (podcastFormat === 'audio') {
-        // This would be replaced with actual audio generation service
-        const simulatedAudioUrl = URL.createObjectURL(new Blob([result], { type: 'text/plain' }));
-        setGeneratedAudioUrl(simulatedAudioUrl);
-        setGeneratedVideoUrl(null);
+        try {
+          const audioUrl = await generateElevenLabsAudio(result);
+          setGeneratedAudioUrl(audioUrl);
+          setGeneratedVideoUrl(null);
+          toast.success('Study audio podcast generated successfully!');
+        } catch (audioError) {
+          console.error('Audio generation failed:', audioError);
+          toast.error('Script generated but audio generation failed. You can still read the script.');
+        }
       } else {
-        // This would be replaced with actual video generation service
+        // For video, we'll simulate for now (would need video generation API)
         const simulatedVideoUrl = URL.createObjectURL(new Blob([result], { type: 'text/plain' }));
         setGeneratedVideoUrl(simulatedVideoUrl);
         setGeneratedAudioUrl(null);
+        toast.success('Study video script generated successfully!');
       }
-      
-      toast.success(`Study ${podcastFormat} generated successfully!`);
       
     } catch (error) {
       console.error('Error generating podcast:', error);
@@ -298,7 +307,7 @@ const Foundation = () => {
                       >
                         {isGenerating ? (
                           <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                             Generating Mind Map...
                           </>
                         ) : (
@@ -327,7 +336,7 @@ const Foundation = () => {
                       {isGenerating ? (
                         <div className="flex items-center justify-center h-64">
                           <div className="text-center">
-                            <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <Loader2 className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
                             <p className="text-gray-500">Creating your mind map...</p>
                           </div>
                         </div>
@@ -371,13 +380,13 @@ const Foundation = () => {
                             <SelectItem value="audio">
                               <div className="flex items-center gap-2">
                                 <Volume2 className="w-4 h-4" />
-                                Audio Podcast
+                                Audio Podcast (ElevenLabs AI)
                               </div>
                             </SelectItem>
                             <SelectItem value="video">
                               <div className="flex items-center gap-2">
                                 <Video className="w-4 h-4" />
-                                Video Podcast
+                                Video Podcast (Script Only)
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -430,13 +439,13 @@ const Foundation = () => {
 
                       <Button 
                         onClick={generateStudyPodcast}
-                        disabled={isGenerating || (!topic.trim() && !uploadedFile)}
+                        disabled={isGenerating || isGeneratingAudio || (!topic.trim() && !uploadedFile)}
                         className="w-full"
                       >
-                        {isGenerating ? (
+                        {isGenerating || isGeneratingAudio ? (
                           <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Creating {podcastFormat}...
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {isGeneratingAudio ? 'Generating Audio...' : `Creating ${podcastFormat}...`}
                           </>
                         ) : (
                           <>
@@ -462,21 +471,24 @@ const Foundation = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {isGenerating ? (
+                      {isGenerating || isGeneratingAudio ? (
                         <div className="flex items-center justify-center h-64">
                           <div className="text-center">
-                            <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                            <p className="text-gray-500">Creating your study {podcastFormat}...</p>
+                            <Loader2 className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
+                            <p className="text-gray-500">
+                              {isGeneratingAudio ? 'Converting to audio...' : `Creating your study ${podcastFormat}...`}
+                            </p>
                           </div>
                         </div>
                       ) : generatedContent ? (
                         <div className="space-y-4">
                           {/* Media Player */}
-                          {(generatedAudioUrl || generatedVideoUrl) && (
+                          {generatedAudioUrl && podcastFormat === 'audio' && (
                             <div className="bg-gray-50 p-4 rounded-lg border">
                               <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-medium text-gray-900">
-                                  {podcastFormat === 'audio' ? 'Audio Player' : 'Video Player'}
+                                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                                  <Volume2 className="w-4 h-4" />
+                                  Audio Player (ElevenLabs AI)
                                 </h4>
                                 <Button
                                   variant="outline"
@@ -498,43 +510,37 @@ const Foundation = () => {
                                 </Button>
                               </div>
                               
-                              {podcastFormat === 'audio' && generatedAudioUrl ? (
-                                <audio
-                                  ref={audioRef}
-                                  controls
-                                  className="w-full"
-                                  onPlay={() => setIsPlaying(true)}
-                                  onPause={() => setIsPlaying(false)}
-                                >
-                                  <source src={generatedAudioUrl} type="audio/mpeg" />
-                                  Your browser does not support the audio element.
-                                </audio>
-                              ) : podcastFormat === 'video' && generatedVideoUrl ? (
-                                <video
-                                  ref={videoRef}
-                                  controls
-                                  className="w-full rounded"
-                                  onPlay={() => setIsPlaying(true)}
-                                  onPause={() => setIsPlaying(false)}
-                                >
-                                  <source src={generatedVideoUrl} type="video/mp4" />
-                                  Your browser does not support the video element.
-                                </video>
-                              ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    {podcastFormat === 'audio' ? (
-                                      <Volume2 className="w-8 h-8 text-gray-400" />
-                                    ) : (
-                                      <Video className="w-8 h-8 text-gray-400" />
-                                    )}
-                                  </div>
-                                  <p>{podcastFormat === 'audio' ? 'Audio' : 'Video'} will be generated here</p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    (Note: This is a demo. In production, this would connect to a text-to-speech or video generation service)
-                                  </p>
+                              <audio
+                                ref={audioRef}
+                                controls
+                                className="w-full"
+                                src={generatedAudioUrl}
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
+                                onEnded={() => setIsPlaying(false)}
+                              >
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+                          )}
+
+                          {generatedVideoUrl && podcastFormat === 'video' && (
+                            <div className="bg-gray-50 p-4 rounded-lg border">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                                  <Video className="w-4 h-4" />
+                                  Video Script
+                                </h4>
+                              </div>
+                              <div className="text-center py-8 text-gray-500">
+                                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                  <Video className="w-8 h-8 text-gray-400" />
                                 </div>
-                              )}
+                                <p>Video generation coming soon!</p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  Currently showing the script. Video generation would require additional video API integration.
+                                </p>
+                              </div>
                             </div>
                           )}
 
