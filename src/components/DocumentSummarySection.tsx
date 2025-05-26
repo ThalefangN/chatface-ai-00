@@ -70,6 +70,8 @@ const DocumentSummarySection: React.FC = () => {
         message = `Please provide a comprehensive summary/explanation about: ${topicQuery}`;
       }
 
+      console.log('Calling AI study chat with message:', message);
+      
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message,
@@ -77,13 +79,25 @@ const DocumentSummarySection: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('AI study chat response:', data, error);
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
       
-      setAiSummary(data.content);
-      toast.success('Summary generated successfully!');
+      if (data && data.content) {
+        setAiSummary(data.content);
+        toast.success('Summary generated successfully!');
+      } else {
+        throw new Error('No content received from AI');
+      }
     } catch (error) {
       console.error('Error generating summary:', error);
       toast.error('Failed to generate summary. Please try again.');
+      
+      // Fallback response to ensure AI always provides something
+      setAiSummary('I apologize, but I encountered an issue generating the summary. Please try again, or check your internet connection and ensure the AI service is available.');
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -155,7 +169,7 @@ const DocumentSummarySection: React.FC = () => {
                   value={topicQuery}
                   onChange={(e) => setTopicQuery(e.target.value)}
                   className="flex-1 text-sm"
-                  size="sm"
+                  onKeyPress={(e) => e.key === 'Enter' && generateSummary()}
                 />
                 <Button onClick={generateSummary} disabled={isGeneratingSummary} size="sm" className="flex-shrink-0">
                   <Send className="w-4 h-4" />

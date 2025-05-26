@@ -41,7 +41,7 @@ function cleanJsonContent(content: string): string {
     } else {
       throw new Error('No valid JSON array found in response');
     }
-    
+
     // Fix incomplete JSON by checking if it ends properly
     if (!cleaned.endsWith(']')) {
       // Find the last complete object
@@ -120,15 +120,22 @@ serve(async (req) => {
   try {
     const { message, systemPrompt } = await req.json()
 
-    console.log('Received request:', { message, systemPrompt })
+    console.log('Received AI study chat request:', { message: message?.substring(0, 100), systemPrompt })
+
+    if (!message || typeof message !== 'string') {
+      throw new Error('Message is required and must be a string')
+    }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured')
+      console.error('OpenAI API key not configured')
+      throw new Error('AI service is not properly configured. Please contact support.')
     }
 
     // Check if this is a request for assessment questions (JSON format)
     const isAssessmentRequest = message.includes('Generate exactly') && message.includes('questions for the subject')
+
+    console.log('Making request to OpenAI API...')
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -143,7 +150,7 @@ serve(async (req) => {
             role: 'system',
             content: isAssessmentRequest 
               ? 'You are a helpful AI that generates valid JSON assessment questions. Always respond with properly formatted JSON arrays containing question objects. Ensure all JSON is valid and complete. Do not truncate responses.'
-              : (systemPrompt || 'You are a helpful AI study assistant.')
+              : (systemPrompt || 'You are a helpful AI study assistant. Provide clear, comprehensive, and educational responses. Always ensure your responses are complete and helpful.')
           },
           {
             role: 'user',
@@ -155,20 +162,42 @@ serve(async (req) => {
       }),
     })
 
+    console.log('OpenAI API response status:', response.status)
+
     if (!response.ok) {
       const errorData = await response.text()
       console.error('OpenAI API error:', response.status, errorData)
-      throw new Error(`OpenAI API error: ${response.status}`)
+      
+      // Provide specific error messages for different status codes
+      if (response.status === 401) {
+        throw new Error('AI service authentication failed. Please contact support.')
+      } else if (response.status === 429) {
+        throw new Error('AI service is temporarily overloaded. Please try again in a moment.')
+      } else if (response.status >= 500) {
+        throw new Error('AI service is temporarily unavailable. Please try again later.')
+      } else {
+        throw new Error(`AI service error: ${response.status}. Please try again.`)
+      }
     }
 
     const data = await response.json()
-    console.log('OpenAI response received:', data)
+    console.log('OpenAI response structure:', { 
+      hasChoices: !!data.choices, 
+      choicesLength: data.choices?.length,
+      finishReason: data.choices?.[0]?.finish_reason 
+    })
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      throw new Error('Invalid response format from OpenAI')
+      console.error('Invalid OpenAI response format:', data)
+      throw new Error('Received invalid response from AI service. Please try again.')
     }
 
     let content = data.choices[0].message.content
+
+    if (!content || typeof content !== 'string') {
+      console.error('No content in OpenAI response:', data.choices[0])
+      throw new Error('AI service returned empty response. Please try again.')
+    }
 
     // Check if response was truncated
     if (data.choices[0].finish_reason === 'length') {
@@ -184,15 +213,17 @@ serve(async (req) => {
       try {
         // Clean and validate JSON for assessment questions
         content = cleanJsonContent(content)
-        console.log('Cleaned JSON content:', content)
+        console.log('Successfully cleaned JSON content')
       } catch (cleanError) {
         console.error('Failed to clean JSON content:', cleanError)
-        throw new Error(`Failed to generate valid JSON: ${cleanError.message}`)
+        throw new Error(`Failed to generate valid assessment questions: ${cleanError.message}`)
       }
     } else {
       // Clean markdown formatting from regular chat content
       content = cleanMarkdownFormatting(content)
     }
+    
+    console.log('Successfully processed AI response')
     
     return new Response(
       JSON.stringify({ 
@@ -208,14 +239,20 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-study-chat function:', error)
     
+    // Provide a helpful fallback response instead of just an error
+    const fallbackContent = error.message.includes('API key') || error.message.includes('authentication') || error.message.includes('service')
+      ? "I'm currently unable to connect to the AI service. Please check your internet connection and try again. If the problem persists, please contact support."
+      : "I encountered an issue processing your request. Please try rephrasing your question or try again in a moment.";
+    
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to process request',
-        details: error.message 
+        content: fallbackContent,
+        hasFollowUpButtons: false,
+        error: 'AI service temporarily unavailable'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 200  // Return 200 to prevent frontend errors, but include error flag
       }
     )
   }
