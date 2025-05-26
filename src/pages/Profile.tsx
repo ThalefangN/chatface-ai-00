@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -94,7 +93,7 @@ const Profile = () => {
           grade_level: data.grade_level || '12th Grade',
           school: data.school || 'Virtual Academy',
           subjects: data.subjects || ['Mathematics', 'Physics', 'Chemistry'],
-          profile_image_url: data.profile_image_url || ''
+          profile_image_url: data.avatar_url || ''
         });
       } else {
         // Create profile if it doesn't exist
