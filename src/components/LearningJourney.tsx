@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Target, Users, RotateCcw, Trophy, Brain, ArrowRight } from 'lucide-react';
@@ -31,8 +30,8 @@ const LearningJourney = () => {
     },
     {
       id: 3,
-      title: 'Practice',
-      description: 'Apply your knowledge through interactive exercises and problems',
+      title: 'AI Study Sessions',
+      description: 'Create personalized courses and upload documents for AI-powered learning assistance',
       icon: Users,
       color: 'bg-yellow-500',
       progress: 50,
