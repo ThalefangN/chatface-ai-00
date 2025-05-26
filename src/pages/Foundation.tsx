@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Headphones, Upload, FileText, Download, Mic } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Brain, Headphones, Upload, FileText, Download, Mic, Play, Pause, Volume2, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -18,6 +19,12 @@ const Foundation = () => {
   const [context, setContext] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
+  const [podcastFormat, setPodcastFormat] = useState<'audio' | 'video'>('audio');
+  const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -126,7 +133,7 @@ const Foundation = () => {
         - Key takeaways and summaries
         - Discussion questions for reflection
         
-        Make it sound natural and engaging for audio learning.`;
+        Make it sound natural and engaging for ${podcastFormat} learning.`;
       } else {
         message = `Create an engaging study podcast script about: "${topic}"
         ${context ? `Additional context: ${context}` : ''}
@@ -137,27 +144,59 @@ const Foundation = () => {
         - Key takeaways and summaries
         - Discussion questions for reflection
         
-        Make it sound natural and engaging for audio learning.`;
+        Make it sound natural and engaging for ${podcastFormat} learning.`;
       }
 
       const result = await generateWithAI(message);
       setGeneratedContent(result);
-      toast.success('Study podcast script generated successfully!');
+      
+      // Simulate generating audio/video URLs (in a real implementation, you'd call a text-to-speech or video generation service)
+      if (podcastFormat === 'audio') {
+        // This would be replaced with actual audio generation service
+        const simulatedAudioUrl = URL.createObjectURL(new Blob([result], { type: 'text/plain' }));
+        setGeneratedAudioUrl(simulatedAudioUrl);
+        setGeneratedVideoUrl(null);
+      } else {
+        // This would be replaced with actual video generation service
+        const simulatedVideoUrl = URL.createObjectURL(new Blob([result], { type: 'text/plain' }));
+        setGeneratedVideoUrl(simulatedVideoUrl);
+        setGeneratedAudioUrl(null);
+      }
+      
+      toast.success(`Study ${podcastFormat} generated successfully!`);
       
     } catch (error) {
       console.error('Error generating podcast:', error);
-      toast.error('Failed to generate study podcast. Please try again.');
-      setGeneratedContent('Unable to generate podcast script at this time. Please check your connection and try again.');
+      toast.error(`Failed to generate study ${podcastFormat}. Please try again.`);
+      setGeneratedContent(`Unable to generate ${podcastFormat} script at this time. Please check your connection and try again.`);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const togglePlayback = () => {
+    if (podcastFormat === 'audio' && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    } else if (podcastFormat === 'video' && videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
   const downloadContent = () => {
     if (!generatedContent) return;
 
-    const title = activeTab === 'mindmap' ? 'Mind Map' : 'Study Podcast Script';
-    const filename = activeTab === 'mindmap' ? 'mindmap.md' : 'podcast-script.md';
+    const title = activeTab === 'mindmap' ? 'Mind Map' : `Study ${podcastFormat.charAt(0).toUpperCase() + podcastFormat.slice(1)} Script`;
+    const filename = activeTab === 'mindmap' ? 'mindmap.md' : `podcast-script.md`;
     const content = `# ${title}: ${topic || 'Document Analysis'}\n\n${generatedContent}`;
     
     const blob = new Blob([content], { type: 'text/markdown' });
@@ -323,6 +362,29 @@ const Foundation = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
+                        <Label htmlFor="podcast-format">Format</Label>
+                        <Select value={podcastFormat} onValueChange={(value: 'audio' | 'video') => setPodcastFormat(value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose format" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="audio">
+                              <div className="flex items-center gap-2">
+                                <Volume2 className="w-4 h-4" />
+                                Audio Podcast
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="video">
+                              <div className="flex items-center gap-2">
+                                <Video className="w-4 h-4" />
+                                Video Podcast
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
                         <Label htmlFor="podcast-topic">Topic</Label>
                         <Input
                           id="podcast-topic"
@@ -374,12 +436,12 @@ const Foundation = () => {
                         {isGenerating ? (
                           <>
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Creating Podcast Script...
+                            Creating {podcastFormat}...
                           </>
                         ) : (
                           <>
                             <Mic className="w-4 h-4 mr-2" />
-                            Generate Study Podcast
+                            Generate Study {podcastFormat.charAt(0).toUpperCase() + podcastFormat.slice(1)}
                           </>
                         )}
                       </Button>
@@ -390,11 +452,11 @@ const Foundation = () => {
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>Study Podcast Script</CardTitle>
+                        <CardTitle>Study {podcastFormat.charAt(0).toUpperCase() + podcastFormat.slice(1)}</CardTitle>
                         {generatedContent && !isGenerating && (
                           <Button variant="outline" size="sm" onClick={downloadContent}>
                             <Download className="w-4 h-4 mr-2" />
-                            Download
+                            Download Script
                           </Button>
                         )}
                       </div>
@@ -404,20 +466,91 @@ const Foundation = () => {
                         <div className="flex items-center justify-center h-64">
                           <div className="text-center">
                             <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                            <p className="text-gray-500">Creating your study podcast...</p>
+                            <p className="text-gray-500">Creating your study {podcastFormat}...</p>
                           </div>
                         </div>
                       ) : generatedContent ? (
-                        <div className="prose max-w-none">
-                          <div className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-lg border">
-                            {generatedContent}
+                        <div className="space-y-4">
+                          {/* Media Player */}
+                          {(generatedAudioUrl || generatedVideoUrl) && (
+                            <div className="bg-gray-50 p-4 rounded-lg border">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="font-medium text-gray-900">
+                                  {podcastFormat === 'audio' ? 'Audio Player' : 'Video Player'}
+                                </h4>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={togglePlayback}
+                                  className="flex items-center gap-2"
+                                >
+                                  {isPlaying ? (
+                                    <>
+                                      <Pause className="w-4 h-4" />
+                                      Pause
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="w-4 h-4" />
+                                      Play
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                              
+                              {podcastFormat === 'audio' && generatedAudioUrl ? (
+                                <audio
+                                  ref={audioRef}
+                                  controls
+                                  className="w-full"
+                                  onPlay={() => setIsPlaying(true)}
+                                  onPause={() => setIsPlaying(false)}
+                                >
+                                  <source src={generatedAudioUrl} type="audio/mpeg" />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              ) : podcastFormat === 'video' && generatedVideoUrl ? (
+                                <video
+                                  ref={videoRef}
+                                  controls
+                                  className="w-full rounded"
+                                  onPlay={() => setIsPlaying(true)}
+                                  onPause={() => setIsPlaying(false)}
+                                >
+                                  <source src={generatedVideoUrl} type="video/mp4" />
+                                  Your browser does not support the video element.
+                                </video>
+                              ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    {podcastFormat === 'audio' ? (
+                                      <Volume2 className="w-8 h-8 text-gray-400" />
+                                    ) : (
+                                      <Video className="w-8 h-8 text-gray-400" />
+                                    )}
+                                  </div>
+                                  <p>{podcastFormat === 'audio' ? 'Audio' : 'Video'} will be generated here</p>
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    (Note: This is a demo. In production, this would connect to a text-to-speech or video generation service)
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Script Content */}
+                          <div className="prose max-w-none">
+                            <h4 className="font-medium text-gray-900 mb-2">Generated Script:</h4>
+                            <div className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-lg border max-h-64 overflow-y-auto">
+                              {generatedContent}
+                            </div>
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center h-64 text-gray-500">
                           <div className="text-center">
                             <Headphones className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                            <p>Enter a topic or upload material to create a study podcast</p>
+                            <p>Enter a topic or upload material to create a study {podcastFormat}</p>
                           </div>
                         </div>
                       )}

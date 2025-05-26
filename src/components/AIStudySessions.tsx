@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,7 +50,6 @@ const AIStudySessions = () => {
       <div className="w-full max-w-full overflow-hidden">
         <CourseViewer 
           courseId={selectedCourse.id}
-          onBack={handleBackToSessions}
         />
       </div>
     );
