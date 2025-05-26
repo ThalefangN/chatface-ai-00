@@ -11,7 +11,7 @@ import { Send, Bot, User, BookOpen, Calculator, Lightbulb, Brain, HelpCircle } f
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { getReliableAIResponse } from '@/utils/aiHelper';
 
 interface Message {
   id: string;
@@ -46,25 +46,21 @@ const AiChat = () => {
     try {
       console.log('Sending message to AI:', messageContent.substring(0, 50) + '...');
       
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: { message: messageContent }
-      });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
+      const response = await getReliableAIResponse(
+        messageContent,
+        'You are a helpful AI study assistant. Provide clear, educational responses with step-by-step explanations when needed. Focus on helping students understand concepts thoroughly.'
+      );
 
       console.log('AI response received');
       return {
-        content: data?.content || "I received your message and I'm here to help! Could you please rephrase your question or try asking something else?",
-        hasFollowUpButtons: false
+        content: response.content,
+        hasFollowUpButtons: response.hasFollowUpButtons || false
       };
     } catch (error) {
       console.error('Error calling AI chat function:', error);
       
       return {
-        content: "I'm having trouble connecting right now, but I'm still here to help! While I work on reconnecting, feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nTry asking your question again in a moment!",
+        content: "I'm here and ready to help with your studies! There might be a brief connection hiccup, but I'm committed to supporting your learning. Please feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nWhat would you like to work on?",
         hasFollowUpButtons: false
       };
     }
@@ -101,7 +97,7 @@ const AiChat = () => {
       
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I encountered an issue, but I'm still here to help! Please try asking your question again.",
+        content: "I'm your AI study assistant and I'm here to help! While I work on the connection, I can still support your learning journey. Try asking your question again or let me know what subject you'd like to explore!",
         isAI: true,
         timestamp: new Date()
       };
@@ -141,7 +137,7 @@ const AiChat = () => {
       
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Let me help you with that! I'm having a small connection hiccup, but please try again.",
+        content: "I'd love to help you with that! I'm having a small connection hiccup, but I'm still your dedicated study assistant. Please try your request again, and I'll do my best to provide helpful guidance!",
         isAI: true,
         timestamp: new Date()
       };

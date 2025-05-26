@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from '@/contexts/ThemeContext';
+import { getReliableAIResponse } from '@/utils/aiHelper';
 
 const Home = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const Home = () => {
   const [displayedMessage, setDisplayedMessage] = useState("");
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
+  const [isAIResponding, setIsAIResponding] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   // Full welcome message
@@ -64,32 +66,57 @@ const Home = () => {
     
     return () => clearInterval(typingInterval);
   }, [isTyping, aiMessage]);
+
+  // Enhanced AI response function
+  const getAIResponse = async (message: string) => {
+    setIsAIResponding(true);
+    try {
+      console.log('Getting AI response for home page');
+      const response = await getReliableAIResponse(
+        message,
+        'You are StudyBuddy, a friendly AI assistant for students in Botswana. You help with BGCSE, JCE, and PSLE studies. Always be encouraging and provide helpful study guidance.'
+      );
+      return response.content;
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      // Always return a helpful response
+      return "I'm here to help you succeed in your studies! While I work on reconnecting perfectly, I can still assist you with math, science, English, and other subjects. What specific topic would you like to explore together?";
+    } finally {
+      setIsAIResponding(false);
+    }
+  };
   
-  const handleToggleListen = () => {
-    setIsListening(!isListening);
-    if (!isListening) {
-      toast.success("Listening...");
-      // Simulate user typing a message after 2 seconds
-      setTimeout(() => {
-        setUserMessage("Can you help me with my BGCSE Mathematics revision?");
-        
-        // Simulate AI response with typing effect
-        setTimeout(() => {
-          const response = "Of course! I'd be happy to help with your BGCSE Mathematics revision. Would you like to focus on a specific topic like Algebra, Geometry, Calculus, or Probability? Or would you prefer general revision tips?";
-          setAiMessage(response);
-          setIsTyping(true);
-          
-          // Speak the response
-          if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(response);
-            window.speechSynthesis.speak(utterance);
-          }
-        }, 1500);
-      }, 2000);
-    } else {
+  const handleToggleListen = async () => {
+    if (isListening) {
+      setIsListening(false);
       toast.info("Stopped listening");
       setUserMessage("");
+      return;
     }
+
+    setIsListening(true);
+    toast.success("Listening...");
+    
+    // Simulate user input and AI response
+    setTimeout(async () => {
+      const simulatedQuestion = "Can you help me with my BGCSE Mathematics revision?";
+      setUserMessage(simulatedQuestion);
+      
+      // Get AI response
+      setTimeout(async () => {
+        const aiResponse = await getAIResponse(simulatedQuestion);
+        setAiMessage(aiResponse);
+        setIsTyping(true);
+        
+        // Speak the response
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(aiResponse);
+          window.speechSynthesis.speak(utterance);
+        }
+        
+        setIsListening(false);
+      }, 1500);
+    }, 2000);
   };
 
   const handleProfileClick = () => {
@@ -130,18 +157,36 @@ const Home = () => {
         <div className="text-center w-full">
           {isListening ? (
             <p className="text-xl mb-12 font-medium animate-pulse text-blue-600">I'm listening...</p>
+          ) : isAIResponding ? (
+            <p className="text-xl mb-12 font-medium animate-pulse text-green-600">AI is thinking...</p>
           ) : (
             showWelcomeMessage && <p className="text-xl mb-12 font-medium text-gray-700">How can I help you today?</p>
           )}
           
           {/* Animated orb */}
           <div className="relative w-52 h-52 mx-auto mb-12">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 opacity-80 animate-pulse blur-sm"></div>
+            <div className={`absolute inset-0 rounded-full opacity-80 blur-sm ${
+              isListening ? 'bg-gradient-to-r from-green-300 via-green-400 to-green-500 animate-pulse' :
+              isAIResponding ? 'bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 animate-pulse' :
+              'bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 animate-pulse'
+            }`}></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-48 h-48 rounded-full bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500 opacity-90 animate-pulse-soft">
-                <div className="w-full h-full rounded-full bg-gradient-to-tl from-blue-200 via-blue-300 to-blue-400 opacity-90 flex items-center justify-center animate-float overflow-hidden relative">
+              <div className={`w-48 h-48 rounded-full opacity-90 animate-pulse-soft ${
+                isListening ? 'bg-gradient-to-br from-green-300 via-green-400 to-green-500' :
+                isAIResponding ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-500' :
+                'bg-gradient-to-br from-blue-300 via-blue-400 to-blue-500'
+              }`}>
+                <div className={`w-full h-full rounded-full opacity-90 flex items-center justify-center animate-float overflow-hidden relative ${
+                  isListening ? 'bg-gradient-to-tl from-green-200 via-green-300 to-green-400' :
+                  isAIResponding ? 'bg-gradient-to-tl from-yellow-200 via-yellow-300 to-yellow-400' :
+                  'bg-gradient-to-tl from-blue-200 via-blue-300 to-blue-400'
+                }`}>
                   {/* Inner light effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 mix-blend-overlay opacity-80"></div>
+                  <div className={`absolute inset-0 mix-blend-overlay opacity-80 ${
+                    isListening ? 'bg-gradient-to-r from-green-300 via-green-400 to-green-500' :
+                    isAIResponding ? 'bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500' :
+                    'bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500'
+                  }`}></div>
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
                     <div className="w-full h-full bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.8)_0%,_transparent_70%)]"></div>
                   </div>
@@ -181,18 +226,29 @@ const Home = () => {
             
             <button 
               onClick={handleToggleListen} 
-              className={`relative w-20 h-20 flex items-center justify-center rounded-full transition-all ${isListening 
-                ? "bg-blue-500" 
-                : "bg-white shadow-lg"}`}
+              disabled={isAIResponding}
+              className={`relative w-20 h-20 flex items-center justify-center rounded-full transition-all ${
+                isListening 
+                  ? "bg-green-500" 
+                  : isAIResponding
+                  ? "bg-yellow-500"
+                  : "bg-white shadow-lg"
+              } ${isAIResponding ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
             >
               {/* Pulse rings when listening */}
-              {isListening && (
+              {(isListening || isAIResponding) && (
                 <>
-                  <div className="absolute inset-0 w-full h-full rounded-full bg-blue-500 opacity-20 animate-ping"></div>
-                  <div className="absolute inset-0 w-full h-full rounded-full border-4 border-blue-400/30 animate-pulse"></div>
+                  <div className={`absolute inset-0 w-full h-full rounded-full opacity-20 animate-ping ${
+                    isListening ? 'bg-green-500' : 'bg-yellow-500'
+                  }`}></div>
+                  <div className={`absolute inset-0 w-full h-full rounded-full border-4 animate-pulse ${
+                    isListening ? 'border-green-400/30' : 'border-yellow-400/30'
+                  }`}></div>
                 </>
               )}
-              <Mic size={30} className={`${isListening ? 'text-white' : 'text-blue-500'}`} />
+              <Mic size={30} className={`${
+                isListening || isAIResponding ? 'text-white' : 'text-blue-500'
+              }`} />
             </button>
             
             <button 
