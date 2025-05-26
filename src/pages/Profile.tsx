@@ -34,15 +34,36 @@ const Profile = () => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   useEffect(() => {
+    // Add a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        toast.error('Profile loading timed out. Please refresh the page.');
+      }
+    }, 10000); // 10 second timeout
+
     if (user) {
-      fetchProfile();
+      fetchProfile().finally(() => {
+        clearTimeout(loadingTimeout);
+      });
+    } else {
+      // If no user, stop loading after a short delay
+      setTimeout(() => setLoading(false), 1000);
+      clearTimeout(loadingTimeout);
     }
-  }, [user]);
+
+    return () => clearTimeout(loadingTimeout);
+  }, [user, loading]);
 
   const fetchProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
+      console.log('Fetching profile for user:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -51,14 +72,77 @@ const Profile = () => {
 
       if (error) {
         console.error('Error fetching profile:', error);
-        toast.error('Failed to load profile');
+        
+        // If profile doesn't exist, create a basic one
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating basic profile...');
+          const basicProfile = {
+            id: user.id,
+            first_name: '',
+            last_name: '',
+            email: user.email || '',
+            avatar_url: '',
+            bio: '',
+            grade_level: '',
+            school: '',
+            subjects: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          // Try to create the profile
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert(basicProfile)
+            .select()
+            .single();
+            
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            setProfile(basicProfile); // Use basic profile even if creation fails
+          } else {
+            setProfile(newProfile);
+          }
+        } else {
+          toast.error('Failed to load profile');
+          // Create a fallback profile from user data
+          setProfile({
+            id: user.id,
+            first_name: '',
+            last_name: '',
+            email: user.email || '',
+            avatar_url: '',
+            bio: '',
+            grade_level: '',
+            school: '',
+            subjects: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        }
         return;
       }
 
+      console.log('Profile fetched successfully:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
+      
+      // Fallback profile
+      setProfile({
+        id: user.id,
+        first_name: '',
+        last_name: '',
+        email: user.email || '',
+        avatar_url: '',
+        bio: '',
+        grade_level: '',
+        school: '',
+        subjects: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
     } finally {
       setLoading(false);
     }
@@ -67,6 +151,26 @@ const Profile = () => {
   const handleProfileUpdate = (updatedProfile: ProfileData) => {
     setProfile(updatedProfile);
   };
+
+  // Ensure we have user before rendering
+  if (!user) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <SidebarInset className="flex-1">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger className="-ml-1" />
+              <h1 className="text-lg font-semibold">Profile</h1>
+            </header>
+            <div className="flex-1 p-6">
+              <p>Please log in to view your profile.</p>
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    );
+  }
 
   if (loading) {
     return (
@@ -102,7 +206,12 @@ const Profile = () => {
               <h1 className="text-lg font-semibold">Profile</h1>
             </header>
             <div className="flex-1 p-6">
-              <p>Profile not found</p>
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">Unable to load profile</p>
+                <Button onClick={() => window.location.reload()}>
+                  Refresh Page
+                </Button>
+              </div>
             </div>
           </SidebarInset>
         </div>
@@ -148,7 +257,12 @@ const Profile = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium">{profile.first_name} {profile.last_name}</span>
+                        <span className="font-medium">
+                          {profile.first_name || profile.last_name 
+                            ? `${profile.first_name} ${profile.last_name}`.trim()
+                            : 'Name not set'
+                          }
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-gray-500" />

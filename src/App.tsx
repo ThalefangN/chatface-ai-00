@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +23,7 @@ import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
 import AudioOverview from "./pages/AudioOverview";
 import Courses from "./pages/Courses";
+import Foundation from "./pages/Foundation";
 import EnglishLiterature from "./pages/EnglishLiterature";
 import SetswanaLanguage from "./pages/SetswanaLanguage";
 import SocialStudies from "./pages/SocialStudies";
@@ -63,6 +65,7 @@ const App = () => (
                 <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/learning/:subject" element={<ProtectedRoute><LearningSession /></ProtectedRoute>} />
+                <Route path="/learning/foundation" element={<ProtectedRoute><Foundation /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AiChat /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
