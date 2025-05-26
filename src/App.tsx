@@ -33,7 +33,6 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import CreateCourse from "./pages/CreateCourse";
 import ManageCourse from "./pages/ManageCourse";
 import AddContent from "./pages/AddContent";
-import StudentCommunity from "./pages/StudentCommunity";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TeacherProtectedRoute from "./components/TeacherProtectedRoute";
@@ -69,7 +68,6 @@ const App = () => (
                 <Route path="/learning/foundation" element={<ProtectedRoute><Foundation /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AiChat /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-                <Route path="/student-community" element={<ProtectedRoute><StudentCommunity /></ProtectedRoute>} />
                 <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
                 <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
