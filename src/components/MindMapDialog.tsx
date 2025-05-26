@@ -3,7 +3,6 @@ import React, { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Plus, Minus, ZoomIn, ZoomOut, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +17,7 @@ interface MindMapNode {
   level: number;
   children: MindMapNode[];
   color: string;
+  parentId?: string;
 }
 
 interface MindMapDialogProps {
@@ -41,14 +41,57 @@ const MindMapDialog: React.FC<MindMapDialogProps> = ({ open, onOpenChange }) => 
     try {
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message: `Generate a comprehensive mind map for the topic: "${topic}". Create a hierarchical structure with the main topic at the center and 4-6 main branches, each with 2-4 sub-branches. Format the response as a JSON object with this structure: {"id": "root", "title": "${topic}", "x": 50, "y": 50, "expanded": true, "level": 0, "color": "#3B82F6", "children": [{"id": "branch1", "title": "Main Branch 1", "x": 20, "y": 30, "expanded": false, "level": 1, "color": "#10B981", "children": [{"id": "sub1", "title": "Sub Topic 1", "x": 10, "y": 20, "expanded": false, "level": 2, "color": "#F59E0B", "children": []}]}]}`,
-          systemPrompt: 'You are a mind map generator. Always respond with valid JSON only. No additional text or formatting.'
+          message: `Generate a comprehensive mind map for the topic: "${topic}". Create a hierarchical structure with the main topic at the center and 4-6 main branches, each with 2-4 sub-branches. Format the response as a JSON object with this structure: {"id": "root", "title": "${topic}", "x": 400, "y": 300, "expanded": true, "level": 0, "color": "#3B82F6", "children": [{"id": "branch1", "title": "Main Branch 1", "x": 200, "y": 150, "expanded": false, "level": 1, "color": "#10B981", "children": [{"id": "sub1", "title": "Sub Topic 1", "x": 100, "y": 100, "expanded": false, "level": 2, "color": "#F59E0B", "children": []}]}]}`,
+          systemPrompt: 'You are a mind map generator. Always respond with valid JSON only. No additional text or formatting. Create a well-structured mind map with proper positioning for visual clarity.'
         }
       });
 
       if (error) throw error;
       
-      const mindMapJson = JSON.parse(data.content);
+      let mindMapJson;
+      try {
+        mindMapJson = JSON.parse(data.content);
+      } catch (parseError) {
+        // Fallback mind map structure if parsing fails
+        mindMapJson = {
+          id: "root",
+          title: topic,
+          x: 400,
+          y: 300,
+          expanded: true,
+          level: 0,
+          color: "#3B82F6",
+          children: [
+            {
+              id: "branch1",
+              title: "Key Concept 1",
+              x: 200,
+              y: 200,
+              expanded: false,
+              level: 1,
+              color: "#10B981",
+              children: [
+                { id: "sub1", title: "Detail A", x: 100, y: 150, expanded: false, level: 2, color: "#F59E0B", children: [] },
+                { id: "sub2", title: "Detail B", x: 100, y: 250, expanded: false, level: 2, color: "#F59E0B", children: [] }
+              ]
+            },
+            {
+              id: "branch2",
+              title: "Key Concept 2",
+              x: 600,
+              y: 200,
+              expanded: false,
+              level: 1,
+              color: "#8B5CF6",
+              children: [
+                { id: "sub3", title: "Detail C", x: 700, y: 150, expanded: false, level: 2, color: "#EF4444", children: [] },
+                { id: "sub4", title: "Detail D", x: 700, y: 250, expanded: false, level: 2, color: "#EF4444", children: [] }
+              ]
+            }
+          ]
+        };
+      }
+      
       setMindMapData(mindMapJson);
       toast.success('Mind map generated successfully!');
     } catch (error) {
@@ -75,61 +118,109 @@ const MindMapDialog: React.FC<MindMapDialogProps> = ({ open, onOpenChange }) => 
     setMindMapData(updateNode(mindMapData));
   }, [mindMapData]);
 
-  const renderNode = (node: MindMapNode) => {
+  const renderConnectingLine = (fromNode: MindMapNode, toNode: MindMapNode) => {
+    const fromX = fromNode.x * zoomLevel;
+    const fromY = fromNode.y * zoomLevel;
+    const toX = toNode.x * zoomLevel;
+    const toY = toNode.y * zoomLevel;
+
+    // Calculate control points for curved line
+    const controlPointOffset = Math.abs(toX - fromX) * 0.5;
+    const controlX1 = fromX + (fromX < toX ? controlPointOffset : -controlPointOffset);
+    const controlX2 = toX + (fromX < toX ? -controlPointOffset : controlPointOffset);
+
+    const pathData = `M ${fromX} ${fromY} C ${controlX1} ${fromY}, ${controlX2} ${toY}, ${toX} ${toY}`;
+
+    return (
+      <path
+        key={`line-${fromNode.id}-${toNode.id}`}
+        d={pathData}
+        stroke={fromNode.color}
+        strokeWidth="2"
+        fill="none"
+        opacity="0.7"
+        className="pointer-events-none"
+      />
+    );
+  };
+
+  const renderNode = (node: MindMapNode): JSX.Element[] => {
+    const elements: JSX.Element[] = [];
+    
     const nodeStyle = {
-      position: 'absolute' as const,
-      left: `${node.x * zoomLevel}%`,
-      top: `${node.y * zoomLevel}%`,
+      left: `${node.x * zoomLevel}px`,
+      top: `${node.y * zoomLevel}px`,
       transform: 'translate(-50%, -50%)',
       zIndex: 10
     };
 
-    return (
-      <div key={node.id}>
-        <div style={nodeStyle}>
-          <Card 
-            className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2`}
-            style={{ borderColor: node.color }}
-            onClick={() => toggleNode(node.id)}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: node.color }}
-                />
-                <span className="text-sm font-medium">{node.title}</span>
-                {node.children.length > 0 && (
-                  <Button variant="ghost" size="sm" className="w-4 h-4 p-0">
-                    {node.expanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+    // Main node container
+    elements.push(
+      <div
+        key={node.id}
+        className="absolute"
+        style={nodeStyle}
+      >
+        <div
+          className={`
+            relative bg-white border-2 rounded-lg shadow-lg cursor-pointer
+            transition-all duration-200 hover:shadow-xl hover:scale-105
+            min-w-[120px] max-w-[200px] p-3
+          `}
+          style={{ borderColor: node.color }}
+          onClick={() => node.children.length > 0 && toggleNode(node.id)}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-gray-800 flex-1 break-words">
+              {node.title}
+            </span>
+            {node.children.length > 0 && (
+              <button
+                className={`
+                  w-6 h-6 rounded-full flex items-center justify-center
+                  text-white text-xs font-bold transition-colors
+                `}
+                style={{ backgroundColor: node.color }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleNode(node.id);
+                }}
+              >
+                {node.expanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
+          
+          {/* Level indicator */}
+          <div 
+            className="absolute -top-1 -left-1 w-3 h-3 rounded-full"
+            style={{ backgroundColor: node.color }}
+          />
         </div>
-        
-        {node.expanded && node.children.map(child => renderNode(child))}
-        
-        {node.expanded && node.children.map(child => (
-          <svg 
-            key={`line-${child.id}`}
-            className="absolute inset-0 pointer-events-none"
-            style={{ zIndex: 5 }}
-          >
-            <line
-              x1={`${node.x * zoomLevel}%`}
-              y1={`${node.y * zoomLevel}%`}
-              x2={`${child.x * zoomLevel}%`}
-              y2={`${child.y * zoomLevel}%`}
-              stroke={node.color}
-              strokeWidth="2"
-              opacity="0.6"
-            />
-          </svg>
-        ))}
       </div>
     );
+
+    // Render children if expanded
+    if (node.expanded && node.children.length > 0) {
+      node.children.forEach(child => {
+        elements.push(...renderNode(child));
+      });
+    }
+
+    return elements;
+  };
+
+  const renderAllConnections = (node: MindMapNode): JSX.Element[] => {
+    const connections: JSX.Element[] = [];
+    
+    if (node.expanded && node.children.length > 0) {
+      node.children.forEach(child => {
+        connections.push(renderConnectingLine(node, child));
+        connections.push(...renderAllConnections(child));
+      });
+    }
+    
+    return connections;
   };
 
   const downloadMindMap = () => {
@@ -168,7 +259,7 @@ const MindMapDialog: React.FC<MindMapDialogProps> = ({ open, onOpenChange }) => 
         {mindMapData && (
           <div className="flex justify-between items-center mb-4">
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}>
+              <Button variant="outline" size="sm" onClick={() => setZoomLevel(prev => Math.max(0.3, prev - 0.1))}>
                 <ZoomOut className="w-4 h-4" />
               </Button>
               <span className="text-sm flex items-center px-2">
@@ -185,14 +276,28 @@ const MindMapDialog: React.FC<MindMapDialogProps> = ({ open, onOpenChange }) => 
           </div>
         )}
 
-        <div className="flex-1 border rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700">
+        <div className="flex-1 border rounded-lg overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
           {mindMapData ? (
             <div className="relative w-full h-full overflow-auto">
+              {/* SVG for connecting lines */}
+              <svg 
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                style={{ zIndex: 5 }}
+              >
+                {renderAllConnections(mindMapData)}
+              </svg>
+              
+              {/* Render all nodes */}
               {renderNode(mindMapData)}
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
-              Enter a topic and click Generate to create your mind map
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-blue-500 rounded"></div>
+                </div>
+                <p>Enter a topic and click Generate to create your mind map</p>
+              </div>
             </div>
           )}
         </div>
