@@ -1,149 +1,171 @@
-
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Play, BookOpen, Brain, Trophy, Star, Users, Clock, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, BookOpen, Upload, Plus } from 'lucide-react';
-import CreateCourseDialog from '@/components/CreateCourseDialog';
+import { Badge } from '@/components/ui/badge';
 import CourseViewer from '@/components/CourseViewer';
-import SavedCoursesList from '@/components/SavedCoursesList';
 
 interface Course {
   id: string;
   name: string;
-  gradeLevel: string;
-  objectives: string[];
-  currentLesson: number;
-  totalLessons: number;
+  instructor: string;
+  rating: number;
+  students: number;
+  duration: string;
+  level: string;
+  subject: string;
+  description: string;
+  features: string[];
 }
 
 const AIStudySessions = () => {
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  const handleCourseCreated = (course: Course) => {
-    setSelectedCourse(course);
-    setIsCreatingCourse(false);
-  };
-
-  const handleCourseSelect = (course: Course) => {
-    setSelectedCourse(course);
-  };
-
-  const handleBackToSessions = () => {
-    setSelectedCourse(null);
-    setIsCreatingCourse(false);
-  };
-
-  const handleCreateCourse = () => {
-    setShowCreateDialog(true);
-    setIsCreatingCourse(true);
-  };
-
-  const handleUploadDocument = () => {
-    // For now, show a toast message - this can be enhanced later
-    console.log('Document upload feature will be implemented');
-  };
+  const courses: Course[] = [
+    {
+      id: 'static-3',
+      name: 'English Literature Basics',
+      instructor: 'Mr. David Smith',
+      rating: 4.5,
+      students: 320,
+      duration: '8 weeks',
+      level: 'BGCSE',
+      subject: 'English Literature',
+      description: 'Introduction to English Literature for BGCSE students with comprehensive analysis techniques',
+      features: ['Interactive lessons', 'Practice exercises', 'Progress tracking', 'AI tutoring']
+    },
+    {
+      id: 'math-advanced',
+      name: 'Advanced Mathematics',
+      instructor: 'Dr. Sarah Molefe',
+      rating: 4.8,
+      students: 156,
+      duration: '12 weeks',
+      level: 'BGCSE',
+      subject: 'Mathematics',
+      description: 'Comprehensive BGCSE Mathematics preparation with advanced problem-solving techniques',
+      features: ['Step-by-step solutions', 'Practice tests', 'Video explanations', 'Progress analytics']
+    },
+    {
+      id: 'science-foundation',
+      name: 'Science Foundations',
+      instructor: 'Prof. Keabetswe Phiri',
+      rating: 4.6,
+      students: 234,
+      duration: '10 weeks',
+      level: 'JCE',
+      subject: 'Science',
+      description: 'Build strong foundations in general science with practical experiments and theory',
+      features: ['Virtual labs', 'Interactive simulations', 'Practical guides', 'Assessment tools']
+    }
+  ];
 
   if (selectedCourse) {
-    return (
-      <div className="w-full max-w-full overflow-hidden">
-        <CourseViewer 
-          course={selectedCourse} 
-          onBack={handleBackToSessions}
-        />
-      </div>
-    );
+    return <CourseViewer courseId={selectedCourse} />;
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
-      <div className="space-y-8 px-2">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+    <div className="space-y-6">
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-6"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            <Brain className="w-5 h-5 text-white" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
             AI Study Sessions
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-sm md:text-base">
-            Create personalized courses or upload your documents for AI-powered learning assistance
-          </p>
+          </h2>
         </div>
+        <p className="text-gray-600 dark:text-gray-400">
+          Personalized learning experiences powered by artificial intelligence
+        </p>
+      </motion.div>
 
-        {/* Action Cards */}
-        <div className="grid md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
-          {/* Upload Document Card */}
-          <Card 
-            className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:shadow-lg transition-all cursor-pointer"
-            onClick={handleUploadDocument}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.map((course, index) => (
+          <motion.div
+            key={course.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
           >
-            <CardHeader className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-6 h-6 md:w-8 md:h-8 text-purple-600" />
-              </div>
-              <CardTitle className="text-lg md:text-xl text-purple-800 dark:text-purple-300">
-                Upload Document
-              </CardTitle>
-              <p className="text-sm md:text-base text-purple-600 dark:text-purple-400">
-                Upload your study materials for AI-powered summarization and analysis
-              </p>
-            </CardHeader>
-            <CardContent className="text-center">
-              <Button 
-                variant="outline" 
-                className="border-purple-300 text-purple-700 hover:bg-purple-50 w-full md:w-auto"
-                onClick={handleUploadDocument}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Upload & Analyze
-              </Button>
-            </CardContent>
-          </Card>
+            <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
+                      {course.name}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      by {course.instructor}
+                    </p>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800">AI Powered</Badge>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                  {course.description}
+                </p>
+                
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    <span>{course.rating}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    <span>{course.students}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{course.duration}</span>
+                  </div>
+                </div>
 
-          {/* Create Course Card */}
-          <Card 
-            className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 hover:shadow-lg transition-all cursor-pointer"
-            onClick={handleCreateCourse}
-          >
-            <CardHeader className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
-              </div>
-              <CardTitle className="text-lg md:text-xl text-green-800 dark:text-green-300">
-                Create Custom Course
-              </CardTitle>
-              <p className="text-sm md:text-base text-green-600 dark:text-green-400">
-                Generate AI-powered courses tailored to Botswana syllabus (PSLE, JCE, BGCSE)
-              </p>
-            </CardHeader>
-            <CardContent className="text-center">
-              <Button 
-                onClick={handleCreateCourse}
-                className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
-                disabled={isCreatingCourse}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {isCreatingCourse ? 'Creating...' : 'Create Course'}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    <Badge variant="secondary" className="text-xs">
+                      {course.subject}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {course.level}
+                    </Badge>
+                  </div>
+                </div>
 
-        {/* Saved Courses Section - This will always show */}
-        <div className="max-w-4xl mx-auto w-full">
-          <SavedCoursesList onCourseSelect={handleCourseSelect} />
-        </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <Award className="w-3 h-3" />
+                    <span>Features:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {course.features.map((feature, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {feature}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
 
-        {/* Create Course Dialog */}
-        <CreateCourseDialog
-          open={showCreateDialog}
-          onOpenChange={(open) => {
-            setShowCreateDialog(open);
-            if (!open) {
-              setIsCreatingCourse(false);
-            }
-          }}
-          onCourseCreated={handleCourseCreated}
-        />
+                <Button 
+                  className="w-full" 
+                  onClick={() => setSelectedCourse(course.id)}
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Start AI Session
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
