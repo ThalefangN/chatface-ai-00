@@ -16,6 +16,7 @@ import TutorSection from "./TutorSection";
 import AssessmentExam from "./AssessmentExam";
 import MindMapDialog from "./MindMapDialog";
 import DocumentSummarySection from "./DocumentSummarySection";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LearningContentProps {
   subject: string;
@@ -57,7 +58,7 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
   const [chatInput, setChatInput] = useState("");
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isMobile = useIsMobile();
 
   // Extract subject type from the subject string
   const getSubjectType = () => {
@@ -345,9 +346,17 @@ const LearningContent: React.FC<LearningContentProps> = ({ subject }) => {
           </div>
         </div>
 
-        {/* Document Summary Section */}
+        {/* Document Summary Section - Mobile-responsive layout */}
         <div className="flex-1 p-4 lg:p-6">
-          <DocumentSummarySection />
+          {isMobile ? (
+            // Mobile: Single column layout similar to AI Study Sessions
+            <div className="w-full max-w-full overflow-x-hidden">
+              <DocumentSummarySection />
+            </div>
+          ) : (
+            // Desktop: Keep the existing layout
+            <DocumentSummarySection />
+          )}
         </div>
       </div>
     );
