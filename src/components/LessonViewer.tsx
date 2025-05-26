@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, BookOpen, Brain, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, ArrowRight, BookOpen, Brain, Clock, Send, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import QuizPage from '@/components/QuizPage';
@@ -36,6 +37,8 @@ const LessonViewer: React.FC<LessonViewerProps> = ({
   const [totalParts, setTotalParts] = useState(3);
   const [isLoading, setIsLoading] = useState(true);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
   useEffect(() => {
     generateLessonContent();
@@ -50,26 +53,26 @@ const LessonViewer: React.FC<LessonViewerProps> = ({
 
 Lesson ${lessonNumber}: ${objective}
 
-Please provide detailed content with:
-1. Clear introduction and learning goals
-2. Step-by-step explanations with examples
-3. Practical applications relevant to Botswana context
-4. Real-world scenarios and problems
-5. Interactive elements and exercises
+As an experienced teacher addressing students directly, create engaging lesson content with:
+1. Clear introduction speaking directly to students
+2. Step-by-step explanations with practical examples from Botswana
+3. Interactive elements and practice exercises
+4. Real-world applications relevant to Botswana context
+5. Encouraging tone that motivates learning
 
 Structure the lesson with clear sections:
-- Introduction
-- Key Concepts
-- Examples and Applications
-- Practice Exercises
-- Summary
+- Welcome and Learning Goals (address students directly)
+- Key Concepts (with clear explanations)
+- Examples and Applications (use Botswana context - markets, temperatures, costs in Pula, etc.)
+- Practice Exercises (engaging activities)
+- Summary and Encouragement
 
-Make the content engaging, educational, and appropriate for ${course.gradeLevel} students. Include plenty of examples and ensure comprehensive coverage of the topic.`;
+Write as if you're speaking directly to the students. Use an encouraging, supportive tone. Include practical examples using Botswana currency (Pula), local contexts, and everyday situations students can relate to.`;
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: prompt,
-          systemPrompt: `You are an expert teacher creating comprehensive lesson content for Botswana students at ${course.gradeLevel} level. Create detailed, well-structured lessons with clear explanations, relevant examples, and practical applications. Use markdown formatting for better readability.`
+          systemPrompt: `You are an experienced and caring teacher speaking directly to students at ${course.gradeLevel} level in Botswana. Create detailed, well-structured lessons with clear explanations, relevant local examples, and practical applications. Use an encouraging tone and address students directly as "you". Use proper formatting with clear headings and sections.`
         }
       });
 
@@ -84,43 +87,60 @@ Make the content engaging, educational, and appropriate for ${course.gradeLevel}
       console.error('Error generating lesson:', error);
       toast.error('Failed to generate lesson content');
       
-      // Fallback content
+      // Enhanced fallback content with better formatting
       const objective = course.objectives[lessonNumber - 1];
-      setLessonContent(`# Lesson ${lessonNumber}: ${objective}
+      setLessonContent(`# Welcome to Lesson ${lessonNumber}: ${objective}
 
-## Introduction
-Welcome to this important lesson on ${objective.toLowerCase()}. This lesson will help you understand the fundamental concepts and how to apply them effectively.
+Hello students! I'm excited to guide you through this important lesson on ${objective.toLowerCase()}. This lesson will help you build a strong foundation in mathematics that you'll use throughout your academic journey and daily life.
+
+## What You'll Learn Today
+
+By the end of this lesson, you will be able to:
+- Understand the fundamental principles we're covering
+- Apply these concepts to real-world situations in Botswana
+- Solve practical problems with confidence
+- Build your mathematical thinking skills
 
 ## Key Concepts
-Understanding ${objective.toLowerCase()} is essential for your academic success. Here are the main points we'll cover:
 
-### 1. Basic Principles
-- Definition and importance
-- Core components and elements
-- How it relates to your studies
+Let's start with the essential ideas you need to understand. Don't worry if these seem challenging at first - we'll work through them together step by step.
 
-### 2. Practical Applications
-- Real-world examples from Botswana
-- Step-by-step problem-solving approaches
-- Common scenarios you might encounter
+### Understanding the Basics
 
-### 3. Examples and Practice
-Let's work through some examples to reinforce your understanding:
+Mathematics is all around us in Botswana. Whether you're helping at your family's shop, planning for school expenses, or calculating travel distances, you're using mathematical thinking.
 
-**Example 1:** 
-This example demonstrates the basic principles in action.
+### Practical Applications
 
-**Example 2:**
-Here we see how to apply the concepts in different situations.
+**Example from Daily Life:**
+Imagine you're at a local market in your area. You want to buy vegetables for your family. If tomatoes cost P8 per kg and you need 2 kg, how much will you spend?
+
+**Solution:** 2 kg × P8 per kg = P16 total
+
+This is mathematics in action!
+
+## Practice Together
+
+Let's try some exercises together. Remember, making mistakes is part of learning!
+
+**Exercise 1:** If you save P20 every week, how much will you have after 4 weeks?
+
+**Exercise 2:** Your class has 30 students and you need to form groups of 5. How many groups will you have?
+
+Take your time with these. Think through each step carefully.
 
 ## Summary
-In this lesson, you've learned about ${objective.toLowerCase()}. The key takeaways are:
-- Understanding the fundamental principles
-- Applying knowledge to real situations
-- Building confidence through practice
 
-## Next Steps
-Complete the quiz to test your understanding before moving to the next lesson.`);
+Today we've explored ${objective.toLowerCase()}. Remember:
+- Mathematics helps us solve everyday problems
+- Practice makes you stronger at math
+- Every small step builds your confidence
+- You have the ability to succeed!
+
+## Your Next Steps
+
+Keep practicing these concepts. Try to spot mathematical patterns in your daily activities. Remember, I'm here to help you succeed, and you can ask me questions anytime!
+
+Keep up the excellent work!`);
     } finally {
       setIsLoading(false);
     }
@@ -154,6 +174,46 @@ Complete the quiz to test your understanding before moving to the next lesson.`)
       setShowQuiz(false);
       toast.error('Please review the lesson and try the quiz again.');
     }
+  };
+
+  const handleQuestionSubmit = async () => {
+    if (!question.trim() || isSubmittingQuestion) return;
+
+    setIsSubmittingQuestion(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+        body: {
+          message: `Student question about Lesson ${lessonNumber} (${course.objectives[lessonNumber - 1]}): ${question}`,
+          systemPrompt: `You are a helpful teacher responding to a student's question about their current lesson. The lesson is about "${course.objectives[lessonNumber - 1]}" at ${course.gradeLevel} level. Provide a clear, encouraging response that helps the student understand the concept. Keep your response concise but thorough.`
+        }
+      });
+
+      if (error) throw error;
+      
+      toast.success('Great question! Here\'s my response:', {
+        description: data?.content || 'I received your question and will help you understand this concept better.',
+        duration: 8000,
+      });
+      
+      setQuestion('');
+    } catch (error) {
+      console.error('Error submitting question:', error);
+      toast.error('I\'m having trouble responding right now. Please try asking your question again.');
+    } finally {
+      setIsSubmittingQuestion(false);
+    }
+  };
+
+  const formatLessonContent = (content: string) => {
+    return content
+      .replace(/---+/g, '') // Remove all --- symbols
+      .replace(/#{1}\s/g, '<h1 class="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-4 mt-6">') // Main headings
+      .replace(/#{2}\s/g, '<h2 class="text-xl font-semibold text-green-700 dark:text-green-400 mb-3 mt-5">') // Subheadings
+      .replace(/#{3}\s/g, '<h3 class="text-lg font-medium text-purple-600 dark:text-purple-400 mb-2 mt-4">') // Sub-subheadings
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>') // Bold text
+      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>') // Italic text
+      .replace(/\n\n/g, '</p><p class="mb-3 leading-relaxed">') // Paragraphs
+      .replace(/\n/g, '<br/>'); // Line breaks
   };
 
   if (showQuiz) {
@@ -216,23 +276,58 @@ Complete the quiz to test your understanding before moving to the next lesson.`)
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-500 mb-2">Generating lesson content...</p>
-                <p className="text-sm text-gray-400">Creating personalized content for your learning</p>
+                <p className="text-gray-500 mb-2">Your teacher is preparing the lesson...</p>
+                <p className="text-sm text-gray-400">Creating personalized content just for you</p>
               </div>
             </div>
           ) : (
             <div className="prose max-w-none dark:prose-invert">
               <div 
-                className="whitespace-pre-wrap leading-relaxed"
+                className="whitespace-pre-wrap leading-relaxed text-gray-800 dark:text-gray-200"
                 dangerouslySetInnerHTML={{ 
-                  __html: lessonContent.replace(/\n/g, '<br/>').replace(/#{1,6}\s/g, match => {
-                    const level = match.trim().length;
-                    return `<h${level} class="font-bold text-lg mt-4 mb-2">`;
-                  }).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  __html: `<p class="mb-3 leading-relaxed">${formatLessonContent(lessonContent)}</p>`
                 }}
               />
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Question Container */}
+      <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg text-blue-800 dark:text-blue-300">
+            <MessageSquare className="w-5 h-5" />
+            Ask Your Teacher a Question
+          </CardTitle>
+          <p className="text-sm text-blue-600 dark:text-blue-400">
+            Have a question about this lesson? I'm here to help you understand better!
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Type your question about this lesson here... For example: 'Can you explain the distributive property with another example?' or 'I don't understand how to solve problem 2'"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="flex-1 min-h-[80px] resize-none"
+              disabled={isSubmittingQuestion}
+            />
+            <Button
+              onClick={handleQuestionSubmit}
+              disabled={!question.trim() || isSubmittingQuestion}
+              className="h-[80px] px-6 bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmittingQuestion ? (
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            💡 Tip: Ask specific questions about concepts you want to understand better
+          </p>
         </CardContent>
       </Card>
 
