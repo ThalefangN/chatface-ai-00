@@ -48,28 +48,18 @@ const OTPConfirmation = () => {
     setIsVerifying(true);
     
     try {
-      const { data, error } = await supabase
-        .from('password_reset_otps')
-        .select('*')
-        .eq('email', email)
-        .eq('otp', otp)
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .single();
+      // Call the verify-otp edge function
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { email, otp }
+      });
 
-      if (error || !data) {
+      if (error || !data?.valid) {
         toast.error('Invalid or expired OTP. Please try again.');
         return;
       }
 
-      // Mark OTP as used
-      await supabase
-        .from('password_reset_otps')
-        .update({ used: true })
-        .eq('id', data.id);
-
       toast.success('OTP verified successfully!');
-      navigate(`/reset-password?email=${encodeURIComponent(email)}&token=${data.id}`);
+      navigate(`/reset-password?email=${encodeURIComponent(email)}&token=${data.token}`);
     } catch (error) {
       console.error('Error verifying OTP:', error);
       toast.error('An error occurred while verifying OTP');

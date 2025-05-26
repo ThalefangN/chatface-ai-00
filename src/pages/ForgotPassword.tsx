@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
-import { ArrowLeft, Mail, CheckCircle, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
 import { Input } from '@/components/ui/input';
@@ -19,15 +19,6 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      // Check if user exists
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-      const userExists = userData?.users?.some(user => user.email === email);
-      
-      if (!userExists) {
-        toast.error('No account found with this email address');
-        return;
-      }
-
       // Send OTP via edge function
       const { error } = await supabase.functions.invoke('send-reset-otp', {
         body: { email }

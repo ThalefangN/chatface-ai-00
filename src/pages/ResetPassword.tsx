@@ -6,7 +6,6 @@ import { ArrowLeft, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -61,36 +60,16 @@ const ResetPassword = () => {
     setIsResetting(true);
     
     try {
-      // Verify token is still valid
-      const { data: otpData, error: otpError } = await supabase
-        .from('password_reset_otps')
-        .select('*')
-        .eq('id', token)
-        .eq('email', email)
-        .eq('used', true)
-        .single();
+      // Call the reset-password edge function
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { email, token, newPassword: password }
+      });
 
-      if (otpError || !otpData) {
+      if (error || !data?.success) {
         toast.error('Invalid or expired reset token');
         navigate('/forgot-password');
         return;
       }
-
-      // Update password using Supabase Admin API
-      const { error } = await supabase.auth.admin.updateUserById(
-        otpData.user_id,
-        { password }
-      );
-
-      if (error) {
-        throw error;
-      }
-
-      // Delete the used OTP
-      await supabase
-        .from('password_reset_otps')
-        .delete()
-        .eq('id', token);
 
       setIsSuccess(true);
       toast.success('Password reset successfully!');
