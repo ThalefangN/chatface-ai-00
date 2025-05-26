@@ -18,7 +18,6 @@ interface Message {
   content: string;
   isAI: boolean;
   timestamp: Date;
-  hasFollowUpButtons?: boolean;
 }
 
 const AiChat = () => {
@@ -33,7 +32,6 @@ const AiChat = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -44,46 +42,27 @@ const AiChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessageToAI = async (messageContent: string, attempt: number = 0) => {
-    const maxRetries = 3;
-    
+  const sendMessageToAI = async (messageContent: string) => {
     try {
-      console.log(`Sending message to AI (attempt ${attempt + 1}): "${messageContent.substring(0, 50)}..."`);
+      console.log('Sending message to AI:', messageContent.substring(0, 50) + '...');
       
-      // Add timeout using Promise.race instead of AbortController
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 30000)
-      );
-      
-      const invokePromise = supabase.functions.invoke('ai-study-chat', {
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: { message: messageContent }
       });
 
-      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
-      if (error) throw error;
-
-      console.log('AI response received successfully');
-      setRetryCount(0); // Reset retry count on success
-
+      console.log('AI response received');
       return {
-        content: data.content || "I received your message and I'm here to help! Could you please rephrase your question or try asking something else?",
-        hasFollowUpButtons: data.hasFollowUpButtons || false
+        content: data?.content || "I received your message and I'm here to help! Could you please rephrase your question or try asking something else?",
+        hasFollowUpButtons: false
       };
     } catch (error) {
-      console.error(`Error calling AI chat function (attempt ${attempt + 1}):`, error);
+      console.error('Error calling AI chat function:', error);
       
-      if (attempt < maxRetries - 1) {
-        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
-        console.log(`Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return sendMessageToAI(messageContent, attempt + 1);
-      }
-      
-      console.error('Max retries reached for AI message');
-      setRetryCount(prev => prev + 1);
-      
-      // Return a helpful fallback response instead of an error
       return {
         content: "I'm having trouble connecting right now, but I'm still here to help! While I work on reconnecting, feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nTry asking your question again in a moment!",
         hasFollowUpButtons: false
@@ -113,61 +92,18 @@ const AiChat = () => {
         id: (Date.now() + 1).toString(),
         content: aiResponse.content,
         isAI: true,
-        timestamp: new Date(),
-        hasFollowUpButtons: aiResponse.hasFollowUpButtons
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Unexpected error in handleSendMessage:', error);
+      console.error('Error in handleSendMessage:', error);
       
-      // Add fallback message even on error
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: "I encountered an issue, but I'm still here to help! Please try asking your question again.",
         isAI: true,
-        timestamp: new Date(),
-        hasFollowUpButtons: false
-      };
-      
-      setMessages(prev => [...prev, fallbackMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFollowUpClick = async (followUpText: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: followUpText,
-      isAI: false,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const aiResponse = await sendMessageToAI(followUpText);
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: aiResponse.content,
-        isAI: true,
-        timestamp: new Date(),
-        hasFollowUpButtons: aiResponse.hasFollowUpButtons
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
-      console.error('Error in handleFollowUpClick:', error);
-      
-      const fallbackMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "I'm having a brief connection issue. Please try that again in a moment!",
-        isAI: true,
-        timestamp: new Date(),
-        hasFollowUpButtons: false
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, fallbackMessage]);
@@ -196,8 +132,7 @@ const AiChat = () => {
         id: (Date.now() + 1).toString(),
         content: aiResponse.content,
         isAI: true,
-        timestamp: new Date(),
-        hasFollowUpButtons: aiResponse.hasFollowUpButtons
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, aiMessage]);
@@ -208,8 +143,7 @@ const AiChat = () => {
         id: (Date.now() + 1).toString(),
         content: "Let me help you with that! I'm having a small connection hiccup, but please try again.",
         isAI: true,
-        timestamp: new Date(),
-        hasFollowUpButtons: false
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, fallbackMessage]);
@@ -242,7 +176,7 @@ const AiChat = () => {
             <h1 className="text-lg font-semibold">Study Chat</h1>
             <Badge variant="secondary" className="ml-auto">
               <Bot className="h-3 w-3 mr-1" />
-              AI Assistant {retryCount > 0 && `(Reconnecting...)`}
+              AI Assistant
             </Badge>
           </header>
           
@@ -251,85 +185,57 @@ const AiChat = () => {
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-3 max-w-4xl mx-auto">
                 {messages.map((message) => (
-                  <div key={message.id}>
-                    <div className={`flex gap-3 ${message.isAI ? 'justify-start' : 'justify-end'}`}>
-                      {message.isAI && (
-                        <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                          <AvatarFallback className="bg-blue-500 text-white text-xs">
-                            <Bot className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      
-                      <Card className={`max-w-[85%] sm:max-w-[75%] ${
-                        message.isAI 
-                          ? 'bg-gray-50 dark:bg-gray-800' 
-                          : 'bg-blue-500 text-white ml-auto'
-                      }`}>
-                        <CardContent className="p-2.5">
-                          <div className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
-                            message.isAI ? 'text-gray-800 dark:text-gray-200' : 'text-white'
-                          }`}>
-                            {message.content.split('\n').map((line, index) => (
-                              <div key={index} className={line.startsWith('•') ? 'ml-2 flex items-start gap-1' : ''}>
-                                {line.startsWith('•') ? (
-                                  <>
-                                    <HelpCircle className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
-                                    <span>{line.substring(1).trim()}</span>
-                                  </>
-                                ) : (
-                                  line
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <p className={`text-xs mt-1.5 ${
-                            message.isAI 
-                              ? 'text-gray-500' 
-                              : 'text-blue-100'
-                          }`}>
-                            {message.timestamp.toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                        </CardContent>
-                      </Card>
-                      
-                      {!message.isAI && (
-                        <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
-                          <AvatarImage src={user?.user_metadata?.avatar_url} />
-                          <AvatarFallback className="text-xs">
-                            <User className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-
-                    {/* Follow-up buttons for AI messages */}
-                    {message.isAI && message.hasFollowUpButtons && (
-                      <div className="flex gap-2 mt-2 ml-10">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleFollowUpClick("Explain any step in more detail")}
-                          disabled={isLoading}
-                          className="text-xs"
-                        >
-                          <HelpCircle className="w-3 h-3 mr-1" />
-                          Explain step in detail
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleFollowUpClick("Create a practice quiz on this topic")}
-                          disabled={isLoading}
-                          className="text-xs"
-                        >
-                          <Brain className="w-3 h-3 mr-1" />
-                          Create practice quiz
-                        </Button>
-                      </div>
+                  <div key={message.id} className={`flex gap-3 ${message.isAI ? 'justify-start' : 'justify-end'}`}>
+                    {message.isAI && (
+                      <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                        <AvatarFallback className="bg-blue-500 text-white text-xs">
+                          <Bot className="h-3 w-3" />
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    
+                    <Card className={`max-w-[85%] sm:max-w-[75%] ${
+                      message.isAI 
+                        ? 'bg-gray-50 dark:bg-gray-800' 
+                        : 'bg-blue-500 text-white ml-auto'
+                    }`}>
+                      <CardContent className="p-2.5">
+                        <div className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${
+                          message.isAI ? 'text-gray-800 dark:text-gray-200' : 'text-white'
+                        }`}>
+                          {message.content.split('\n').map((line, index) => (
+                            <div key={index} className={line.startsWith('•') ? 'ml-2 flex items-start gap-1' : ''}>
+                              {line.startsWith('•') ? (
+                                <>
+                                  <HelpCircle className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
+                                  <span>{line.substring(1).trim()}</span>
+                                </>
+                              ) : (
+                                line
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className={`text-xs mt-1.5 ${
+                          message.isAI 
+                            ? 'text-gray-500' 
+                            : 'text-blue-100'
+                        }`}>
+                          {message.timestamp.toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    {!message.isAI && (
+                      <Avatar className="h-7 w-7 mt-1 flex-shrink-0">
+                        <AvatarImage src={user?.user_metadata?.avatar_url} />
+                        <AvatarFallback className="text-xs">
+                          <User className="h-3 w-3" />
+                        </AvatarFallback>
+                      </Avatar>
                     )}
                   </div>
                 ))}
@@ -357,7 +263,7 @@ const AiChat = () => {
               </div>
             </ScrollArea>
 
-            {/* Quick Prompts - Only show when no messages or few messages */}
+            {/* Quick Prompts */}
             {messages.length <= 1 && (
               <div className="p-4 border-t bg-gray-50 dark:bg-gray-800">
                 <div className="max-w-4xl mx-auto">

@@ -50,7 +50,7 @@ const AIStudySessions = () => {
     return (
       <div className="w-full max-w-full overflow-hidden">
         <CourseViewer 
-          course={selectedCourse} 
+          courseId={selectedCourse.id}
           onBack={handleBackToSessions}
         />
       </div>

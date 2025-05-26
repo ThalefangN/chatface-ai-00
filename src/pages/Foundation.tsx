@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -8,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Brain, Headphones, Upload, FileText, Play, Download, Mic, Volume2 } from 'lucide-react';
+import { Brain, Headphones, Upload, FileText, Download, Mic } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -20,7 +18,6 @@ const Foundation = () => {
   const [context, setContext] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -34,26 +31,21 @@ const Foundation = () => {
     }
   };
 
-  const generateWithRetry = async (message: string, attempt = 0): Promise<string> => {
-    const maxRetries = 3;
-    
+  const generateWithAI = async (message: string): Promise<string> => {
     try {
-      console.log(`Attempting to generate content (attempt ${attempt + 1})`);
+      console.log('Generating content with AI');
       
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 45000)
-      );
-      
-      const invokePromise = supabase.functions.invoke('ai-study-chat', {
+      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message,
           systemPrompt: 'You are a helpful AI study assistant. Provide clear, comprehensive content based on the user request. Format your response in a readable way with proper structure.'
         }
       });
 
-      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
-
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
       
       if (data && data.content) {
         console.log('Content generated successfully');
@@ -62,15 +54,7 @@ const Foundation = () => {
         throw new Error('No content received from AI');
       }
     } catch (error) {
-      console.error(`Error generating content (attempt ${attempt + 1}):`, error);
-      
-      if (attempt < maxRetries - 1) {
-        const delay = Math.pow(2, attempt) * 1000;
-        console.log(`Retrying content generation in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return generateWithRetry(message, attempt + 1);
-      }
-      
+      console.error('Error generating content:', error);
       throw error;
     }
   };
@@ -109,7 +93,7 @@ const Foundation = () => {
         Use clear hierarchical structure with bullet points and indentation.`;
       }
 
-      const result = await generateWithRetry(message);
+      const result = await generateWithAI(message);
       setGeneratedContent(result);
       toast.success('Mind map generated successfully!');
       
@@ -156,7 +140,7 @@ const Foundation = () => {
         Make it sound natural and engaging for audio learning.`;
       }
 
-      const result = await generateWithRetry(message);
+      const result = await generateWithAI(message);
       setGeneratedContent(result);
       toast.success('Study podcast script generated successfully!');
       
@@ -216,7 +200,6 @@ const Foundation = () => {
 
               <TabsContent value="mindmap" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Input Section */}
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -268,7 +251,7 @@ const Foundation = () => {
                           </div>
                         )}
                       </div>
-
+                      
                       <Button 
                         onClick={generateMindMap}
                         disabled={isGenerating || (!topic.trim() && !uploadedFile)}
@@ -289,7 +272,6 @@ const Foundation = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Output Section */}
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
@@ -410,12 +392,10 @@ const Foundation = () => {
                       <div className="flex items-center justify-between">
                         <CardTitle>Study Podcast Script</CardTitle>
                         {generatedContent && !isGenerating && (
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={downloadContent}>
-                              <Download className="w-4 h-4 mr-2" />
-                              Download
-                            </Button>
-                          </div>
+                          <Button variant="outline" size="sm" onClick={downloadContent}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
                         )}
                       </div>
                     </CardHeader>
@@ -428,16 +408,9 @@ const Foundation = () => {
                           </div>
                         </div>
                       ) : generatedContent ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                            <Volume2 className="w-5 h-5 text-blue-600" />
-                            <span className="text-sm font-medium text-blue-800">Study Podcast Script Ready</span>
-                            <Badge variant="secondary" className="ml-auto">Audio Ready</Badge>
-                          </div>
-                          <div className="prose max-w-none">
-                            <div className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-lg border max-h-96 overflow-y-auto">
-                              {generatedContent}
-                            </div>
+                        <div className="prose max-w-none">
+                          <div className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-lg border">
+                            {generatedContent}
                           </div>
                         </div>
                       ) : (
