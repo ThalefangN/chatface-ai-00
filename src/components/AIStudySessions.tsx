@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, PlusCircle, BookOpen, FileText, Brain } from 'lucide-react';
+import { Upload, PlusCircle, BookOpen, FileText } from 'lucide-react';
 import DocumentSummarySection from '@/components/DocumentSummarySection';
 import CreateCourseDialog from '@/components/CreateCourseDialog';
 import CourseViewer from '@/components/CourseViewer';
@@ -51,14 +51,9 @@ const AIStudySessions = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <Brain className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            AI Study Sessions
-          </h1>
-        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          AI Study Sessions
+        </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
           Transform your learning experience with AI-powered document analysis and custom course generation
         </p>
@@ -132,7 +127,7 @@ const AIStudySessions = () => {
       {/* Features Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <Card className="text-center p-4">
-          <Brain className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+          <BookOpen className="w-8 h-8 text-blue-500 mx-auto mb-2" />
           <h4 className="font-semibold">AI-Powered</h4>
           <p className="text-sm text-gray-600 dark:text-gray-400">Advanced AI generates personalized content</p>
         </Card>

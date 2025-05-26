@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, ChevronRight, ArrowLeft, Play, CheckCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowLeft, PlusCircle, CheckCircle } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import LessonViewer from '@/components/LessonViewer';
 
@@ -35,12 +35,12 @@ const CourseViewer: React.FC<CourseViewerProps> = ({ course, onBack }) => {
   };
 
   const objectiveTopics = [
-    ['Basic concepts and definitions', 'Historical context', 'Key principles'],
-    ['Practical applications', 'Hands-on exercises', 'Real-world examples'],
-    ['Critical thinking skills', 'Analysis techniques', 'Evaluation methods'],
-    ['Assessment strategies', 'Performance indicators', 'Success metrics'],
-    ['Real-world connections', 'Industry applications', 'Career relevance'],
-    ['Problem identification', 'Solution strategies', 'Implementation techniques']
+    ['Basic concepts and definitions', 'Historical context and foundations', 'Key principles and frameworks'],
+    ['Practical applications and examples', 'Hands-on exercises and demonstrations', 'Real-world case studies'],
+    ['Critical thinking methodologies', 'Analysis techniques and tools', 'Evaluation strategies and criteria'],
+    ['Assessment preparation strategies', 'Performance measurement techniques', 'Success indicators and metrics'],
+    ['Real-world connections in Botswana', 'Industry applications and relevance', 'Career pathway opportunities'],
+    ['Problem identification methods', 'Solution development strategies', 'Implementation and evaluation techniques']
   ];
 
   const handleStartCourse = () => {
@@ -94,7 +94,7 @@ const CourseViewer: React.FC<CourseViewerProps> = ({ course, onBack }) => {
         <CardContent>
           <div className="flex items-center gap-4">
             <Button onClick={handleStartCourse} size="lg" className="bg-blue-600 hover:bg-blue-700">
-              <Play className="w-5 h-5 mr-2" />
+              <PlusCircle className="w-5 h-5 mr-2" />
               Start Course
             </Button>
             <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -163,7 +163,7 @@ const CourseViewer: React.FC<CourseViewerProps> = ({ course, onBack }) => {
                         handleStartLesson(index + 1);
                       }}
                     >
-                      <Play className="w-4 h-4 mr-2" />
+                      <PlusCircle className="w-4 h-4 mr-2" />
                       Start This Lesson
                     </Button>
                   </CardContent>
