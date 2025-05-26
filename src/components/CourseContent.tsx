@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileText, Play, BookOpen, Download, Upload, Eye, Calendar, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import TutorSection from '@/components/TutorSection';
 
 interface CourseContentItem {
   id: string;
@@ -307,105 +307,90 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId, isTeacher = fal
   }
 
   return (
-    <div className="w-full max-w-full space-y-6 overflow-x-hidden">
+    <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="notes" className="text-xs md:text-sm">Notes ({notes.length})</TabsTrigger>
-          <TabsTrigger value="videos" className="text-xs md:text-sm">Videos ({videos.length})</TabsTrigger>
-          <TabsTrigger value="assignments" className="text-xs md:text-sm">Assignments ({assignments.length})</TabsTrigger>
-          <TabsTrigger value="grades" className="text-xs md:text-sm">Grades ({sampleGrades.length})</TabsTrigger>
-          <TabsTrigger value="tutor" className="text-xs md:text-sm">AI Tutor</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="notes">Notes ({notes.length})</TabsTrigger>
+          <TabsTrigger value="videos">Videos ({videos.length})</TabsTrigger>
+          <TabsTrigger value="assignments">Assignments ({assignments.length})</TabsTrigger>
+          <TabsTrigger value="grades">Grades ({sampleGrades.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="notes" className="space-y-4 w-full">
+        <TabsContent value="notes" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg md:text-xl font-semibold">Course Notes</h3>
+            <h3 className="text-xl font-semibold">Course Notes</h3>
             <Badge variant="secondary">{notes.length} Documents Available</Badge>
           </div>
-          <div className="space-y-4">
-            {notes.map(renderContentItem)}
-          </div>
+          {notes.map(renderContentItem)}
         </TabsContent>
 
-        <TabsContent value="videos" className="space-y-4 w-full">
+        <TabsContent value="videos" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg md:text-xl font-semibold">Course Videos</h3>
+            <h3 className="text-xl font-semibold">Course Videos</h3>
             <Badge variant="secondary">{videos.length} Videos Available</Badge>
           </div>
-          <div className="space-y-4">
-            {videos.map(renderContentItem)}
-          </div>
+          {videos.map(renderContentItem)}
         </TabsContent>
 
-        <TabsContent value="assignments" className="space-y-4 w-full">
+        <TabsContent value="assignments" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg md:text-xl font-semibold">Assignments</h3>
+            <h3 className="text-xl font-semibold">Assignments</h3>
             <Badge variant="secondary">{assignments.length} Assignments</Badge>
           </div>
-          <div className="space-y-4">
-            {assignments.map(renderContentItem)}
-          </div>
+          {assignments.map(renderContentItem)}
         </TabsContent>
 
-        <TabsContent value="grades" className="space-y-4 w-full">
+        <TabsContent value="grades" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg md:text-xl font-semibold">Your Grades</h3>
+            <h3 className="text-xl font-semibold">Your Grades</h3>
             <div className="flex items-center gap-2">
               <Star className="h-4 w-4 text-yellow-500" />
-              <span className="font-medium text-sm md:text-base">Average: 85%</span>
+              <span className="font-medium">Average: 85%</span>
             </div>
           </div>
-          <div className="space-y-4">
-            {sampleGrades.map((grade) => (
-              <Card key={grade.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-base md:text-lg flex items-center justify-between">
-                    <span className="truncate">{grade.assignment_title}</span>
-                    <Badge variant={grade.grade >= 90 ? "default" : grade.grade >= 75 ? "secondary" : "destructive"}>
-                      {grade.grade >= 90 ? "Excellent" : grade.grade >= 75 ? "Good" : "Needs Improvement"}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">
-                          {grade.grade}/{grade.max_grade}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {((grade.grade / grade.max_grade) * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">
-                          Graded on {new Date(grade.graded_at).toLocaleDateString()}
-                        </p>
-                        <Button variant="outline" size="sm" className="mt-2">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download Feedback
-                        </Button>
-                      </div>
+          {sampleGrades.map((grade) => (
+            <Card key={grade.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  {grade.assignment_title}
+                  <Badge variant={grade.grade >= 90 ? "default" : grade.grade >= 75 ? "secondary" : "destructive"}>
+                    {grade.grade >= 90 ? "Excellent" : grade.grade >= 75 ? "Good" : "Needs Improvement"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                        {grade.grade}/{grade.max_grade}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {((grade.grade / grade.max_grade) * 100).toFixed(1)}%
+                      </p>
                     </div>
-                    {grade.feedback && (
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p className="text-sm font-medium mb-2 text-blue-800 dark:text-blue-300">
-                          Teacher Feedback:
-                        </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-200">{grade.feedback}</p>
-                      </div>
-                    )}
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">
+                        Graded on {new Date(grade.graded_at).toLocaleDateString()}
+                      </p>
+                      <Button variant="outline" size="sm" className="mt-2">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Feedback
+                      </Button>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tutor" className="space-y-4 w-full">
-          <div className="w-full">
-            <TutorSection />
-          </div>
+                  {grade.feedback && (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-sm font-medium mb-2 text-blue-800 dark:text-blue-300">
+                        Teacher Feedback:
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-200">{grade.feedback}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </TabsContent>
       </Tabs>
     </div>
