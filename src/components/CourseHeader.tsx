@@ -43,14 +43,16 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
 
   return (
     <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <CardTitle className="text-3xl text-blue-800 dark:text-blue-300">{title}</CardTitle>
-            <CardDescription className="text-lg text-blue-600 dark:text-blue-400">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-2 flex-1">
+            <CardTitle className="text-2xl md:text-3xl text-blue-800 dark:text-blue-300 leading-tight">
+              {title}
+            </CardTitle>
+            <CardDescription className="text-base md:text-lg text-blue-600 dark:text-blue-400">
               Taught by {teacherName}
             </CardDescription>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
                 {level} Level
               </Badge>
@@ -60,8 +62,8 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
               </Badge>
             </div>
           </div>
-          <div className="text-right space-y-2">
-            <div className="flex items-center gap-1 justify-end">
+          <div className="flex flex-row md:flex-col md:text-right items-center md:items-end gap-2 md:gap-0">
+            <div className="flex items-center gap-1">
               <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
               <span className="font-bold text-lg">{rating}</span>
             </div>
@@ -69,8 +71,8 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-6">
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
           <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg">
             <Users className="h-6 w-6 text-blue-600 mx-auto mb-2" />
             <div className="font-bold text-xl text-blue-800 dark:text-blue-300">{students}</div>

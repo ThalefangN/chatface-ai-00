@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileText, Play, BookOpen, Download, Upload, Eye, Calendar, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import TutorSection from '@/components/TutorSection';
 
 interface CourseContentItem {
   id: string;
@@ -309,12 +309,11 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId, isTeacher = fal
   return (
     <div className="w-full max-w-full space-y-6 overflow-x-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="notes" className="text-xs md:text-sm">Notes ({notes.length})</TabsTrigger>
           <TabsTrigger value="videos" className="text-xs md:text-sm">Videos ({videos.length})</TabsTrigger>
           <TabsTrigger value="assignments" className="text-xs md:text-sm">Assignments ({assignments.length})</TabsTrigger>
           <TabsTrigger value="grades" className="text-xs md:text-sm">Grades ({sampleGrades.length})</TabsTrigger>
-          <TabsTrigger value="tutor" className="text-xs md:text-sm">AI Tutor</TabsTrigger>
         </TabsList>
 
         <TabsContent value="notes" className="space-y-4 w-full">
@@ -399,12 +398,6 @@ const CourseContent: React.FC<CourseContentProps> = ({ courseId, isTeacher = fal
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="tutor" className="space-y-4 w-full">
-          <div className="w-full">
-            <TutorSection />
           </div>
         </TabsContent>
       </Tabs>
