@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -49,16 +50,16 @@ const AiChat = () => {
     try {
       console.log(`Sending message to AI (attempt ${attempt + 1}): "${messageContent.substring(0, 50)}..."`);
       
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      // Add timeout using Promise.race instead of AbortController
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 30000)
+      );
       
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: { message: messageContent },
-        signal: controller.signal
+      const invokePromise = supabase.functions.invoke('ai-study-chat', {
+        body: { message: messageContent }
       });
 
-      clearTimeout(timeoutId);
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
 
       if (error) throw error;
 

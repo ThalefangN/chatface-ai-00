@@ -107,20 +107,20 @@ export const useAIChat = (sessionId: string | null) => {
         
         setMessages(prev => [...prev, userMessage]);
         
-        // Send message to the Edge Function with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        // Send message to the Edge Function with timeout using Promise.race
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 30000)
+        );
         
-        const { data, error } = await supabase.functions.invoke('ai-coach', {
+        const invokePromise = supabase.functions.invoke('ai-coach', {
           body: { 
             message,
             sessionId,
             userId: (await supabase.auth.getUser()).data.user?.id
-          },
-          signal: controller.signal
+          }
         });
         
-        clearTimeout(timeoutId);
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
         
         if (error) throw error;
         
@@ -184,20 +184,20 @@ export const useAIChat = (sessionId: string | null) => {
               throw new Error('Failed to convert audio to base64');
             }
             
-            // Send audio to the Edge Function with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for audio
+            // Send audio to the Edge Function with timeout using Promise.race
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), 45000)
+            );
             
-            const { data, error } = await supabase.functions.invoke('ai-coach', {
+            const invokePromise = supabase.functions.invoke('ai-coach', {
               body: { 
                 audioData: base64data,
                 sessionId,
                 userId: (await supabase.auth.getUser()).data.user?.id
-              },
-              signal: controller.signal
+              }
             });
             
-            clearTimeout(timeoutId);
+            const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
             
             if (error) throw error;
             
