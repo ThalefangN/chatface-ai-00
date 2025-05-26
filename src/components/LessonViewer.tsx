@@ -32,123 +32,186 @@ const LessonViewer: React.FC<LessonViewerProps> = ({
   onBack, 
   onNextLesson 
 }) => {
-  const [lessonContent, setLessonContent] = useState('');
+  const [lessonParts, setLessonParts] = useState<string[]>([]);
   const [currentPart, setCurrentPart] = useState(1);
-  const [totalParts, setTotalParts] = useState(3);
-  const [isLoading, setIsLoading] = useState(true);
+  const [totalParts] = useState(5);
+  const [isLoading, setIsLoading] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [question, setQuestion] = useState('');
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
   useEffect(() => {
-    generateLessonContent();
+    if (lessonParts.length === 0) {
+      generateLessonPart(1);
+    }
   }, [lessonNumber]);
 
-  const generateLessonContent = async () => {
+  const generateLessonPart = async (partNumber: number) => {
     setIsLoading(true);
     try {
       const objective = course.objectives[lessonNumber - 1] || 'Core concepts and fundamentals';
       
-      const prompt = `Create a comprehensive lesson for "${course.name}" at ${course.gradeLevel} level.
+      let partTitle = '';
+      let partPrompt = '';
+      
+      switch (partNumber) {
+        case 1:
+          partTitle = 'Introduction and Basic Concepts';
+          partPrompt = `Create Part 1 of 5: Introduction and Basic Concepts for "${objective}".
 
-Lesson ${lessonNumber}: ${objective}
+This should be a warm welcome to students with:
+- A friendly greeting addressing students directly
+- Clear learning goals for this lesson (3-4 goals)
+- Introduction to the main topic
+- Why this topic is important in daily life in Botswana
+- Basic definitions and key terms (2-3 main concepts)
 
-As an experienced teacher addressing students directly, create engaging lesson content with:
-1. Clear introduction speaking directly to students
-2. Step-by-step explanations with practical examples from Botswana
-3. Interactive elements and practice exercises
-4. Real-world applications relevant to Botswana context
-5. Encouraging tone that motivates learning
+Keep it engaging but concise. Address students as "you" and use an encouraging tone.`;
+          break;
+        case 2:
+          partTitle = 'Core Principles and Theory';
+          partPrompt = `Create Part 2 of 5: Core Principles and Theory for "${objective}".
 
-Structure the lesson with clear sections:
-- Welcome and Learning Goals (address students directly)
-- Key Concepts (with clear explanations)
-- Examples and Applications (use Botswana context - markets, temperatures, costs in Pula, etc.)
-- Practice Exercises (engaging activities)
-- Summary and Encouragement
+This should cover:
+- Main theoretical concepts explained simply
+- Step-by-step breakdown of key principles
+- Important rules or formulas (if applicable)
+- Clear explanations with simple language
+- 1-2 basic examples to illustrate concepts
 
-Write as if you're speaking directly to the students. Use an encouraging, supportive tone. Include practical examples using Botswana currency (Pula), local contexts, and everyday situations students can relate to.`;
+Focus on understanding rather than memorization. Keep explanations clear and student-friendly.`;
+          break;
+        case 3:
+          partTitle = 'Practical Examples from Botswana';
+          partPrompt = `Create Part 3 of 5: Practical Examples for "${objective}".
+
+This should include:
+- 2-3 practical examples using Botswana context (markets, Pula currency, local situations)
+- Step-by-step solutions showing how to apply the concepts
+- Real-world scenarios students can relate to
+- Clear working and explanations for each example
+- Tips for solving similar problems
+
+Make examples relevant to student life in Botswana.`;
+          break;
+        case 4:
+          partTitle = 'Practice Exercises';
+          partPrompt = `Create Part 4 of 5: Practice Exercises for "${objective}".
+
+This should contain:
+- 3-4 practice problems for students to try
+- Progressive difficulty (start easy, build up)
+- Clear instructions for each exercise
+- Hints or guidance for approaching the problems
+- Encourage students to work through them step by step
+
+Focus on building confidence through practice.`;
+          break;
+        case 5:
+          partTitle = 'Summary and Next Steps';
+          partPrompt = `Create Part 5 of 5: Summary and Next Steps for "${objective}".
+
+This should include:
+- Summary of key points learned
+- Important takeaways to remember
+- How this connects to future lessons
+- Encouragement and motivation
+- Study tips for retaining the information
+- Preview of what comes next
+
+End on a positive, encouraging note that builds confidence.`;
+          break;
+      }
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message: prompt,
-          systemPrompt: `You are an experienced and caring teacher speaking directly to students at ${course.gradeLevel} level in Botswana. Create detailed, well-structured lessons with clear explanations, relevant local examples, and practical applications. Use an encouraging tone and address students directly as "you". Use proper formatting with clear headings and sections.`
+          message: partPrompt,
+          systemPrompt: `You are an experienced teacher speaking directly to ${course.gradeLevel} students in Botswana. Create engaging, well-structured lesson content with clear headings and formatting. Use **bold** for important topics and concepts. Address students as "you" and maintain an encouraging, supportive tone. Keep content focused and not too lengthy - this is part ${partNumber} of 5 parts.`
         }
       });
 
       if (error) throw error;
       
+      let content = '';
       if (data && data.content) {
-        setLessonContent(data.content);
+        content = `# ${partTitle}\n\n${data.content}`;
       } else {
-        throw new Error('No content received from AI');
+        // Fallback content
+        content = generateFallbackContent(partNumber, partTitle, objective);
       }
+
+      setLessonParts(prev => {
+        const newParts = [...prev];
+        newParts[partNumber - 1] = content;
+        return newParts;
+      });
     } catch (error) {
-      console.error('Error generating lesson:', error);
+      console.error('Error generating lesson part:', error);
       toast.error('Failed to generate lesson content');
       
-      // Enhanced fallback content with better formatting
-      const objective = course.objectives[lessonNumber - 1];
-      setLessonContent(`# Welcome to Lesson ${lessonNumber}: ${objective}
-
-Hello students! I'm excited to guide you through this important lesson on ${objective.toLowerCase()}. This lesson will help you build a strong foundation in mathematics that you'll use throughout your academic journey and daily life.
-
-## What You'll Learn Today
-
-By the end of this lesson, you will be able to:
-- Understand the fundamental principles we're covering
-- Apply these concepts to real-world situations in Botswana
-- Solve practical problems with confidence
-- Build your mathematical thinking skills
-
-## Key Concepts
-
-Let's start with the essential ideas you need to understand. Don't worry if these seem challenging at first - we'll work through them together step by step.
-
-### Understanding the Basics
-
-Mathematics is all around us in Botswana. Whether you're helping at your family's shop, planning for school expenses, or calculating travel distances, you're using mathematical thinking.
-
-### Practical Applications
-
-**Example from Daily Life:**
-Imagine you're at a local market in your area. You want to buy vegetables for your family. If tomatoes cost P8 per kg and you need 2 kg, how much will you spend?
-
-**Solution:** 2 kg × P8 per kg = P16 total
-
-This is mathematics in action!
-
-## Practice Together
-
-Let's try some exercises together. Remember, making mistakes is part of learning!
-
-**Exercise 1:** If you save P20 every week, how much will you have after 4 weeks?
-
-**Exercise 2:** Your class has 30 students and you need to form groups of 5. How many groups will you have?
-
-Take your time with these. Think through each step carefully.
-
-## Summary
-
-Today we've explored ${objective.toLowerCase()}. Remember:
-- Mathematics helps us solve everyday problems
-- Practice makes you stronger at math
-- Every small step builds your confidence
-- You have the ability to succeed!
-
-## Your Next Steps
-
-Keep practicing these concepts. Try to spot mathematical patterns in your daily activities. Remember, I'm here to help you succeed, and you can ask me questions anytime!
-
-Keep up the excellent work!`);
+      // Generate fallback content
+      const fallbackContent = generateFallbackContent(partNumber, getPartTitle(partNumber), objective);
+      setLessonParts(prev => {
+        const newParts = [...prev];
+        newParts[partNumber - 1] = fallbackContent;
+        return newParts;
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getPartTitle = (partNumber: number) => {
+    switch (partNumber) {
+      case 1: return 'Introduction and Basic Concepts';
+      case 2: return 'Core Principles and Theory';
+      case 3: return 'Practical Examples from Botswana';
+      case 4: return 'Practice Exercises';
+      case 5: return 'Summary and Next Steps';
+      default: return 'Lesson Content';
+    }
+  };
+
+  const generateFallbackContent = (partNumber: number, partTitle: string, objective: string) => {
+    const content = `# ${partTitle}
+
+**Welcome to Part ${partNumber} of your lesson!**
+
+Hello students! Let's continue exploring **${objective.toLowerCase()}** together.
+
+## Key Learning Points
+
+**Important:** This section focuses on building your understanding step by step.
+
+### Main Concepts
+- **Fundamental principles** that guide our understanding
+- **Practical applications** in everyday life
+- **Problem-solving strategies** you can use
+
+### Examples from Botswana Context
+Let's look at how these concepts apply in our daily lives:
+
+**Example:** If you're at a local market and need to calculate costs in Pula, you'll use these mathematical principles.
+
+## Practice Activity
+Try to think of situations where you might use these concepts in your own life.
+
+**Remember:** Every expert was once a beginner. Take your time and don't be afraid to ask questions!
+
+Keep up the excellent work!`;
+
+    return content;
+  };
+
   const handleNextPart = () => {
     if (currentPart < totalParts) {
-      setCurrentPart(currentPart + 1);
+      const nextPart = currentPart + 1;
+      setCurrentPart(nextPart);
+      
+      // Generate next part if it doesn't exist
+      if (!lessonParts[nextPart - 1]) {
+        generateLessonPart(nextPart);
+      }
     } else {
       setShowQuiz(true);
     }
@@ -183,8 +246,8 @@ Keep up the excellent work!`);
     try {
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message: `Student question about Lesson ${lessonNumber} (${course.objectives[lessonNumber - 1]}): ${question}`,
-          systemPrompt: `You are a helpful teacher responding to a student's question about their current lesson. The lesson is about "${course.objectives[lessonNumber - 1]}" at ${course.gradeLevel} level. Provide a clear, encouraging response that helps the student understand the concept. Keep your response concise but thorough.`
+          message: `Student question about Lesson ${lessonNumber}, Part ${currentPart} (${course.objectives[lessonNumber - 1]}): ${question}`,
+          systemPrompt: `You are a helpful teacher responding to a student's question about their current lesson part. The lesson is about "${course.objectives[lessonNumber - 1]}" at ${course.gradeLevel} level. Provide a clear, encouraging response that helps the student understand the concept. Keep your response concise but thorough.`
         }
       });
 
@@ -206,11 +269,10 @@ Keep up the excellent work!`);
 
   const formatLessonContent = (content: string) => {
     return content
-      .replace(/---+/g, '') // Remove all --- symbols
       .replace(/#{1}\s/g, '<h1 class="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-4 mt-6">') // Main headings
       .replace(/#{2}\s/g, '<h2 class="text-xl font-semibold text-green-700 dark:text-green-400 mb-3 mt-5">') // Subheadings
       .replace(/#{3}\s/g, '<h3 class="text-lg font-medium text-purple-600 dark:text-purple-400 mb-2 mt-4">') // Sub-subheadings
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-800 dark:text-gray-200">$1</strong>') // Bold text
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>') // Bold text
       .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>') // Italic text
       .replace(/\n\n/g, '</p><p class="mb-3 leading-relaxed">') // Paragraphs
       .replace(/\n/g, '<br/>'); // Line breaks
@@ -228,6 +290,7 @@ Keep up the excellent work!`);
   }
 
   const progress = (currentPart / totalParts) * 100;
+  const currentContent = lessonParts[currentPart - 1] || '';
 
   return (
     <div className="space-y-6">
@@ -276,7 +339,9 @@ Keep up the excellent work!`);
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-500 mb-2">Your teacher is preparing the lesson...</p>
+                <p className="text-gray-500 mb-2">
+                  {currentPart === 1 ? 'Your teacher is preparing the lesson...' : 'Continuation lesson loading...'}
+                </p>
                 <p className="text-sm text-gray-400">Creating personalized content just for you</p>
               </div>
             </div>
@@ -285,7 +350,7 @@ Keep up the excellent work!`);
               <div 
                 className="whitespace-pre-wrap leading-relaxed text-gray-800 dark:text-gray-200"
                 dangerouslySetInnerHTML={{ 
-                  __html: `<p class="mb-3 leading-relaxed">${formatLessonContent(lessonContent)}</p>`
+                  __html: `<p class="mb-3 leading-relaxed">${formatLessonContent(currentContent)}</p>`
                 }}
               />
             </div>
@@ -301,13 +366,13 @@ Keep up the excellent work!`);
             Ask Your Teacher a Question
           </CardTitle>
           <p className="text-sm text-blue-600 dark:text-blue-400">
-            Have a question about this lesson? I'm here to help you understand better!
+            Have a question about this part of the lesson? I'm here to help you understand better!
           </p>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
             <Textarea
-              placeholder="Type your question about this lesson here... For example: 'Can you explain the distributive property with another example?' or 'I don't understand how to solve problem 2'"
+              placeholder="Type your question about this lesson part here... For example: 'Can you explain this concept with another example?' or 'I don't understand this step'"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               className="flex-1 min-h-[80px] resize-none"
