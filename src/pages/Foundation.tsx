@@ -380,7 +380,7 @@ const Foundation = () => {
                             <SelectItem value="audio">
                               <div className="flex items-center gap-2">
                                 <Volume2 className="w-4 h-4" />
-                                Audio Podcast (ElevenLabs AI)
+                                Audio Podcast
                               </div>
                             </SelectItem>
                             <SelectItem value="video">
