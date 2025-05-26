@@ -7,7 +7,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,16 +14,23 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const ChangePasswordDialog = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
+interface ChangePasswordDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({ 
+  open, 
+  onOpenChange 
+}) => {
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handlePasswordChange = async () => {
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -54,28 +60,6 @@ const ChangePasswordDialog = () => {
     setIsLoading(true);
 
     try {
-      // First verify the old password by attempting to sign in
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user?.email) {
-        throw new Error("User not found");
-      }
-
-      // Attempt to sign in with the old password to verify it
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.user.email,
-        password: oldPassword,
-      });
-
-      if (signInError) {
-        toast({
-          title: "Error",
-          description: "Current password is incorrect",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
       // Update the password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
@@ -91,10 +75,10 @@ const ChangePasswordDialog = () => {
       });
 
       // Reset form and close dialog
-      setOldPassword('');
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setIsOpen(false);
+      onOpenChange(false);
 
     } catch (error: any) {
       console.error('Password change error:', error);
@@ -109,12 +93,7 @@ const ChangePasswordDialog = () => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          Change Password
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Change Password</DialogTitle>
@@ -124,12 +103,12 @@ const ChangePasswordDialog = () => {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="old-password">Current Password</Label>
+            <Label htmlFor="current-password">Current Password</Label>
             <Input
-              id="old-password"
+              id="current-password"
               type="password"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Enter current password"
             />
           </div>
@@ -158,7 +137,7 @@ const ChangePasswordDialog = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setIsOpen(false)}
+            onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>

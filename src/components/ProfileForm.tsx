@@ -11,28 +11,36 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileData {
+  id: string;
   first_name: string;
   last_name: string;
-  grade_level: string;
-  bio: string;
-  school: string;
-  subjects: string[];
+  email: string;
+  avatar_url: string;
+  bio?: string;
+  grade_level?: string;
+  school?: string;
+  subjects?: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 interface ProfileFormProps {
-  profile: ProfileData;
-  onProfileUpdate: (profile: ProfileData) => void;
-  isEditing: boolean;
-  onEditToggle: () => void;
+  initialData: ProfileData;
+  onUpdate: (profile: ProfileData) => void;
 }
 
 const ProfileForm: React.FC<ProfileFormProps> = ({
-  profile,
-  onProfileUpdate,
-  isEditing,
-  onEditToggle
+  initialData,
+  onUpdate
 }) => {
-  const [formData, setFormData] = useState<ProfileData>(profile);
+  const [formData, setFormData] = useState({
+    first_name: initialData.first_name || '',
+    last_name: initialData.last_name || '',
+    bio: initialData.bio || '',
+    grade_level: initialData.grade_level || '',
+    school: initialData.school || '',
+    subjects: initialData.subjects || []
+  });
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,7 +54,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
     '12th Grade'
   ];
 
-  const handleSave = async () => {
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) return;
 
     setIsSaving(true);
@@ -56,8 +65,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         .update({
           first_name: formData.first_name,
           last_name: formData.last_name,
-          grade_level: formData.grade_level,
           bio: formData.bio,
+          grade_level: formData.grade_level,
           school: formData.school,
           subjects: formData.subjects
         })
@@ -65,8 +74,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
       if (error) throw error;
 
-      onProfileUpdate(formData);
-      onEditToggle();
+      const updatedProfile = {
+        ...initialData,
+        ...formData,
+        updated_at: new Date().toISOString()
+      };
+
+      onUpdate(updatedProfile);
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -83,13 +97,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
     }
   };
 
-  const handleCancel = () => {
-    setFormData(profile);
-    onEditToggle();
-  };
-
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSave} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="first_name">First Name</Label>
@@ -97,7 +106,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             id="first_name"
             value={formData.first_name}
             onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-            disabled={!isEditing}
           />
         </div>
         <div className="space-y-2">
@@ -106,36 +114,27 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
             id="last_name"
             value={formData.last_name}
             onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-            disabled={!isEditing}
           />
         </div>
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="grade">Grade Level</Label>
-        {isEditing ? (
-          <Select 
-            value={formData.grade_level} 
-            onValueChange={(value) => setFormData({ ...formData, grade_level: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select grade level" />
-            </SelectTrigger>
-            <SelectContent>
-              {gradeOptions.map((grade) => (
-                <SelectItem key={grade} value={grade}>
-                  {grade}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            id="grade"
-            value={formData.grade_level}
-            disabled={true}
-          />
-        )}
+        <Select 
+          value={formData.grade_level} 
+          onValueChange={(value) => setFormData({ ...formData, grade_level: value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select grade level" />
+          </SelectTrigger>
+          <SelectContent>
+            {gradeOptions.map((grade) => (
+              <SelectItem key={grade} value={grade}>
+                {grade}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
@@ -144,7 +143,6 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
           id="school"
           value={formData.school}
           onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-          disabled={!isEditing}
         />
       </div>
       
@@ -152,9 +150,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         <Label htmlFor="bio">Bio</Label>
         <Textarea
           id="bio"
-          value={formData.bio || ''}
+          value={formData.bio}
           onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-          disabled={!isEditing}
           rows={3}
         />
       </div>
@@ -162,36 +159,27 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
       <div className="space-y-2">
         <Label>Subjects</Label>
         <div className="flex flex-wrap gap-2">
-          {formData.subjects?.map((subject, index) => (
-            <Badge key={index} variant="outline">
-              {subject}
-            </Badge>
-          ))}
+          {formData.subjects.length > 0 ? (
+            formData.subjects.map((subject, index) => (
+              <Badge key={index} variant="outline">
+                {subject}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-gray-500 text-sm">No subjects selected</span>
+          )}
         </div>
       </div>
 
-      {isEditing && (
-        <div className="flex flex-col sm:flex-row gap-2 pt-4">
-          <Button 
-            size="sm" 
-            className="w-full sm:w-auto"
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleCancel}
-            className="w-full sm:w-auto"
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-        </div>
-      )}
-    </div>
+      <div className="flex gap-2 pt-4">
+        <Button 
+          type="submit"
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
+    </form>
   );
 };
 

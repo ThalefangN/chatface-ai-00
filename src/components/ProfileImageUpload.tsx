@@ -8,17 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileImageUploadProps {
+  userId: string;
   currentImageUrl?: string;
-  userName: string;
   onImageUpdate: (url: string) => void;
-  isEditing: boolean;
 }
 
 const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
+  userId,
   currentImageUrl,
-  userName,
-  onImageUpdate,
-  isEditing
+  onImageUpdate
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
@@ -49,7 +47,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/profile.${fileExt}`;
+      const fileName = `${userId}/profile.${fileExt}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -65,11 +63,11 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
         .from('profile-images')
         .getPublicUrl(fileName);
 
-      // Update profile in database - use avatar_url since that's the actual column name
+      // Update profile in database
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
+        .eq('id', userId);
 
       if (updateError) throw updateError;
 
@@ -90,30 +88,33 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
     }
   };
 
+  const getUserInitials = () => {
+    if (!user?.email) return 'U';
+    return user.email.charAt(0).toUpperCase();
+  };
+
   return (
     <div className="relative">
-      <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+      <Avatar className="h-24 w-24">
         <AvatarImage src={currentImageUrl} />
-        <AvatarFallback className="text-lg">
-          {userName.charAt(0).toUpperCase()}
+        <AvatarFallback className="text-xl">
+          {getUserInitials()}
         </AvatarFallback>
       </Avatar>
-      {isEditing && (
-        <label className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
-          {isUploading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Camera className="h-3 w-3" />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-            disabled={isUploading}
-          />
-        </label>
-      )}
+      <label className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
+        {isUploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Camera className="h-4 w-4" />
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+          disabled={isUploading}
+        />
+      </label>
     </div>
   );
 };
