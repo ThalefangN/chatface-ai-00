@@ -16,14 +16,23 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar';
+import { toast } from 'sonner';
 
 const AppSidebar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      console.log('Starting sign out process...');
+      await signOut();
+      console.log('Sign out successful, navigating to home...');
+      navigate('/');
+      toast.success('Successfully logged out');
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      toast.error('Failed to sign out. Please try again.');
+    }
   };
 
   const menuItems = [
@@ -107,7 +116,10 @@ const AppSidebar = () => {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} className="text-red-600 hover:text-red-700">
+            <SidebarMenuButton 
+              onClick={handleSignOut} 
+              className="text-red-600 hover:text-red-700 cursor-pointer"
+            >
               <LogOut className="h-4 w-4" />
               <span>Logout</span>
             </SidebarMenuButton>

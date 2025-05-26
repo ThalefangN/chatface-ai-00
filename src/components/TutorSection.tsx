@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, FileText, Trophy, Star, Users, DollarSign, Download } from 'lucide-react';
@@ -41,6 +42,7 @@ const TutorSection = () => {
   const [selectedGrade, setSelectedGrade] = useState<string>('bgcse');
   const [gradeLevels, setGradeLevels] = useState<GradeLevel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { teacherProfile } = useTeacherAuth();
@@ -50,45 +52,11 @@ const TutorSection = () => {
   }, []);
 
   const fetchCourses = async () => {
+    console.log('Starting to fetch courses...');
     try {
-      const { data: courses, error } = await supabase
-        .from('courses')
-        .select(`
-          *,
-          teacher_profiles (
-            first_name,
-            last_name
-          )
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching courses:', error);
-        return;
-      }
-
-      // Group courses by grade level with both free and paid courses
-      const bgcseCourses = courses?.filter(course => 
-        course.difficulty_level === 'advanced' || 
-        course.subject === 'Mathematics' || 
-        course.subject === 'English' || 
-        course.subject === 'Business Studies'
-      ) || [];
+      setError(null);
       
-      const psleCourses = courses?.filter(course => 
-        course.difficulty_level === 'beginner' || 
-        course.subject === 'Setswana'
-      ) || [];
-      
-      const jceCourses = courses?.filter(course => 
-        course.difficulty_level === 'intermediate' || 
-        course.subject === 'Science' || 
-        course.subject === 'History' || 
-        course.subject === 'Social Studies'
-      ) || [];
-
-      // Add sample paid courses for demonstration
+      // Always show sample courses even if database fetch fails
       const samplePaidCourses = [
         {
           id: 'paid-1',
@@ -117,12 +85,25 @@ const TutorSection = () => {
           difficulty_level: 'advanced'
         },
         {
-          id: 'paid-3',
+          id: 'free-1',
+          title: 'English Literature Basics',
+          subject: 'English',
+          teacher_profiles: { first_name: 'Mr. David', last_name: 'Smith' },
+          price: 0,
+          is_free: true,
+          rating: 4.5,
+          students_count: 320,
+          materials_count: 28,
+          description: 'Introduction to English Literature for BGCSE students',
+          difficulty_level: 'beginner'
+        },
+        {
+          id: 'free-2',
           title: 'Primary Math Excellence',
           subject: 'Mathematics',
           teacher_profiles: { first_name: 'Mr. Peter', last_name: 'Kgomo' },
-          price: 149,
-          is_free: false,
+          price: 0,
+          is_free: true,
           rating: 4.9,
           students_count: 234,
           materials_count: 28,
@@ -130,19 +111,68 @@ const TutorSection = () => {
           difficulty_level: 'beginner'
         },
         {
-          id: 'paid-4',
-          title: 'Science Mastery JCE',
+          id: 'free-3',
+          title: 'Science Foundations',
           subject: 'Science',
           teacher_profiles: { first_name: 'Dr. Maria', last_name: 'Sekai' },
-          price: 249,
-          is_free: false,
+          price: 0,
+          is_free: true,
           rating: 4.6,
           students_count: 178,
-          materials_count: 55,
+          materials_count: 35,
           description: 'Comprehensive JCE Science preparation with practical experiments',
           difficulty_level: 'intermediate'
         }
       ];
+
+      let databaseCourses: Course[] = [];
+      
+      // Try to fetch from database but don't fail if it doesn't work
+      try {
+        const { data: courses, error } = await supabase
+          .from('courses')
+          .select(`
+            *,
+            teacher_profiles (
+              first_name,
+              last_name
+            )
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.warn('Database fetch error (using sample data):', error);
+        } else {
+          databaseCourses = courses || [];
+          console.log('Successfully fetched database courses:', databaseCourses.length);
+        }
+      } catch (dbError) {
+        console.warn('Database connection error (using sample data):', dbError);
+      }
+
+      // Combine database courses with sample courses
+      const allCourses = [...databaseCourses, ...samplePaidCourses];
+
+      // Group courses by grade level
+      const bgcseCourses = allCourses.filter(course => 
+        course.difficulty_level === 'advanced' || 
+        course.subject === 'Mathematics' || 
+        course.subject === 'English' || 
+        course.subject === 'Business Studies'
+      );
+      
+      const psleCourses = allCourses.filter(course => 
+        course.difficulty_level === 'beginner' || 
+        course.subject === 'Setswana'
+      );
+      
+      const jceCourses = allCourses.filter(course => 
+        course.difficulty_level === 'intermediate' || 
+        course.subject === 'Science' || 
+        course.subject === 'History' || 
+        course.subject === 'Social Studies'
+      );
 
       const initialGradeLevels = [
         {
@@ -152,10 +182,7 @@ const TutorSection = () => {
           description: 'Form 4-5 students preparing for national examinations',
           icon: GraduationCap,
           color: 'bg-blue-500',
-          courses: [
-            ...bgcseCourses, 
-            ...samplePaidCourses.filter(c => c.difficulty_level === 'advanced')
-          ]
+          courses: bgcseCourses
         },
         {
           id: 'psle',
@@ -164,10 +191,7 @@ const TutorSection = () => {
           description: 'Standard 7 students preparing for primary school completion',
           icon: BookOpen,
           color: 'bg-green-500',
-          courses: [
-            ...psleCourses, 
-            ...samplePaidCourses.filter(c => c.difficulty_level === 'beginner')
-          ]
+          courses: psleCourses
         },
         {
           id: 'jce',
@@ -176,18 +200,18 @@ const TutorSection = () => {
           description: 'Form 3 students preparing for junior secondary completion',
           icon: Trophy,
           color: 'bg-purple-500',
-          courses: [
-            ...jceCourses, 
-            ...samplePaidCourses.filter(c => c.difficulty_level === 'intermediate')
-          ]
+          courses: jceCourses
         }
       ];
 
       setGradeLevels(initialGradeLevels);
+      console.log('Grade levels set successfully');
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('Error in fetchCourses:', error);
+      setError('Failed to load courses. Please refresh the page.');
     } finally {
       setLoading(false);
+      console.log('Loading completed');
     }
   };
 
@@ -249,6 +273,23 @@ const TutorSection = () => {
     return (
       <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="border-t border-gray-200 dark:border-gray-700 p-6">
+        <div className="text-center text-red-600 dark:text-red-400">
+          <p>{error}</p>
+          <Button 
+            onClick={fetchCourses} 
+            variant="outline" 
+            className="mt-4"
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
