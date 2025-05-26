@@ -108,30 +108,30 @@ const getStaticCourses = (): Course[] => [
     difficulty_level: 'intermediate'
   },
   {
-    id: 'setswana-language',
-    title: 'Setswana Language',
-    subject: 'Setswana',
-    teacher_profiles: { first_name: 'Mme Mpho', last_name: 'Kebonang' },
+    id: 'static-6',
+    title: 'Advanced Poetry Analysis',
+    subject: 'English Literature',
+    teacher_profiles: { first_name: 'StudyBuddy', last_name: 'Instructor' },
     price: 0,
     is_free: true,
-    rating: 4.5,
-    students_count: 187,
+    rating: 4.3,
+    students_count: 142,
     materials_count: 25,
-    description: 'Free Setswana language course for PSLE preparation',
-    difficulty_level: 'beginner'
+    description: 'Deep dive into poetic forms and literary devices',
+    difficulty_level: 'advanced'
   },
   {
-    id: 'social-studies',
-    title: 'Social Studies',
+    id: 'static-7',
+    title: 'Advanced Social Theory',
     subject: 'Social Studies',
-    teacher_profiles: { first_name: 'Mr. Gaolathe', last_name: 'Mmolawa' },
+    teacher_profiles: { first_name: 'StudyBuddy', last_name: 'Instructor' },
     price: 0,
     is_free: true,
     rating: 4.4,
     students_count: 98,
     materials_count: 30,
-    description: 'Free Social Studies course with interactive content',
-    difficulty_level: 'intermediate'
+    description: 'Complex social theories and their applications',
+    difficulty_level: 'advanced'
   }
 ];
 
@@ -162,8 +162,7 @@ const TutorSection = () => {
     
     const psleCourses = staticCourses.filter(course => 
       course.difficulty_level === 'beginner' || 
-      (course.subject === 'Mathematics' && course.title.includes('Primary')) ||
-      course.subject === 'Setswana'
+      (course.subject === 'Mathematics' && course.title.includes('Primary'))
     );
     
     const jceCourses = staticCourses.filter(course => 
@@ -242,8 +241,7 @@ const TutorSection = () => {
         
         const psleCourses = allCourses.filter(course => 
           course.difficulty_level === 'beginner' || 
-          (course.subject === 'Mathematics' && course.title.includes('Primary')) ||
-          course.subject === 'Setswana'
+          (course.subject === 'Mathematics' && course.title.includes('Primary'))
         );
         
         const jceCourses = allCourses.filter(course => 
@@ -322,20 +320,8 @@ const TutorSection = () => {
           }
         }
 
-        // Map course IDs to their specific routes like the courses page does
-        const courseRoutes: Record<string, string> = {
-          'setswana-language': '/courses/setswana-language',
-          'social-studies': '/courses/social-studies',
-          'static-3': '/courses/english-literature'
-        };
-
-        const route = courseRoutes[course.id];
-        if (route) {
-          navigate(route);
-        } else {
-          // For other courses, navigate to generic course viewer
-          navigate(`/courses/view/${course.id}`);
-        }
+        // Navigate to course content page for free courses
+        navigate(`/courses/view/${course.id}`);
       } catch (error) {
         console.error('Error enrolling in course:', error);
       }
