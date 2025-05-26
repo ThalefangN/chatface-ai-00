@@ -53,6 +53,49 @@ const DocumentSummarySection: React.FC = () => {
     }
   };
 
+  const generateSummaryWithRetry = async (message: string, attempt = 0): Promise<string> => {
+    const maxRetries = 3;
+    
+    try {
+      console.log(`Attempting to generate summary (attempt ${attempt + 1})`);
+      
+      // Add timeout using Promise.race
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 45000)
+      );
+      
+      const invokePromise = supabase.functions.invoke('ai-study-chat', {
+        body: {
+          message,
+          systemPrompt: 'You are a helpful AI study assistant. Provide clear, comprehensive summaries and explanations. Format your response in a readable way with proper paragraphs and bullet points where appropriate.'
+        }
+      });
+
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+
+      if (error) throw error;
+      
+      if (data && data.content) {
+        console.log('Summary generated successfully');
+        return data.content;
+      } else {
+        throw new Error('No content received from AI');
+      }
+    } catch (error) {
+      console.error(`Error generating summary (attempt ${attempt + 1}):`, error);
+      
+      if (attempt < maxRetries - 1) {
+        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+        console.log(`Retrying summary generation in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return generateSummaryWithRetry(message, attempt + 1);
+      }
+      
+      console.error('Max retries reached for summary generation');
+      throw error;
+    }
+  };
+
   const generateSummary = async () => {
     if (!selectedFile && !topicQuery.trim()) {
       toast.error('Please upload a document or enter a topic');
@@ -70,34 +113,16 @@ const DocumentSummarySection: React.FC = () => {
         message = `Please provide a comprehensive summary/explanation about: ${topicQuery}`;
       }
 
-      console.log('Calling AI study chat with message:', message);
+      const summary = await generateSummaryWithRetry(message);
+      setAiSummary(summary);
+      toast.success('Summary generated successfully!');
       
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: {
-          message,
-          systemPrompt: 'You are a helpful AI study assistant. Provide clear, comprehensive summaries and explanations. Format your response in a readable way with proper paragraphs and bullet points where appropriate.'
-        }
-      });
-
-      console.log('AI study chat response:', data, error);
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-      
-      if (data && data.content) {
-        setAiSummary(data.content);
-        toast.success('Summary generated successfully!');
-      } else {
-        throw new Error('No content received from AI');
-      }
     } catch (error) {
       console.error('Error generating summary:', error);
       toast.error('Failed to generate summary. Please try again.');
       
-      // Fallback response to ensure AI always provides something
-      setAiSummary('I apologize, but I encountered an issue generating the summary. Please try again, or check your internet connection and ensure the AI service is available.');
+      // Provide a helpful fallback response
+      setAiSummary('I apologize, but I encountered an issue generating the summary. This could be due to a temporary connection issue or high server load. Please try again in a moment, or check your internet connection.');
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -169,10 +194,20 @@ const DocumentSummarySection: React.FC = () => {
                   value={topicQuery}
                   onChange={(e) => setTopicQuery(e.target.value)}
                   className="flex-1 text-sm"
-                  onKeyPress={(e) => e.key === 'Enter' && generateSummary()}
+                  onKeyPress={(e) => e.key === 'Enter' && !isGeneratingSummary && generateSummary()}
+                  disabled={isGeneratingSummary}
                 />
-                <Button onClick={generateSummary} disabled={isGeneratingSummary} size="sm" className="flex-shrink-0">
-                  <Send className="w-4 h-4" />
+                <Button 
+                  onClick={generateSummary} 
+                  disabled={isGeneratingSummary || (!selectedFile && !topicQuery.trim())} 
+                  size="sm" 
+                  className="flex-shrink-0"
+                >
+                  {isGeneratingSummary ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -203,6 +238,7 @@ const DocumentSummarySection: React.FC = () => {
                           removeFile(file.id);
                         }}
                         className="w-6 h-6 p-0 flex-shrink-0"
+                        disabled={isGeneratingSummary}
                       >
                         <X className="w-3 h-3" />
                       </Button>
@@ -224,7 +260,7 @@ const DocumentSummarySection: React.FC = () => {
                 <Bot className="w-5 h-5 text-blue-500" />
                 AI Summary
               </CardTitle>
-              {aiSummary && (
+              {aiSummary && !isGeneratingSummary && (
                 <Button variant="outline" size="sm" onClick={downloadSummary}>
                   <Download className="w-4 h-4 mr-2" />
                   Download
@@ -239,6 +275,7 @@ const DocumentSummarySection: React.FC = () => {
                   <div className="text-center">
                     <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
                     <p className="text-gray-500 text-sm">Generating summary...</p>
+                    <p className="text-xs text-gray-400 mt-2">This may take up to 45 seconds</p>
                   </div>
                 </div>
               ) : aiSummary ? (
@@ -251,7 +288,8 @@ const DocumentSummarySection: React.FC = () => {
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="text-center">
                     <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-sm">Upload a document or enter a topic to generate a summary</p>
+                    <p className="text-sm font-medium mb-2">Ready to generate summaries</p>
+                    <p className="text-xs">Upload a document or enter a topic to get started</p>
                   </div>
                 </div>
               )}
