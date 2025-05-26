@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, BookOpen, Brain, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -44,49 +45,82 @@ const LessonViewer: React.FC<LessonViewerProps> = ({
     setIsLoading(true);
     try {
       const objective = course.objectives[lessonNumber - 1] || 'Core concepts and fundamentals';
+      
       const prompt = `Create a comprehensive lesson for "${course.name}" at ${course.gradeLevel} level.
 
 Lesson ${lessonNumber}: ${objective}
 
-Please provide:
-1. Clear explanations with examples
-2. Step-by-step breakdowns
-3. Practical applications
-4. Real-world connections relevant to Botswana context
-5. Interactive elements
+Please provide detailed content with:
+1. Clear introduction and learning goals
+2. Step-by-step explanations with examples
+3. Practical applications relevant to Botswana context
+4. Real-world scenarios and problems
+5. Interactive elements and exercises
 
-Make the content engaging and appropriate for ${course.gradeLevel} students. Include plenty of examples and ensure the lesson is well-structured with clear sections.`;
+Structure the lesson with clear sections:
+- Introduction
+- Key Concepts
+- Examples and Applications
+- Practice Exercises
+- Summary
+
+Make the content engaging, educational, and appropriate for ${course.gradeLevel} students. Include plenty of examples and ensure comprehensive coverage of the topic.`;
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: prompt,
-          systemPrompt: 'You are an expert teacher creating engaging lesson content for Botswana students. Make lessons comprehensive, clear, and interactive with plenty of examples.'
+          systemPrompt: `You are an expert teacher creating comprehensive lesson content for Botswana students at ${course.gradeLevel} level. Create detailed, well-structured lessons with clear explanations, relevant examples, and practical applications. Use markdown formatting for better readability.`
         }
       });
 
       if (error) throw error;
       
-      setLessonContent(data.content);
+      if (data && data.content) {
+        setLessonContent(data.content);
+      } else {
+        throw new Error('No content received from AI');
+      }
     } catch (error) {
       console.error('Error generating lesson:', error);
       toast.error('Failed to generate lesson content');
-      setLessonContent(`# Lesson ${lessonNumber}: ${course.objectives[lessonNumber - 1]}
-
-Welcome to this lesson! This content is being generated to provide you with comprehensive learning materials.
+      
+      // Fallback content
+      const objective = course.objectives[lessonNumber - 1];
+      setLessonContent(`# Lesson ${lessonNumber}: ${objective}
 
 ## Introduction
-This lesson will cover the fundamental concepts and help you understand the key principles.
+Welcome to this important lesson on ${objective.toLowerCase()}. This lesson will help you understand the fundamental concepts and how to apply them effectively.
 
 ## Key Concepts
-- Important concept 1
-- Important concept 2  
-- Important concept 3
+Understanding ${objective.toLowerCase()} is essential for your academic success. Here are the main points we'll cover:
 
-## Examples
-Here we'll explore practical examples to reinforce your understanding.
+### 1. Basic Principles
+- Definition and importance
+- Core components and elements
+- How it relates to your studies
+
+### 2. Practical Applications
+- Real-world examples from Botswana
+- Step-by-step problem-solving approaches
+- Common scenarios you might encounter
+
+### 3. Examples and Practice
+Let's work through some examples to reinforce your understanding:
+
+**Example 1:** 
+This example demonstrates the basic principles in action.
+
+**Example 2:**
+Here we see how to apply the concepts in different situations.
 
 ## Summary
-In this lesson, you've learned about the core concepts and how to apply them.`);
+In this lesson, you've learned about ${objective.toLowerCase()}. The key takeaways are:
+- Understanding the fundamental principles
+- Applying knowledge to real situations
+- Building confidence through practice
+
+## Next Steps
+Complete the quiz to test your understanding before moving to the next lesson.`);
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +145,7 @@ In this lesson, you've learned about the core concepts and how to apply them.`);
       setShowQuiz(false);
       if (lessonNumber < course.totalLessons) {
         onNextLesson(lessonNumber + 1);
+        toast.success('Great job! Moving to the next lesson.');
       } else {
         onBack();
         toast.success('Congratulations! You have completed the entire course!');
@@ -131,6 +166,8 @@ In this lesson, you've learned about the core concepts and how to apply them.`);
       />
     );
   }
+
+  const progress = (currentPart / totalParts) * 100;
 
   return (
     <div className="space-y-6">
@@ -162,6 +199,13 @@ In this lesson, you've learned about the core concepts and how to apply them.`);
               AI-Generated Content
             </div>
           </div>
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span>Lesson Progress</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
         </CardHeader>
       </Card>
 
@@ -172,14 +216,21 @@ In this lesson, you've learned about the core concepts and how to apply them.`);
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-gray-500">Generating lesson content...</p>
+                <p className="text-gray-500 mb-2">Generating lesson content...</p>
+                <p className="text-sm text-gray-400">Creating personalized content for your learning</p>
               </div>
             </div>
           ) : (
             <div className="prose max-w-none dark:prose-invert">
-              <div className="whitespace-pre-wrap leading-relaxed">
-                {lessonContent}
-              </div>
+              <div 
+                className="whitespace-pre-wrap leading-relaxed"
+                dangerouslySetInnerHTML={{ 
+                  __html: lessonContent.replace(/\n/g, '<br/>').replace(/#{1,6}\s/g, match => {
+                    const level = match.trim().length;
+                    return `<h${level} class="font-bold text-lg mt-4 mb-2">`;
+                  }).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                }}
+              />
             </div>
           )}
         </CardContent>
@@ -190,7 +241,7 @@ In this lesson, you've learned about the core concepts and how to apply them.`);
         <Button 
           variant="outline" 
           onClick={handlePrevPart}
-          disabled={currentPart === 1}
+          disabled={currentPart === 1 || isLoading}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Previous Part
@@ -200,14 +251,14 @@ In this lesson, you've learned about the core concepts and how to apply them.`);
           {Array.from({ length: totalParts }, (_, i) => (
             <div 
               key={i}
-              className={`w-3 h-3 rounded-full ${
-                i + 1 === currentPart ? 'bg-blue-500' : 'bg-gray-300'
+              className={`w-3 h-3 rounded-full transition-colors ${
+                i + 1 === currentPart ? 'bg-blue-500' : i + 1 < currentPart ? 'bg-green-500' : 'bg-gray-300'
               }`}
             />
           ))}
         </div>
 
-        <Button onClick={handleNextPart}>
+        <Button onClick={handleNextPart} disabled={isLoading}>
           {currentPart === totalParts ? (
             <>
               Take Short Quiz
