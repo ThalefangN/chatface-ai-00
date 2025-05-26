@@ -1,17 +1,17 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { ArrowLeft, Mail, CheckCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AnimatedContainer from '@/components/AnimatedContainer';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ForgotPassword = () => {
-  const { resetPassword } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,10 +19,29 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      await resetPassword(email);
-      setSubmitted(true);
-    } catch (error) {
+      // Check if user exists
+      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      const userExists = userData?.users?.some(user => user.email === email);
+      
+      if (!userExists) {
+        toast.error('No account found with this email address');
+        return;
+      }
+
+      // Send OTP via edge function
+      const { error } = await supabase.functions.invoke('send-reset-otp', {
+        body: { email }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('OTP sent successfully! Check your email.');
+      navigate(`/otp-confirmation?email=${encodeURIComponent(email)}`);
+    } catch (error: any) {
       console.error('Error during password reset:', error);
+      toast.error('Failed to send reset instructions. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -42,76 +61,44 @@ const ForgotPassword = () => {
           <div className="text-center mb-8">
             <Logo className="mx-auto mb-6" size="lg" />
             <h1 className="text-2xl font-bold mb-2">Reset Your Password</h1>
-            <p className="text-muted-foreground">We'll send you instructions to reset your password</p>
+            <p className="text-muted-foreground">We'll send you an OTP code to reset your password</p>
           </div>
           
           <AnimatedContainer className="bg-card p-6">
-            {!submitted ? (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    Email Address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                  />
-                </div>
-                
-                <Button
-                  type="submit"
-                  className="w-full bg-green-500 hover:bg-green-600"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="flex items-center">
-                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                      Sending...
-                    </span>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Reset Instructions
-                    </>
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <div className="text-center py-8">
-                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Check Your Email</h3>
-                <p className="text-muted-foreground mb-4">
-                  We've sent instructions to:
-                  <span className="block font-medium text-foreground mt-1">{email}</span>
-                </p>
-                
-                <div className="space-y-3 mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSubmitted(false)}
-                    className="w-full"
-                  >
-                    Try a different email
-                  </Button>
-                  
-                  <p className="text-sm text-muted-foreground">
-                    Didn't receive the email? Check your spam folder or{' '}
-                    <button 
-                      onClick={handleSubmit}
-                      className="text-green-500 hover:underline"
-                      disabled={isLoading}
-                    >
-                      click here to resend
-                    </button>
-                  </p>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
               </div>
-            )}
+              
+              <Button
+                type="submit"
+                className="w-full bg-green-500 hover:bg-green-600"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                    Sending...
+                  </span>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Send Reset Instructions
+                  </>
+                )}
+              </Button>
+            </form>
             
             <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">

@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
+import OTPConfirmation from "./pages/OTPConfirmation";
+import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import LearningSession from "./pages/LearningSession";
@@ -50,6 +52,8 @@ const App = () => (
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/sign-up" element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/otp-confirmation" element={<OTPConfirmation />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/teacher-sign-up" element={<TeacherSignUp />} />
                 <Route path="/teacher-sign-in" element={<TeacherSignIn />} />
                 <Route path="/teacher-dashboard" element={<TeacherProtectedRoute><TeacherDashboard /></TeacherProtectedRoute>} />
