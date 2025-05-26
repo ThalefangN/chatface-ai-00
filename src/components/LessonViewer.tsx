@@ -95,11 +95,16 @@ const LessonViewer: React.FC<LessonViewerProps> = ({
 This should be a warm welcome to students with:
 - A friendly greeting addressing students directly
 - Clear learning goals for this lesson (3-4 goals)
-- Introduction to the main topic
+- Introduction to the main topic  
 - Why this topic is important in daily life in Botswana
 - Basic definitions and key terms (2-3 main concepts)
 
-Keep it engaging but concise. Address students as "you" and use an encouraging tone.`;
+FORMATTING RULES:
+- Use ## for main subtopics only (these will be bolded)
+- Use normal text for all explanations and content
+- Add proper line spacing between sections
+- Keep language simple and student-friendly
+- Address students as "you" and use an encouraging tone`;
           break;
         case 2:
           partTitle = 'Core Principles and Theory';
@@ -107,38 +112,60 @@ Keep it engaging but concise. Address students as "you" and use an encouraging t
 
 This should cover:
 - Main theoretical concepts explained simply
-- Step-by-step breakdown of key principles
+- Step-by-step breakdown of key principles  
 - Important rules or formulas (if applicable)
 - Clear explanations with simple language
-- 1-2 basic examples to illustrate concepts
+- 2-3 solved mathematical examples with complete working steps
 
-Focus on understanding rather than memorization. Keep explanations clear and student-friendly.`;
+FORMATTING RULES:
+- Use ## for subtopics only (like "Number Systems", "Basic Operations")
+- Use normal text for all explanations
+- For math problems: Show step-by-step solutions clearly
+- Include at least 2 complete mathematical examples with working
+- Add proper spacing between different concepts
+- Make calculations easy to follow
+
+Focus on understanding rather than memorization. Show complete mathematical working for examples.`;
           break;
         case 3:
           partTitle = 'Practical Examples from Botswana';
           partPrompt = `Create Part 3 of 5: Practical Examples for "${objective}".
 
 This should include:
-- 2-3 practical examples using Botswana context (markets, Pula currency, local situations)
-- Step-by-step solutions showing how to apply the concepts
+- 3-4 practical examples using Botswana context (markets, Pula currency, local situations)
+- Complete step-by-step mathematical solutions showing all working
 - Real-world scenarios students can relate to
-- Clear working and explanations for each example
+- Clear mathematical calculations with proper formatting
 - Tips for solving similar problems
 
-Make examples relevant to student life in Botswana.`;
+FORMATTING RULES:
+- Use ## for subtopics only (like "Market Calculations", "Currency Problems")
+- Use normal text for explanations and problem descriptions
+- Show complete mathematical working: Problem → Given → Find → Solution → Answer
+- Use proper spacing between different examples
+- Make each calculation step clear and easy to follow
+
+Make examples relevant to student life in Botswana with complete mathematical solutions.`;
           break;
         case 4:
           partTitle = 'Practice Exercises';
           partPrompt = `Create Part 4 of 5: Practice Exercises for "${objective}".
 
 This should contain:
-- 3-4 practice problems for students to try
+- 4-5 practice problems for students to try
 - Progressive difficulty (start easy, build up)
 - Clear instructions for each exercise
+- Sample solutions with step-by-step working for 2 problems
 - Hints or guidance for approaching the problems
-- Encourage students to work through them step by step
 
-Focus on building confidence through practice.`;
+FORMATTING RULES:
+- Use ## for subtopics only (like "Basic Practice", "Challenge Problems")
+- Use normal text for problem statements and instructions
+- Show complete solutions for sample problems with all mathematical steps
+- Use proper spacing between problems
+- Make instructions clear and encouraging
+
+Focus on building confidence through practice with clear mathematical examples.`;
           break;
         case 5:
           partTitle = 'Summary and Next Steps';
@@ -146,20 +173,41 @@ Focus on building confidence through practice.`;
 
 This should include:
 - Summary of key points learned
-- Important takeaways to remember
+- Important mathematical formulas or concepts to remember
 - How this connects to future lessons
+- Quick review problem with solution
 - Encouragement and motivation
 - Study tips for retaining the information
-- Preview of what comes next
 
-End on a positive, encouraging note that builds confidence.`;
+FORMATTING RULES:
+- Use ## for subtopics only (like "Key Takeaways", "Important Formulas")
+- Use normal text for all content and explanations
+- Include one worked example as a summary
+- Add proper spacing throughout
+- End on a positive, encouraging note
+
+Keep content focused and encouraging while reinforcing the mathematical concepts learned.`;
           break;
       }
 
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: partPrompt,
-          systemPrompt: `You are an experienced teacher speaking directly to ${course.gradeLevel} students in Botswana. Create engaging, well-structured lesson content with clear headings and formatting. Use **bold** for important topics and concepts. Address students as "you" and maintain an encouraging, supportive tone. Keep content focused and not too lengthy - this is part ${partNumber} of 5 parts.`
+          systemPrompt: `You are an experienced mathematics teacher speaking directly to ${course.gradeLevel} students in Botswana. 
+
+CRITICAL FORMATTING INSTRUCTIONS:
+- Use ## ONLY for main subtopics (these will appear bold)
+- Use normal text for ALL explanations, descriptions, and content
+- For mathematical problems, show complete step-by-step solutions
+- Include proper spacing with double line breaks between sections
+- Address students as "you" and maintain an encouraging tone
+- When showing math calculations, format them clearly:
+  Problem: [state the problem]
+  Given: [what we know]
+  Solution: [step by step working]
+  Answer: [final result]
+
+Keep content focused and not too lengthy - this is part ${partNumber} of 5 parts. Make mathematical examples clear and easy to follow with complete working shown.`
         }
       });
 
@@ -217,28 +265,41 @@ End on a positive, encouraging note that builds confidence.`;
   };
 
   const generateFallbackContent = (partNumber: number, partTitle: string, objective: string) => {
-    const content = `**Welcome to Part ${partNumber} of your lesson!**
+    const content = `Welcome to Part ${partNumber} of your lesson!
 
-Hello students! Let's continue exploring **${objective.toLowerCase()}** together.
+Hello students! Let's continue exploring ${objective.toLowerCase()} together.
 
 ## Key Learning Points
 
-**Important:** This section focuses on building your understanding step by step.
+This section focuses on building your understanding step by step.
 
 ### Main Concepts
-- **Fundamental principles** that guide our understanding
-- **Practical applications** in everyday life
-- **Problem-solving strategies** you can use
+Here are the fundamental principles that guide our understanding:
 
-### Examples from Botswana Context
-Let's look at how these concepts apply in our daily lives:
+- Basic mathematical operations and their properties
+- Problem-solving strategies you can use in daily life
+- Real-world applications in Botswana context
 
-**Example:** If you're at a local market and need to calculate costs in Pula, you'll use these mathematical principles.
+### Sample Mathematical Problem
+Let's work through a practical example:
+
+Problem: If you buy 3 exercise books at 15 Pula each and 2 pens at 8 Pula each, what is the total cost?
+
+Given: 
+- 3 exercise books at 15 Pula each
+- 2 pens at 8 Pula each
+
+Solution:
+Step 1: Calculate cost of exercise books = 3 × 15 = 45 Pula
+Step 2: Calculate cost of pens = 2 × 8 = 16 Pula  
+Step 3: Add total costs = 45 + 16 = 61 Pula
+
+Answer: The total cost is 61 Pula.
 
 ## Practice Activity
-Try to think of situations where you might use these concepts in your own life.
+Try to think of situations where you might use these mathematical concepts in your own life in Botswana.
 
-**Remember:** Every expert was once a beginner. Take your time and don't be afraid to ask questions!
+Remember: Every expert was once a beginner. Take your time and don't be afraid to ask questions!
 
 Keep up the excellent work!`;
 
@@ -300,7 +361,16 @@ Keep up the excellent work!`;
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
           message: `Student question about Lesson ${lessonNumber}, Part ${currentPart} (${course.objectives[lessonNumber - 1]}): ${question}`,
-          systemPrompt: `You are a helpful teacher responding to a student's question about their current lesson part. The lesson is about "${course.objectives[lessonNumber - 1]}" at ${course.gradeLevel} level. Provide a clear, encouraging response that helps the student understand the concept. Keep your response concise but thorough.`
+          systemPrompt: `You are a helpful mathematics teacher responding to a student's question about their current lesson part. The lesson is about "${course.objectives[lessonNumber - 1]}" at ${course.gradeLevel} level. 
+
+FORMATTING INSTRUCTIONS:
+- Use clear, simple language
+- If explaining math, show step-by-step solutions
+- Use proper spacing between steps
+- Be encouraging and supportive
+- Keep your response concise but thorough
+
+Provide a clear, encouraging response that helps the student understand the concept.`
         }
       });
 
@@ -322,12 +392,19 @@ Keep up the excellent work!`;
 
   const formatLessonContent = (content: string) => {
     return content
-      .replace(/#{1}\s/g, '<h1 class="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-4 mt-6">') 
-      .replace(/#{2}\s/g, '<h2 class="text-xl font-semibold text-green-700 dark:text-green-400 mb-3 mt-5">') 
-      .replace(/#{3}\s/g, '<h3 class="text-lg font-medium text-purple-600 dark:text-purple-400 mb-2 mt-4">') 
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>') 
+      // Format main headers (# )
+      .replace(/^#\s(.+)$/gm, '<h1 class="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-4 mt-6">$1</h1>')
+      // Format subtopics (## ) - these will be bolded
+      .replace(/^##\s(.+)$/gm, '<h2 class="text-xl font-bold text-green-700 dark:text-green-400 mb-3 mt-5">$1</h2>') 
+      // Format sub-subtopics (### ) - these will be medium weight
+      .replace(/^###\s(.+)$/gm, '<h3 class="text-lg font-medium text-purple-600 dark:text-purple-400 mb-2 mt-4">$1</h3>') 
+      // Remove any remaining bold formatting from explanatory text
+      .replace(/\*\*(.*?)\*\*/g, '$1') 
+      // Keep italic formatting
       .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>') 
-      .replace(/\n\n/g, '</p><p class="mb-3 leading-relaxed">') 
+      // Add proper paragraph spacing
+      .replace(/\n\n/g, '</p><p class="mb-4 leading-relaxed text-gray-800 dark:text-gray-200">') 
+      // Handle single line breaks
       .replace(/\n/g, '<br/>'); 
   };
 
@@ -403,7 +480,7 @@ Keep up the excellent work!`;
               <div 
                 className="whitespace-pre-wrap leading-relaxed text-gray-800 dark:text-gray-200"
                 dangerouslySetInnerHTML={{ 
-                  __html: `<p class="mb-3 leading-relaxed">${formatLessonContent(currentContent)}</p>`
+                  __html: `<p class="mb-4 leading-relaxed text-gray-800 dark:text-gray-200">${formatLessonContent(currentContent)}</p>`
                 }}
               />
             </div>
