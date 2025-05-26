@@ -380,7 +380,7 @@ Provide a clear, encouraging response that helps the student understand the conc
       
       const toastId = toast.success('Great question! Here\'s my response:', {
         description: data?.content || 'I received your question and will help you understand this concept better.',
-        duration: 8000,
+        duration: 10000,
         action: {
           label: <X className="w-4 h-4" />,
           onClick: () => toast.dismiss(toastId),

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Play, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, Play, Calendar, Clock, CheckCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -112,7 +112,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 w-full">
         <h3 className="text-lg font-semibold mb-4">Your Saved Courses</h3>
         <div className="grid gap-4">
           {[1, 2, 3].map(i => (
@@ -131,7 +131,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
 
   if (courses.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8 w-full">
         <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-600 mb-2">No Saved Courses</h3>
         <p className="text-gray-500 mb-4">Create your first AI-generated course to get started!</p>
@@ -140,7 +140,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <BookOpen className="w-5 h-5" />
         Your Saved Courses ({courses.length})
@@ -155,7 +155,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
                   <CardTitle className="text-lg mb-2 flex items-center gap-2">
                     {course.name}
                     {course.hasGeneratedContent && (
-                      <CheckCircle className="w-4 h-4 text-green-500" title="Has generated content" />
+                      <CheckCircle className="w-4 h-4 text-green-500" />
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
