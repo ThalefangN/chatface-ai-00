@@ -48,8 +48,8 @@ const LearningJourney = () => {
     },
     {
       id: 5,
-      title: 'Mastery',
-      description: 'Achieve deep understanding and advanced problem-solving skills',
+      title: 'Notes/Topic Summary',
+      description: 'Create comprehensive notes and summarize key topics for effective review',
       icon: Trophy,
       color: 'bg-purple-500',
       progress: 10,
