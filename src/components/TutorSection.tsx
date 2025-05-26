@@ -320,13 +320,14 @@ const TutorSection = () => {
           }
         }
 
-        // Navigate to course content page for all courses
+        // Navigate to course content page for free courses
         navigate(`/courses/view/${course.id}`);
       } catch (error) {
         console.error('Error enrolling in course:', error);
       }
     } else {
-      console.log('Enrolling in paid course:', course.title);
+      // For paid courses, navigate to enrollment/payment page
+      navigate(`/courses/enroll/${course.id}`);
     }
   };
 
