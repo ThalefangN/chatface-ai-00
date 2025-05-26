@@ -9,6 +9,112 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_course_objectives: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          objective_text: string
+          order_index: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          objective_text: string
+          order_index: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          objective_text?: string
+          order_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_course_objectives_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "ai_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_courses: {
+        Row: {
+          created_at: string
+          current_lesson: number
+          description: string | null
+          grade_level: string
+          id: string
+          name: string
+          total_lessons: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_lesson?: number
+          description?: string | null
+          grade_level: string
+          id?: string
+          name: string
+          total_lessons?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_lesson?: number
+          description?: string | null
+          grade_level?: string
+          id?: string
+          name?: string
+          total_lessons?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_lesson_parts: {
+        Row: {
+          content: string
+          course_id: string
+          created_at: string
+          id: string
+          lesson_number: number
+          part_number: number
+          title: string
+        }
+        Insert: {
+          content: string
+          course_id: string
+          created_at?: string
+          id?: string
+          lesson_number: number
+          part_number: number
+          title: string
+        }
+        Update: {
+          content?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          lesson_number?: number
+          part_number?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_lesson_parts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "ai_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assessment_questions: {
         Row: {
           assessment_id: string | null

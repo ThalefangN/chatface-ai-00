@@ -37,49 +37,12 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStep, setGenerationStep] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState(0);
 
   const gradeLevels = [
     { value: 'psle', label: 'PSLE (Primary School Leaving Examination)' },
     { value: 'jce', label: 'JCE (Junior Certificate Examination)' },
     { value: 'bgcse', label: 'BGCSE (Botswana General Certificate of Secondary Education)' }
   ];
-
-  const simulateProgress = () => {
-    const steps = [
-      { message: 'Analyzing course requirements...', duration: 2000 },
-      { message: 'Generating learning objectives...', duration: 3000 },
-      { message: 'Creating lesson structure...', duration: 2500 },
-      { message: 'Preparing course content...', duration: 2000 },
-      { message: 'Finalizing course materials...', duration: 1500 }
-    ];
-
-    const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
-    setEstimatedTime(Math.ceil(totalDuration / 1000));
-
-    let currentProgress = 0;
-    let stepIndex = 0;
-
-    const progressInterval = setInterval(() => {
-      if (stepIndex < steps.length) {
-        setGenerationStep(steps[stepIndex].message);
-        const stepProgress = (100 / steps.length) * (stepIndex + 1);
-        setGenerationProgress(stepProgress);
-        
-        if (stepProgress >= (stepIndex + 1) * (100 / steps.length)) {
-          stepIndex++;
-        }
-      }
-
-      if (stepIndex >= steps.length) {
-        clearInterval(progressInterval);
-        setGenerationProgress(100);
-        setGenerationStep('Course generation complete!');
-      }
-    }, 500);
-
-    return totalDuration;
-  };
 
   const handleCreateCourse = async () => {
     if (!courseName.trim() || !gradeLevel) {
@@ -89,10 +52,15 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({
 
     setIsGenerating(true);
     setGenerationProgress(0);
-    
-    const totalTime = simulateProgress();
 
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        toast.error('Please log in to create a course');
+        return;
+      }
+
       const gradeLabels = {
         'psle': 'Primary School (PSLE)',
         'jce': 'Junior Certificate (JCE)', 
@@ -108,16 +76,64 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({
         `Develop critical thinking and analytical skills in ${courseName}`
       ];
 
-      setTimeout(() => {
-        const newCourse: Course = {
-          id: `course-${Date.now()}`,
-          name: courseName,
-          gradeLevel: gradeLabels[gradeLevel as keyof typeof gradeLabels] || gradeLevel.toUpperCase(),
-          objectives,
-          currentLesson: 1,
-          totalLessons: objectives.length
-        };
+      // Simulate progress updates
+      const progressSteps = [
+        'Analyzing course requirements...',
+        'Generating learning objectives...',
+        'Creating lesson structure...',
+        'Preparing course content...',
+        'Saving to database...'
+      ];
 
+      for (let i = 0; i < progressSteps.length; i++) {
+        setGenerationStep(progressSteps[i]);
+        setGenerationProgress((i + 1) * 20);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Save course to database
+      const { data: courseData, error: courseError } = await supabase
+        .from('ai_courses')
+        .insert({
+          user_id: user.id,
+          name: courseName,
+          grade_level: gradeLabels[gradeLevel as keyof typeof gradeLabels] || gradeLevel.toUpperCase(),
+          description,
+          total_lessons: objectives.length,
+          current_lesson: 1
+        })
+        .select()
+        .single();
+
+      if (courseError) throw courseError;
+
+      // Save objectives
+      const objectivesData = objectives.map((objective, index) => ({
+        course_id: courseData.id,
+        objective_text: objective,
+        order_index: index + 1
+      }));
+
+      const { error: objectivesError } = await supabase
+        .from('ai_course_objectives')
+        .insert(objectivesData);
+
+      if (objectivesError) throw objectivesError;
+
+      setGenerationProgress(100);
+      setGenerationStep('Course generation complete!');
+
+      // Create course object for the UI
+      const newCourse: Course = {
+        id: courseData.id,
+        name: courseData.name,
+        gradeLevel: courseData.grade_level,
+        objectives,
+        currentLesson: courseData.current_lesson,
+        totalLessons: courseData.total_lessons
+      };
+
+      setTimeout(() => {
         onCourseCreated(newCourse);
         onOpenChange(false);
         
@@ -129,8 +145,8 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({
         setGenerationProgress(0);
         setGenerationStep('');
         
-        toast.success('Course created successfully!');
-      }, totalTime);
+        toast.success('Course created and saved successfully!');
+      }, 1000);
 
     } catch (error) {
       console.error('Error creating course:', error);
@@ -171,9 +187,6 @@ const CreateCourseDialog: React.FC<CreateCourseDialogProps> = ({
                 </span>
               </div>
               <Progress value={generationProgress} className="h-2" />
-              <p className="text-xs text-gray-500 text-center">
-                Estimated time remaining: {Math.max(0, estimatedTime - Math.floor(generationProgress / 20))} seconds
-              </p>
             </div>
 
             {generationProgress === 100 && (

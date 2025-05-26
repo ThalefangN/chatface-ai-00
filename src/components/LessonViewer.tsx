@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,10 +40,44 @@ const LessonViewer: React.FC<LessonViewerProps> = ({
   const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
 
   useEffect(() => {
-    if (lessonParts.length === 0) {
+    loadLessonParts();
+  }, [lessonNumber, course.id]);
+
+  const loadLessonParts = async () => {
+    try {
+      // First, try to load existing lesson parts from database
+      const { data: existingParts, error } = await supabase
+        .from('ai_lesson_parts')
+        .select('*')
+        .eq('course_id', course.id)
+        .eq('lesson_number', lessonNumber)
+        .order('part_number');
+
+      if (error) throw error;
+
+      if (existingParts && existingParts.length > 0) {
+        // Load existing parts
+        const parts = new Array(totalParts).fill('');
+        existingParts.forEach(part => {
+          if (part.part_number <= totalParts) {
+            parts[part.part_number - 1] = `# ${part.title}\n\n${part.content}`;
+          }
+        });
+        setLessonParts(parts);
+        
+        // If we don't have the first part, generate it
+        if (!parts[0]) {
+          generateLessonPart(1);
+        }
+      } else {
+        // No existing parts, generate the first one
+        generateLessonPart(1);
+      }
+    } catch (error) {
+      console.error('Error loading lesson parts:', error);
       generateLessonPart(1);
     }
-  }, [lessonNumber]);
+  };
 
   const generateLessonPart = async (partNumber: number) => {
     setIsLoading(true);
@@ -134,15 +167,25 @@ End on a positive, encouraging note that builds confidence.`;
       
       let content = '';
       if (data && data.content) {
-        content = `# ${partTitle}\n\n${data.content}`;
+        content = data.content;
+        
+        // Save to database
+        await supabase.from('ai_lesson_parts').insert({
+          course_id: course.id,
+          lesson_number: lessonNumber,
+          part_number: partNumber,
+          title: partTitle,
+          content: content
+        });
       } else {
         // Fallback content
         content = generateFallbackContent(partNumber, partTitle, objective);
       }
 
+      const fullContent = `# ${partTitle}\n\n${content}`;
       setLessonParts(prev => {
         const newParts = [...prev];
-        newParts[partNumber - 1] = content;
+        newParts[partNumber - 1] = fullContent;
         return newParts;
       });
     } catch (error) {
@@ -151,9 +194,10 @@ End on a positive, encouraging note that builds confidence.`;
       
       // Generate fallback content
       const fallbackContent = generateFallbackContent(partNumber, getPartTitle(partNumber), objective);
+      const fullContent = `# ${getPartTitle(partNumber)}\n\n${fallbackContent}`;
       setLessonParts(prev => {
         const newParts = [...prev];
-        newParts[partNumber - 1] = fallbackContent;
+        newParts[partNumber - 1] = fullContent;
         return newParts;
       });
     } finally {
@@ -173,9 +217,7 @@ End on a positive, encouraging note that builds confidence.`;
   };
 
   const generateFallbackContent = (partNumber: number, partTitle: string, objective: string) => {
-    const content = `# ${partTitle}
-
-**Welcome to Part ${partNumber} of your lesson!**
+    const content = `**Welcome to Part ${partNumber} of your lesson!**
 
 Hello students! Let's continue exploring **${objective.toLowerCase()}** together.
 
@@ -223,10 +265,21 @@ Keep up the excellent work!`;
     }
   };
 
-  const handleQuizComplete = (passed: boolean) => {
+  const handleQuizComplete = async (passed: boolean) => {
     if (passed) {
       setShowQuiz(false);
+      
+      // Update current lesson in database
       if (lessonNumber < course.totalLessons) {
+        try {
+          await supabase
+            .from('ai_courses')
+            .update({ current_lesson: lessonNumber + 1 })
+            .eq('id', course.id);
+        } catch (error) {
+          console.error('Error updating lesson progress:', error);
+        }
+        
         onNextLesson(lessonNumber + 1);
         toast.success('Great job! Moving to the next lesson.');
       } else {
@@ -269,13 +322,13 @@ Keep up the excellent work!`;
 
   const formatLessonContent = (content: string) => {
     return content
-      .replace(/#{1}\s/g, '<h1 class="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-4 mt-6">') // Main headings
-      .replace(/#{2}\s/g, '<h2 class="text-xl font-semibold text-green-700 dark:text-green-400 mb-3 mt-5">') // Subheadings
-      .replace(/#{3}\s/g, '<h3 class="text-lg font-medium text-purple-600 dark:text-purple-400 mb-2 mt-4">') // Sub-subheadings
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>') // Bold text
-      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>') // Italic text
-      .replace(/\n\n/g, '</p><p class="mb-3 leading-relaxed">') // Paragraphs
-      .replace(/\n/g, '<br/>'); // Line breaks
+      .replace(/#{1}\s/g, '<h1 class="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-4 mt-6">') 
+      .replace(/#{2}\s/g, '<h2 class="text-xl font-semibold text-green-700 dark:text-green-400 mb-3 mt-5">') 
+      .replace(/#{3}\s/g, '<h3 class="text-lg font-medium text-purple-600 dark:text-purple-400 mb-2 mt-4">') 
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>') 
+      .replace(/\*(.*?)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>') 
+      .replace(/\n\n/g, '</p><p class="mb-3 leading-relaxed">') 
+      .replace(/\n/g, '<br/>'); 
   };
 
   if (showQuiz) {
