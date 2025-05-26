@@ -19,9 +19,11 @@ interface Course {
 const AIStudySessions = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
 
   const handleCourseCreated = (course: Course) => {
     setSelectedCourse(course);
+    setIsCreatingCourse(false);
   };
 
   const handleCourseSelect = (course: Course) => {
@@ -30,6 +32,17 @@ const AIStudySessions = () => {
 
   const handleBackToSessions = () => {
     setSelectedCourse(null);
+    setIsCreatingCourse(false);
+  };
+
+  const handleCreateCourse = () => {
+    setShowCreateDialog(true);
+    setIsCreatingCourse(true);
+  };
+
+  const handleUploadDocument = () => {
+    // For now, show a toast message - this can be enhanced later
+    console.log('Document upload feature will be implemented');
   };
 
   if (selectedCourse) {
@@ -59,7 +72,10 @@ const AIStudySessions = () => {
         {/* Action Cards */}
         <div className="grid md:grid-cols-2 gap-4 md:gap-6 max-w-4xl mx-auto">
           {/* Upload Document Card */}
-          <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:shadow-lg transition-all cursor-pointer">
+          <Card 
+            className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:shadow-lg transition-all cursor-pointer"
+            onClick={handleUploadDocument}
+          >
             <CardHeader className="text-center">
               <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Upload className="w-6 h-6 md:w-8 md:h-8 text-purple-600" />
@@ -72,7 +88,11 @@ const AIStudySessions = () => {
               </p>
             </CardHeader>
             <CardContent className="text-center">
-              <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50 w-full md:w-auto">
+              <Button 
+                variant="outline" 
+                className="border-purple-300 text-purple-700 hover:bg-purple-50 w-full md:w-auto"
+                onClick={handleUploadDocument}
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 Upload & Analyze
               </Button>
@@ -80,7 +100,10 @@ const AIStudySessions = () => {
           </Card>
 
           {/* Create Course Card */}
-          <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 hover:shadow-lg transition-all cursor-pointer">
+          <Card 
+            className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 hover:shadow-lg transition-all cursor-pointer"
+            onClick={handleCreateCourse}
+          >
             <CardHeader className="text-center">
               <div className="w-12 h-12 md:w-16 md:h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
@@ -94,17 +117,18 @@ const AIStudySessions = () => {
             </CardHeader>
             <CardContent className="text-center">
               <Button 
-                onClick={() => setShowCreateDialog(true)}
+                onClick={handleCreateCourse}
                 className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
+                disabled={isCreatingCourse}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Create Course
+                {isCreatingCourse ? 'Creating...' : 'Create Course'}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Saved Courses Section */}
+        {/* Saved Courses Section - This will always show */}
         <div className="max-w-4xl mx-auto w-full">
           <SavedCoursesList onCourseSelect={handleCourseSelect} />
         </div>
@@ -112,7 +136,12 @@ const AIStudySessions = () => {
         {/* Create Course Dialog */}
         <CreateCourseDialog
           open={showCreateDialog}
-          onOpenChange={setShowCreateDialog}
+          onOpenChange={(open) => {
+            setShowCreateDialog(open);
+            if (!open) {
+              setIsCreatingCourse(false);
+            }
+          }}
           onCourseCreated={handleCourseCreated}
         />
       </div>

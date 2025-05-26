@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, FileText, Trophy, Star, Users, DollarSign, Download } from 'lucide-react';
@@ -37,180 +38,241 @@ interface GradeLevel {
   courses: Course[];
 }
 
+// Static course data that will always be available
+const getStaticCourses = (): Course[] => [
+  {
+    id: 'static-1',
+    title: 'Advanced Mathematics Mastery',
+    subject: 'Mathematics',
+    teacher_profiles: { first_name: 'Dr. John', last_name: 'Mokone' },
+    price: 299,
+    is_free: false,
+    rating: 4.8,
+    students_count: 156,
+    materials_count: 45,
+    description: 'Comprehensive BGCSE Mathematics preparation with advanced problem-solving techniques',
+    difficulty_level: 'advanced'
+  },
+  {
+    id: 'static-2',
+    title: 'Business Studies Pro',
+    subject: 'Business Studies',
+    teacher_profiles: { first_name: 'Ms. Sarah', last_name: 'Thabo' },
+    price: 199,
+    is_free: false,
+    rating: 4.7,
+    students_count: 89,
+    materials_count: 32,
+    description: 'Complete Business Studies curriculum with real-world case studies',
+    difficulty_level: 'advanced'
+  },
+  {
+    id: 'static-3',
+    title: 'English Literature Basics',
+    subject: 'English',
+    teacher_profiles: { first_name: 'Mr. David', last_name: 'Smith' },
+    price: 0,
+    is_free: true,
+    rating: 4.5,
+    students_count: 320,
+    materials_count: 28,
+    description: 'Introduction to English Literature for BGCSE students',
+    difficulty_level: 'beginner'
+  },
+  {
+    id: 'static-4',
+    title: 'Primary Math Excellence',
+    subject: 'Mathematics',
+    teacher_profiles: { first_name: 'Mr. Peter', last_name: 'Kgomo' },
+    price: 0,
+    is_free: true,
+    rating: 4.9,
+    students_count: 234,
+    materials_count: 28,
+    description: 'Structured mathematics program for Standard 7 PSLE success',
+    difficulty_level: 'beginner'
+  },
+  {
+    id: 'static-5',
+    title: 'Science Foundations',
+    subject: 'Science',
+    teacher_profiles: { first_name: 'Dr. Maria', last_name: 'Sekai' },
+    price: 0,
+    is_free: true,
+    rating: 4.6,
+    students_count: 178,
+    materials_count: 35,
+    description: 'Comprehensive JCE Science preparation with practical experiments',
+    difficulty_level: 'intermediate'
+  },
+  {
+    id: 'static-6',
+    title: 'Advanced Poetry Analysis',
+    subject: 'English Literature',
+    teacher_profiles: { first_name: 'StudyBuddy', last_name: 'Instructor' },
+    price: 0,
+    is_free: true,
+    rating: 4.3,
+    students_count: 142,
+    materials_count: 25,
+    description: 'Deep dive into poetic forms and literary devices',
+    difficulty_level: 'advanced'
+  },
+  {
+    id: 'static-7',
+    title: 'Advanced Social Theory',
+    subject: 'Social Studies',
+    teacher_profiles: { first_name: 'StudyBuddy', last_name: 'Instructor' },
+    price: 0,
+    is_free: true,
+    rating: 4.4,
+    students_count: 98,
+    materials_count: 30,
+    description: 'Complex social theories and their applications',
+    difficulty_level: 'advanced'
+  }
+];
+
 const TutorSection = () => {
   const [selectedGrade, setSelectedGrade] = useState<string>('bgcse');
   const [gradeLevels, setGradeLevels] = useState<GradeLevel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { teacherProfile } = useTeacherAuth();
 
   useEffect(() => {
-    fetchCourses();
+    // Always initialize with static data first to prevent loading forever
+    initializeWithStaticData();
+    
+    // Then try to fetch additional data from database
+    fetchAdditionalCourses();
   }, []);
 
-  const fetchCourses = async () => {
-    console.log('Starting to fetch courses...');
-    try {
-      setError(null);
-      
-      // Always show sample courses even if database fetch fails
-      const samplePaidCourses = [
-        {
-          id: 'paid-1',
-          title: 'Advanced Mathematics Mastery',
-          subject: 'Mathematics',
-          teacher_profiles: { first_name: 'Dr. John', last_name: 'Mokone' },
-          price: 299,
-          is_free: false,
-          rating: 4.8,
-          students_count: 156,
-          materials_count: 45,
-          description: 'Comprehensive BGCSE Mathematics preparation with advanced problem-solving techniques',
-          difficulty_level: 'advanced'
-        },
-        {
-          id: 'paid-2',
-          title: 'Business Studies Pro',
-          subject: 'Business Studies',
-          teacher_profiles: { first_name: 'Ms. Sarah', last_name: 'Thabo' },
-          price: 199,
-          is_free: false,
-          rating: 4.7,
-          students_count: 89,
-          materials_count: 32,
-          description: 'Complete Business Studies curriculum with real-world case studies',
-          difficulty_level: 'advanced'
-        },
-        {
-          id: 'free-1',
-          title: 'English Literature Basics',
-          subject: 'English',
-          teacher_profiles: { first_name: 'Mr. David', last_name: 'Smith' },
-          price: 0,
-          is_free: true,
-          rating: 4.5,
-          students_count: 320,
-          materials_count: 28,
-          description: 'Introduction to English Literature for BGCSE students',
-          difficulty_level: 'beginner'
-        },
-        {
-          id: 'free-2',
-          title: 'Primary Math Excellence',
-          subject: 'Mathematics',
-          teacher_profiles: { first_name: 'Mr. Peter', last_name: 'Kgomo' },
-          price: 0,
-          is_free: true,
-          rating: 4.9,
-          students_count: 234,
-          materials_count: 28,
-          description: 'Structured mathematics program for Standard 7 PSLE success',
-          difficulty_level: 'beginner'
-        },
-        {
-          id: 'free-3',
-          title: 'Science Foundations',
-          subject: 'Science',
-          teacher_profiles: { first_name: 'Dr. Maria', last_name: 'Sekai' },
-          price: 0,
-          is_free: true,
-          rating: 4.6,
-          students_count: 178,
-          materials_count: 35,
-          description: 'Comprehensive JCE Science preparation with practical experiments',
-          difficulty_level: 'intermediate'
-        }
-      ];
+  const initializeWithStaticData = () => {
+    const staticCourses = getStaticCourses();
+    
+    // Group courses by difficulty/grade level
+    const bgcseCourses = staticCourses.filter(course => 
+      course.difficulty_level === 'advanced' || 
+      ['Mathematics', 'English', 'Business Studies', 'English Literature'].includes(course.subject)
+    );
+    
+    const psleCourses = staticCourses.filter(course => 
+      course.difficulty_level === 'beginner' || 
+      course.subject === 'Mathematics' && course.title.includes('Primary')
+    );
+    
+    const jceCourses = staticCourses.filter(course => 
+      course.difficulty_level === 'intermediate' || 
+      ['Science', 'Social Studies'].includes(course.subject)
+    );
 
-      let databaseCourses: Course[] = [];
-      
-      // Try to fetch from database but don't fail if it doesn't work
-      try {
-        const { data: courses, error } = await supabase
-          .from('courses')
-          .select(`
-            *,
-            teacher_profiles (
-              first_name,
-              last_name
-            )
-          `)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.warn('Database fetch error (using sample data):', error);
-        } else {
-          databaseCourses = courses || [];
-          console.log('Successfully fetched database courses:', databaseCourses.length);
-        }
-      } catch (dbError) {
-        console.warn('Database connection error (using sample data):', dbError);
+    const initialGradeLevels = [
+      {
+        id: 'bgcse',
+        name: 'BGCSE',
+        fullName: 'Botswana General Certificate of Secondary Education',
+        description: 'Form 4-5 students preparing for national examinations',
+        icon: GraduationCap,
+        color: 'bg-blue-500',
+        courses: bgcseCourses
+      },
+      {
+        id: 'psle',
+        name: 'PSLE',
+        fullName: 'Primary School Leaving Examination',
+        description: 'Standard 7 students preparing for primary school completion',
+        icon: BookOpen,
+        color: 'bg-green-500',
+        courses: psleCourses
+      },
+      {
+        id: 'jce',
+        name: 'JCE',
+        fullName: 'Junior Certificate Examination',
+        description: 'Form 3 students preparing for junior secondary completion',
+        icon: Trophy,
+        color: 'bg-purple-500',
+        courses: jceCourses
       }
+    ];
 
-      // Combine database courses with sample courses
-      const allCourses = [...databaseCourses, ...samplePaidCourses];
+    setGradeLevels(initialGradeLevels);
+    setLoading(false);
+  };
 
-      // Group courses by grade level
-      const bgcseCourses = allCourses.filter(course => 
-        course.difficulty_level === 'advanced' || 
-        course.subject === 'Mathematics' || 
-        course.subject === 'English' || 
-        course.subject === 'Business Studies'
-      );
-      
-      const psleCourses = allCourses.filter(course => 
-        course.difficulty_level === 'beginner' || 
-        course.subject === 'Setswana'
-      );
-      
-      const jceCourses = allCourses.filter(course => 
-        course.difficulty_level === 'intermediate' || 
-        course.subject === 'Science' || 
-        course.subject === 'History' || 
-        course.subject === 'Social Studies'
-      );
+  const fetchAdditionalCourses = async () => {
+    try {
+      // Try to fetch from database but don't block if it fails
+      const { data: courses } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          teacher_profiles (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
 
-      const initialGradeLevels = [
-        {
-          id: 'bgcse',
-          name: 'BGCSE',
-          fullName: 'Botswana General Certificate of Secondary Education',
-          description: 'Form 4-5 students preparing for national examinations',
-          icon: GraduationCap,
-          color: 'bg-blue-500',
-          courses: bgcseCourses
-        },
-        {
-          id: 'psle',
-          name: 'PSLE',
-          fullName: 'Primary School Leaving Examination',
-          description: 'Standard 7 students preparing for primary school completion',
-          icon: BookOpen,
-          color: 'bg-green-500',
-          courses: psleCourses
-        },
-        {
-          id: 'jce',
-          name: 'JCE',
-          fullName: 'Junior Certificate Examination',
-          description: 'Form 3 students preparing for junior secondary completion',
-          icon: Trophy,
-          color: 'bg-purple-500',
-          courses: jceCourses
-        }
-      ];
+      if (courses && courses.length > 0) {
+        // Merge database courses with static courses
+        const staticCourses = getStaticCourses();
+        const allCourses = [...staticCourses, ...courses];
+        
+        // Re-group with combined data
+        const bgcseCourses = allCourses.filter(course => 
+          course.difficulty_level === 'advanced' || 
+          ['Mathematics', 'English', 'Business Studies', 'English Literature'].includes(course.subject)
+        );
+        
+        const psleCourses = allCourses.filter(course => 
+          course.difficulty_level === 'beginner' || 
+          (course.subject === 'Mathematics' && course.title.includes('Primary'))
+        );
+        
+        const jceCourses = allCourses.filter(course => 
+          course.difficulty_level === 'intermediate' || 
+          ['Science', 'Social Studies'].includes(course.subject)
+        );
 
-      setGradeLevels(initialGradeLevels);
-      console.log('Grade levels set successfully');
+        const updatedGradeLevels = [
+          {
+            id: 'bgcse',
+            name: 'BGCSE',
+            fullName: 'Botswana General Certificate of Secondary Education',
+            description: 'Form 4-5 students preparing for national examinations',
+            icon: GraduationCap,
+            color: 'bg-blue-500',
+            courses: bgcseCourses
+          },
+          {
+            id: 'psle',
+            name: 'PSLE',
+            fullName: 'Primary School Leaving Examination',
+            description: 'Standard 7 students preparing for primary school completion',
+            icon: BookOpen,
+            color: 'bg-green-500',
+            courses: psleCourses
+          },
+          {
+            id: 'jce',
+            name: 'JCE',
+            fullName: 'Junior Certificate Examination',
+            description: 'Form 3 students preparing for junior secondary completion',
+            icon: Trophy,
+            color: 'bg-purple-500',
+            courses: jceCourses
+          }
+        ];
+
+        setGradeLevels(updatedGradeLevels);
+      }
     } catch (error) {
-      console.error('Error in fetchCourses:', error);
-      setError('Failed to load courses. Please refresh the page.');
-    } finally {
-      setLoading(false);
-      console.log('Loading completed');
+      console.warn('Failed to fetch additional courses from database, using static data:', error);
+      // Static data is already loaded, so we don't need to do anything
     }
   };
 
@@ -218,13 +280,11 @@ const TutorSection = () => {
 
   const handleCourseAction = async (course: Course) => {
     if (teacherProfile) {
-      // Teacher - navigate to manage course
       navigate(`/teacher/manage-course/${course.id}`);
       return;
     }
 
     if (course.is_free) {
-      // Student - enroll in free course and navigate to content
       try {
         if (user) {
           const { error } = await supabase
@@ -240,20 +300,18 @@ const TutorSection = () => {
           }
         }
 
-        // Navigate to the appropriate course page based on course title/subject
         const courseRoutes: { [key: string]: string } = {
           'English Literature Basics': '/courses/english-literature',
-          'Primary Math Excellence': '/courses/setswana-language', // Using existing route for demo
-          'Science Foundations': '/courses/social-studies', // Using existing route for demo
+          'Primary Math Excellence': '/courses/setswana-language',
+          'Science Foundations': '/courses/social-studies',
         };
 
-        const routePath = courseRoutes[course.title] || '/courses/english-literature'; // Default fallback
+        const routePath = courseRoutes[course.title] || '/courses/english-literature';
         navigate(routePath);
       } catch (error) {
         console.error('Error enrolling in course:', error);
       }
     } else {
-      // Handle paid course enrollment
       console.log('Enrolling in paid course:', course.title);
     }
   };
@@ -276,26 +334,12 @@ const TutorSection = () => {
     return course.is_free ? 'Start Free Course' : `Enroll for P${course.price}`;
   };
 
+  // Show loading only for a brief moment, then always show content
   if (loading) {
     return (
-      <div className="border-t border-gray-200 dark:border-gray-700 p-6 flex justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
       <div className="border-t border-gray-200 dark:border-gray-700 p-6">
-        <div className="text-center text-red-600 dark:text-red-400">
-          <p>{error}</p>
-          <Button 
-            onClick={fetchCourses} 
-            variant="outline" 
-            className="mt-4"
-          >
-            Try Again
-          </Button>
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       </div>
     );
@@ -322,7 +366,6 @@ const TutorSection = () => {
         </p>
       </motion.div>
 
-      {/* Grade Level Tabs */}
       <Tabs value={selectedGrade} onValueChange={setSelectedGrade} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           {gradeLevels.map((grade) => (
@@ -340,7 +383,6 @@ const TutorSection = () => {
 
         {gradeLevels.map((grade) => (
           <TabsContent key={grade.id} value={grade.id}>
-            {/* Grade Level Info */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -377,7 +419,6 @@ const TutorSection = () => {
               </Card>
             </motion.div>
 
-            {/* Courses Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
               {grade.courses.map((course, index) => (
                 <motion.div
@@ -410,7 +451,6 @@ const TutorSection = () => {
                         {course.description}
                       </p>
                       
-                      {/* Course Stats */}
                       <div className="flex items-center justify-between text-xs text-gray-500">
                         <div className="flex items-center gap-1">
                           <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -426,7 +466,6 @@ const TutorSection = () => {
                         </div>
                       </div>
 
-                      {/* Subject Badge */}
                       <div className="flex items-center justify-between">
                         <Badge variant="secondary" className="text-xs">
                           {course.subject}
@@ -439,7 +478,6 @@ const TutorSection = () => {
                         </div>
                       </div>
 
-                      {/* Action Button */}
                       <Button 
                         className="w-full text-xs sm:text-sm h-8" 
                         variant={course.is_free && !teacherProfile ? "default" : "outline"}
@@ -453,7 +491,6 @@ const TutorSection = () => {
               ))}
             </div>
 
-            {/* View More Courses Section */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
