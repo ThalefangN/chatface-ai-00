@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -33,6 +32,7 @@ const AiChat = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -43,22 +43,48 @@ const AiChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessageToAI = async (messageContent: string) => {
+  const sendMessageToAI = async (messageContent: string, attempt: number = 0) => {
+    const maxRetries = 3;
+    
     try {
+      console.log(`Sending message to AI (attempt ${attempt + 1}): "${messageContent.substring(0, 50)}..."`);
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: { message: messageContent }
+        body: { message: messageContent },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (error) throw error;
 
+      console.log('AI response received successfully');
+      setRetryCount(0); // Reset retry count on success
+
       return {
-        content: data.content,
-        hasFollowUpButtons: data.hasFollowUpButtons
+        content: data.content || "I received your message and I'm here to help! Could you please rephrase your question or try asking something else?",
+        hasFollowUpButtons: data.hasFollowUpButtons || false
       };
     } catch (error) {
-      console.error('Error calling AI chat function:', error);
+      console.error(`Error calling AI chat function (attempt ${attempt + 1}):`, error);
+      
+      if (attempt < maxRetries - 1) {
+        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return sendMessageToAI(messageContent, attempt + 1);
+      }
+      
+      console.error('Max retries reached for AI message');
+      setRetryCount(prev => prev + 1);
+      
+      // Return a helpful fallback response instead of an error
       return {
-        content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. In the meantime, feel free to ask me about any academic subjects you need help with!",
+        content: "I'm having trouble connecting right now, but I'm still here to help! While I work on reconnecting, feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nTry asking your question again in a moment!",
         hasFollowUpButtons: false
       };
     }
@@ -92,7 +118,18 @@ const AiChat = () => {
       
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      toast.error('Failed to get AI response. Please try again.');
+      console.error('Unexpected error in handleSendMessage:', error);
+      
+      // Add fallback message even on error
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I encountered an issue, but I'm still here to help! Please try asking your question again.",
+        isAI: true,
+        timestamp: new Date(),
+        hasFollowUpButtons: false
+      };
+      
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +159,17 @@ const AiChat = () => {
       
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      toast.error('Failed to get AI response. Please try again.');
+      console.error('Error in handleFollowUpClick:', error);
+      
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm having a brief connection issue. Please try that again in a moment!",
+        isAI: true,
+        timestamp: new Date(),
+        hasFollowUpButtons: false
+      };
+      
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +201,17 @@ const AiChat = () => {
       
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      toast.error('Failed to get AI response. Please try again.');
+      console.error('Error in handleQuickPrompt:', error);
+      
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Let me help you with that! I'm having a small connection hiccup, but please try again.",
+        isAI: true,
+        timestamp: new Date(),
+        hasFollowUpButtons: false
+      };
+      
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -173,7 +230,7 @@ const AiChat = () => {
     { icon: Lightbulb, text: "Give me study tips", color: "bg-yellow-500" },
     { icon: Brain, text: "Create a practice quiz", color: "bg-purple-500" }
   ];
-
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -184,7 +241,7 @@ const AiChat = () => {
             <h1 className="text-lg font-semibold">Study Chat</h1>
             <Badge variant="secondary" className="ml-auto">
               <Bot className="h-3 w-3 mr-1" />
-              AI Assistant
+              AI Assistant {retryCount > 0 && `(Reconnecting...)`}
             </Badge>
           </header>
           
@@ -290,6 +347,7 @@ const AiChat = () => {
                           <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                           <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">AI is thinking...</p>
                       </CardContent>
                     </Card>
                   </div>

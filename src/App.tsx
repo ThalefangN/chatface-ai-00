@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,7 +34,7 @@ import AddContent from "./pages/AddContent";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TeacherProtectedRoute from "./components/TeacherProtectedRoute";
-import CourseViewer from "./components/CourseViewer";
+import CourseViewerWrapper from "./components/CourseViewerWrapper";
 
 const queryClient = new QueryClient();
 
@@ -71,8 +70,8 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/audio-overview" element={<ProtectedRoute><AudioOverview /></ProtectedRoute>} />
                 <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-                <Route path="/courses/view/:courseId" element={<ProtectedRoute><CourseViewer /></ProtectedRoute>} />
-                <Route path="/courses/enroll/:courseId" element={<ProtectedRoute><CourseViewer /></ProtectedRoute>} />
+                <Route path="/courses/view/:courseId" element={<ProtectedRoute><CourseViewerWrapper /></ProtectedRoute>} />
+                <Route path="/courses/enroll/:courseId" element={<ProtectedRoute><CourseViewerWrapper /></ProtectedRoute>} />
                 <Route path="/courses/english-literature" element={<ProtectedRoute><EnglishLiterature /></ProtectedRoute>} />
                 <Route path="/courses/setswana-language" element={<ProtectedRoute><SetswanaLanguage /></ProtectedRoute>} />
                 <Route path="/courses/social-studies" element={<ProtectedRoute><SocialStudies /></ProtectedRoute>} />
