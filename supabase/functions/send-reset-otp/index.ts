@@ -47,9 +47,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Failed to store OTP');
     }
 
-    // Send OTP email
+    // Send OTP email using Resend's verified domain
     const emailResponse = await resend.emails.send({
-      from: "StudyBuddy <noreply@studybuddy.co.bw>",
+      from: "StudyBuddy <onboarding@resend.dev>",
       to: [email],
       subject: "StudyBuddy - Password Reset OTP",
       html: `
