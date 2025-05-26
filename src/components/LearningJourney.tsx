@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Target, Users, RotateCcw, Trophy, Brain, ArrowRight } from 'lucide-react';
@@ -12,6 +13,15 @@ const LearningJourney = () => {
   const learningSteps = [
     {
       id: 1,
+      title: 'AI Study Sessions',
+      description: 'Create personalized courses and upload documents for AI-powered learning assistance',
+      icon: Users,
+      color: 'bg-yellow-500',
+      progress: 50,
+      route: 'practice'
+    },
+    {
+      id: 2,
       title: 'Assessment',
       description: 'Evaluate your current knowledge and identify learning gaps',
       icon: Target,
@@ -20,22 +30,13 @@ const LearningJourney = () => {
       route: 'assessment'
     },
     {
-      id: 2,
+      id: 3,
       title: 'Foundation',
       description: 'Build strong fundamentals with core concepts and principles',
       icon: BookOpen,
       color: 'bg-green-500',
       progress: 75,
       route: 'foundation'
-    },
-    {
-      id: 3,
-      title: 'AI Study Sessions',
-      description: 'Create personalized courses and upload documents for AI-powered learning assistance',
-      icon: Users,
-      color: 'bg-yellow-500',
-      progress: 50,
-      route: 'practice'
     },
     {
       id: 4,
@@ -84,7 +85,7 @@ const LearningJourney = () => {
           {/* Learning Steps Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {learningSteps.map((step, index) => {
-              // Special layout for the last row (Review and Mastery)
+              // Special layout for the last row (Review and Notes/Topic Summary)
               const isLastRow = index >= 3;
               const gridColClass = isLastRow && index === 3 ? 'lg:col-span-2' : isLastRow && index === 4 ? 'lg:col-span-1' : '';
               

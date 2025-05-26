@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -11,7 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 import { 
   User, 
   Mail, 
@@ -22,13 +26,14 @@ import {
   Clock,
   Bell,
   Shield,
-  Palette,
   Settings as SettingsIcon,
-  Edit
+  Edit,
+  Camera
 } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.user_metadata?.full_name || 'Student User',
@@ -36,7 +41,8 @@ const Profile = () => {
     bio: 'Passionate learner exploring mathematics and science',
     grade: '12th Grade',
     school: 'Virtual Academy',
-    subjects: ['Mathematics', 'Physics', 'Chemistry']
+    subjects: ['Mathematics', 'Physics', 'Chemistry'],
+    avatarUrl: user?.user_metadata?.avatar_url || ''
   });
 
   const [settings, setSettings] = useState({
@@ -61,6 +67,32 @@ const Profile = () => {
     { name: 'Perfect Score', description: 'Get 100% on any assessment', earned: false }
   ];
 
+  const gradeOptions = [
+    'PSLE',
+    'JCE',
+    'BGCSE',
+    '10th Grade',
+    '11th Grade',
+    '12th Grade'
+  ];
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Create a preview URL for the uploaded image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setProfile(prev => ({ ...prev, avatarUrl: result }));
+        toast({
+          title: "Photo uploaded",
+          description: "Your profile photo has been updated",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -84,12 +116,25 @@ const Profile = () => {
                 <Card>
                   <CardHeader>
                     <div className="flex flex-col items-center sm:flex-row sm:items-center gap-4">
-                      <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-                        <AvatarImage src={user?.user_metadata?.avatar_url} />
-                        <AvatarFallback className="text-lg">
-                          {profile.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                          <AvatarImage src={profile.avatarUrl} />
+                          <AvatarFallback className="text-lg">
+                            {profile.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isEditing && (
+                          <label className="absolute -bottom-1 -right-1 bg-blue-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
+                            <Camera className="h-3 w-3" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
                       <div className="flex-1 space-y-2 text-center sm:text-left">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                           <CardTitle className="text-lg sm:text-xl">{profile.name}</CardTitle>
@@ -135,12 +180,29 @@ const Profile = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="grade">Grade Level</Label>
-                        <Input
-                          id="grade"
-                          value={profile.grade}
-                          onChange={(e) => setProfile({...profile, grade: e.target.value})}
-                          disabled={!isEditing}
-                        />
+                        {isEditing ? (
+                          <Select 
+                            value={profile.grade} 
+                            onValueChange={(value) => setProfile({...profile, grade: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select grade level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {gradeOptions.map((grade) => (
+                                <SelectItem key={grade} value={grade}>
+                                  {grade}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            id="grade"
+                            value={profile.grade}
+                            disabled={true}
+                          />
+                        )}
                       </div>
                     </div>
                     
@@ -394,9 +456,7 @@ const Profile = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Button variant="outline" className="w-full">
-                      Change Password
-                    </Button>
+                    <ChangePasswordDialog />
                     <Button variant="outline" className="w-full">
                       Download My Data
                     </Button>
