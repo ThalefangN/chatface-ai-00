@@ -6,6 +6,7 @@ import { FileText, BookOpen, Upload, Plus } from 'lucide-react';
 import CreateCourseDialog from '@/components/CreateCourseDialog';
 import CourseViewer from '@/components/CourseViewer';
 import SavedCoursesList from '@/components/SavedCoursesList';
+import { toast } from 'sonner';
 
 interface Course {
   id: string;
@@ -41,7 +42,7 @@ const AIStudySessions = () => {
   };
 
   const handleUploadDocument = () => {
-    // For now, show a toast message - this can be enhanced later
+    toast.info('Document upload feature will be available soon');
     console.log('Document upload feature will be implemented');
   };
 
@@ -128,7 +129,7 @@ const AIStudySessions = () => {
           </Card>
         </div>
 
-        {/* Saved Courses Section - This will always show */}
+        {/* Saved Courses Section */}
         <div className="max-w-4xl mx-auto w-full">
           <SavedCoursesList onCourseSelect={handleCourseSelect} />
         </div>

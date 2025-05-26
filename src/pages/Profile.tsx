@@ -34,26 +34,12 @@ const Profile = () => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   useEffect(() => {
-    // Add a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-        toast.error('Profile loading timed out. Please refresh the page.');
-      }
-    }, 10000); // 10 second timeout
-
     if (user) {
-      fetchProfile().finally(() => {
-        clearTimeout(loadingTimeout);
-      });
+      fetchProfile();
     } else {
-      // If no user, stop loading after a short delay
-      setTimeout(() => setLoading(false), 1000);
-      clearTimeout(loadingTimeout);
+      setLoading(false);
     }
-
-    return () => clearTimeout(loadingTimeout);
-  }, [user, loading]);
+  }, [user]);
 
   const fetchProfile = async () => {
     if (!user) {
@@ -68,68 +54,49 @@ const Profile = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
-        
-        // If profile doesn't exist, create a basic one
-        if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating basic profile...');
-          const basicProfile = {
-            id: user.id,
-            first_name: '',
-            last_name: '',
-            email: user.email || '',
-            avatar_url: '',
-            bio: '',
-            grade_level: '',
-            school: '',
-            subjects: [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          // Try to create the profile
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert(basicProfile)
-            .select()
-            .single();
-            
-          if (createError) {
-            console.error('Error creating profile:', createError);
-            setProfile(basicProfile); // Use basic profile even if creation fails
-          } else {
-            setProfile(newProfile);
-          }
-        } else {
-          toast.error('Failed to load profile');
-          // Create a fallback profile from user data
-          setProfile({
-            id: user.id,
-            first_name: '',
-            last_name: '',
-            email: user.email || '',
-            avatar_url: '',
-            bio: '',
-            grade_level: '',
-            school: '',
-            subjects: [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        }
-        return;
+        toast.error('Failed to load profile');
       }
 
-      console.log('Profile fetched successfully:', data);
-      setProfile(data);
+      if (data) {
+        console.log('Profile fetched successfully:', data);
+        setProfile(data);
+      } else {
+        // Create a basic profile if none exists
+        console.log('No profile found, creating basic profile...');
+        const basicProfile = {
+          id: user.id,
+          first_name: '',
+          last_name: '',
+          email: user.email || '',
+          avatar_url: '',
+          bio: '',
+          grade_level: '',
+          school: '',
+          subjects: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        // Try to create the profile
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert(basicProfile)
+          .select()
+          .maybeSingle();
+          
+        if (createError) {
+          console.warn('Could not create profile:', createError);
+        }
+        
+        setProfile(newProfile || basicProfile);
+      }
     } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile');
-      
-      // Fallback profile
+      console.error('Error in fetchProfile:', error);
+      // Create fallback profile
       setProfile({
         id: user.id,
         first_name: '',
@@ -152,7 +119,6 @@ const Profile = () => {
     setProfile(updatedProfile);
   };
 
-  // Ensure we have user before rendering
   if (!user) {
     return (
       <SidebarProvider>
