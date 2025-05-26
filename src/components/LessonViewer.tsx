@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, ArrowRight, BookOpen, Brain, Clock, Send, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, Brain, Clock, Send, MessageSquare, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import QuizPage from '@/components/QuizPage';
@@ -377,9 +378,13 @@ Provide a clear, encouraging response that helps the student understand the conc
 
       if (error) throw error;
       
-      toast.success('Great question! Here\'s my response:', {
+      const toastId = toast.success('Great question! Here\'s my response:', {
         description: data?.content || 'I received your question and will help you understand this concept better.',
-        duration: 8000,
+        duration: 10000,
+        action: {
+          label: <X className="w-4 h-4" />,
+          onClick: () => toast.dismiss(toastId),
+        },
       });
       
       setQuestion('');

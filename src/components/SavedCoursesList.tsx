@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Play, Calendar, Clock } from 'lucide-react';
+import { BookOpen, Play, Calendar, Clock, CheckCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -16,6 +16,8 @@ interface SavedCourse {
   current_lesson: number;
   created_at: string;
   objectives: string[];
+  hasGeneratedContent?: boolean;
+  completedLessons?: number[];
 }
 
 interface SavedCoursesListProps {
@@ -38,7 +40,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
         return;
       }
 
-      // Fetch courses with their objectives
+      // Fetch courses with their objectives and lesson content
       const { data: coursesData, error: coursesError } = await supabase
         .from('ai_courses')
         .select(`
@@ -50,15 +52,34 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
 
       if (coursesError) throw coursesError;
 
-      // Transform data to include objectives array
-      const transformedCourses = coursesData?.map(course => ({
-        ...course,
-        objectives: course.ai_course_objectives
-          ?.sort((a, b) => a.order_index - b.order_index)
-          .map(obj => obj.objective_text) || []
-      })) || [];
+      // For each course, check if it has generated lesson content
+      const coursesWithContent = await Promise.all(
+        (coursesData || []).map(async (course) => {
+          // Check for existing lesson parts
+          const { data: lessonParts } = await supabase
+            .from('ai_lesson_parts')
+            .select('lesson_number, part_number')
+            .eq('course_id', course.id);
 
-      setCourses(transformedCourses);
+          const hasGeneratedContent = lessonParts && lessonParts.length > 0;
+          
+          // Get unique lesson numbers that have content
+          const completedLessons = lessonParts 
+            ? [...new Set(lessonParts.map(part => part.lesson_number))]
+            : [];
+
+          return {
+            ...course,
+            objectives: course.ai_course_objectives
+              ?.sort((a, b) => a.order_index - b.order_index)
+              .map(obj => obj.objective_text) || [],
+            hasGeneratedContent,
+            completedLessons
+          };
+        })
+      );
+
+      setCourses(coursesWithContent);
     } catch (error) {
       console.error('Error fetching saved courses:', error);
       toast.error('Failed to load saved courses');
@@ -91,7 +112,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 w-full">
         <h3 className="text-lg font-semibold mb-4">Your Saved Courses</h3>
         <div className="grid gap-4">
           {[1, 2, 3].map(i => (
@@ -110,7 +131,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
 
   if (courses.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8 w-full">
         <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-600 mb-2">No Saved Courses</h3>
         <p className="text-gray-500 mb-4">Create your first AI-generated course to get started!</p>
@@ -119,7 +140,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <BookOpen className="w-5 h-5" />
         Your Saved Courses ({courses.length})
@@ -131,7 +152,12 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg mb-2">{course.name}</CardTitle>
+                  <CardTitle className="text-lg mb-2 flex items-center gap-2">
+                    {course.name}
+                    {course.hasGeneratedContent && (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    )}
+                  </CardTitle>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <Badge variant="secondary">{course.grade_level}</Badge>
                     <div className="flex items-center gap-1">
@@ -159,6 +185,12 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
                   <div>
                     {course.objectives.length} objectives
                   </div>
+                  {course.hasGeneratedContent && (
+                    <div className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="w-4 h-4" />
+                      {course.completedLessons?.length || 0} lessons generated
+                    </div>
+                  )}
                 </div>
                 
                 <div className="text-right">
@@ -180,7 +212,7 @@ const SavedCoursesList: React.FC<SavedCoursesListProps> = ({ onCourseSelect }) =
                 size="sm"
               >
                 <Play className="w-4 h-4 mr-2" />
-                Continue Studying
+                {course.hasGeneratedContent ? 'Continue Studying' : 'Start Learning'}
               </Button>
             </CardContent>
           </Card>
