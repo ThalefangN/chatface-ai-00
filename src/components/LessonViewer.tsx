@@ -241,6 +241,7 @@ Keep content focused and not too lengthy - this is part ${partNumber} of 5 parts
       toast.error('Failed to generate lesson content');
       
       // Generate fallback content
+      const objective = course.objectives[lessonNumber - 1] || 'Core concepts and fundamentals';
       const fallbackContent = generateFallbackContent(partNumber, getPartTitle(partNumber), objective);
       const fullContent = `# ${getPartTitle(partNumber)}\n\n${fallbackContent}`;
       setLessonParts(prev => {
