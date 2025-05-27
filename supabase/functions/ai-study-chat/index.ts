@@ -8,31 +8,19 @@ const corsHeaders = {
 
 // Function to clean markdown formatting from text
 function cleanMarkdownFormatting(text: string): string {
-  // Remove ** bold formatting
   let cleaned = text.replace(/\*\*(.*?)\*\*/g, '$1');
-  
-  // Remove ### headers
   cleaned = cleaned.replace(/###\s*/g, '');
-  
-  // Remove ## headers
   cleaned = cleaned.replace(/##\s*/g, '');
-  
-  // Remove # headers
   cleaned = cleaned.replace(/#\s*/g, '');
-  
-  // Clean up any remaining asterisks that might be used for emphasis
   cleaned = cleaned.replace(/\*(.*?)\*/g, '$1');
-  
   return cleaned;
 }
 
-// Function to clean and validate JSON content for assessment questions
+// Enhanced JSON cleaning function
 function cleanJsonContent(content: string): string {
   try {
-    // Remove any markdown formatting first
     let cleaned = cleanMarkdownFormatting(content);
     
-    // Remove any text before the first [ and after the last ]
     const startIndex = cleaned.indexOf('[');
     const endIndex = cleaned.lastIndexOf(']');
     
@@ -42,9 +30,7 @@ function cleanJsonContent(content: string): string {
       throw new Error('No valid JSON array found in response');
     }
 
-    // Fix incomplete JSON by checking if it ends properly
     if (!cleaned.endsWith(']')) {
-      // Find the last complete object
       let lastCompleteIndex = -1;
       let braceCount = 0;
       let inString = false;
@@ -85,19 +71,13 @@ function cleanJsonContent(content: string): string {
       }
     }
     
-    // Fix common JSON issues
     cleaned = cleaned
-      // Fix missing commas after closing braces/brackets
       .replace(/}\s*\n\s*{/g, '},\n  {')
       .replace(/]\s*\n\s*{/g, '],\n  {')
-      // Fix missing commas after string values
       .replace(/"\s*\n\s*"/g, '",\n    "')
-      // Fix missing commas after arrays
       .replace(/]\s*\n\s*}/g, ']\n  }')
-      // Remove trailing commas
       .replace(/,(\s*[}\]])/g, '$1');
     
-    // Try to parse and re-stringify to ensure valid JSON
     const parsed = JSON.parse(cleaned);
     
     if (!Array.isArray(parsed)) {
@@ -112,7 +92,6 @@ function cleanJsonContent(content: string): string {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -132,11 +111,11 @@ serve(async (req) => {
       throw new Error('AI service is not properly configured. Please contact support.')
     }
 
-    // Check if this is a request for assessment questions (JSON format)
     const isAssessmentRequest = message.includes('Generate exactly') && message.includes('questions for the subject')
 
     console.log('Making request to OpenAI API...')
 
+    // Enhanced request with better parameters for reliability
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -158,7 +137,10 @@ serve(async (req) => {
           }
         ],
         temperature: 0.7,
-        max_tokens: 4000, // Increased token limit to prevent truncation
+        max_tokens: 4000,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0,
       }),
     })
 
@@ -168,7 +150,6 @@ serve(async (req) => {
       const errorData = await response.text()
       console.error('OpenAI API error:', response.status, errorData)
       
-      // Provide specific error messages for different status codes
       if (response.status === 401) {
         throw new Error('AI service authentication failed. Please contact support.')
       } else if (response.status === 429) {
@@ -199,19 +180,15 @@ serve(async (req) => {
       throw new Error('AI service returned empty response. Please try again.')
     }
 
-    // Check if response was truncated
     if (data.choices[0].finish_reason === 'length') {
       console.warn('Response was truncated due to max_tokens limit');
-      // For assessment requests, this is critical
       if (isAssessmentRequest) {
         throw new Error('Response was truncated. Please try requesting fewer questions.');
       }
     }
 
-    // Handle assessment questions differently
     if (isAssessmentRequest) {
       try {
-        // Clean and validate JSON for assessment questions
         content = cleanJsonContent(content)
         console.log('Successfully cleaned JSON content')
       } catch (cleanError) {
@@ -219,7 +196,6 @@ serve(async (req) => {
         throw new Error(`Failed to generate valid assessment questions: ${cleanError.message}`)
       }
     } else {
-      // Clean markdown formatting from regular chat content
       content = cleanMarkdownFormatting(content)
     }
     
@@ -228,7 +204,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         content,
-        hasFollowUpButtons: !isAssessmentRequest // Don't show follow-up buttons for assessment questions
+        hasFollowUpButtons: !isAssessmentRequest
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -239,7 +215,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in ai-study-chat function:', error)
     
-    // Provide a helpful fallback response instead of just an error
     const fallbackContent = error.message.includes('API key') || error.message.includes('authentication') || error.message.includes('service')
       ? "I'm currently unable to connect to the AI service. Please check your internet connection and try again. If the problem persists, please contact support."
       : "I encountered an issue processing your request. Please try rephrasing your question or try again in a moment.";
@@ -252,7 +227,7 @@ serve(async (req) => {
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200  // Return 200 to prevent frontend errors, but include error flag
+        status: 200
       }
     )
   }
