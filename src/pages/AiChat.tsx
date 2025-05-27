@@ -11,7 +11,7 @@ import { Send, Bot, User, BookOpen, Calculator, Lightbulb, Brain, HelpCircle } f
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { getReliableAIResponse } from '@/utils/aiHelper';
 
 interface Message {
   id: string;
@@ -42,76 +42,32 @@ const AiChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const getAIResponse = async (messageContent: string): Promise<string> => {
-    console.log('🚀 Starting AI response generation for:', messageContent.substring(0, 50));
-    
-    // Enhanced fallback responses
-    const contextualFallbacks = {
-      math: "I'd love to help you with mathematics! Let's work through this step by step. Could you share the specific math problem you're working on? I can help with algebra, geometry, calculus, or any other math topic.",
-      science: "Science is fascinating! I'm here to help you understand scientific concepts. Whether it's biology, chemistry, physics, or earth science, I can explain complex topics in simple terms. What science question do you have?",
-      english: "I'm excited to help with English! Whether you need help with grammar, writing essays, analyzing literature, or improving your vocabulary, I'm here for you. What specific English topic would you like to work on?",
-      study: "Great that you're thinking about effective studying! I can help you create study schedules, learn memory techniques, and develop better study habits. What subject are you preparing for or what study challenge are you facing?",
-      general: "I'm your AI study assistant and I'm here to help you succeed! I can assist with homework, explain difficult concepts, create study materials, and provide learning strategies. What would you like to learn about today?"
-    };
+  const sendMessageToAI = async (messageContent: string) => {
+    try {
+      console.log('Sending message to AI:', messageContent.substring(0, 50) + '...');
+      
+      const response = await getReliableAIResponse(
+        messageContent,
+        'You are a helpful AI study assistant. Provide clear, educational responses with step-by-step explanations when needed. Focus on helping students understand concepts thoroughly.'
+      );
 
-    const getContextualResponse = (msg: string): string => {
-      const lower = msg.toLowerCase();
-      if (lower.includes('math') || lower.includes('calculate') || lower.includes('solve') || lower.includes('equation')) {
-        return contextualFallbacks.math;
-      }
-      if (lower.includes('science') || lower.includes('biology') || lower.includes('chemistry') || lower.includes('physics')) {
-        return contextualFallbacks.science;
-      }
-      if (lower.includes('english') || lower.includes('writing') || lower.includes('essay') || lower.includes('grammar')) {
-        return contextualFallbacks.english;
-      }
-      if (lower.includes('study') || lower.includes('exam') || lower.includes('test') || lower.includes('learn')) {
-        return contextualFallbacks.study;
-      }
-      return contextualFallbacks.general;
-    };
-
-    // Try multiple AI endpoints
-    const endpoints = ['ai-study-chat', 'ai-coach'];
-    
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`🤖 Trying ${endpoint} endpoint...`);
-        
-        const { data, error } = await supabase.functions.invoke(endpoint, {
-          body: {
-            message: messageContent,
-            systemPrompt: 'You are a helpful AI study assistant for students. Provide clear, encouraging, and educational responses. Always be supportive and patient in your explanations.'
-          }
-        });
-
-        console.log(`📡 ${endpoint} response:`, { data, error });
-
-        if (error) {
-          console.warn(`❌ ${endpoint} failed:`, error);
-          continue;
-        }
-
-        if (data?.content) {
-          console.log(`✅ ${endpoint} success!`);
-          return data.content;
-        }
-
-        console.warn(`⚠️ ${endpoint} returned no content`);
-      } catch (err) {
-        console.error(`💥 ${endpoint} threw error:`, err);
-        continue;
-      }
+      console.log('AI response received');
+      return {
+        content: response.content,
+        hasFollowUpButtons: response.hasFollowUpButtons || false
+      };
+    } catch (error) {
+      console.error('Error calling AI chat function:', error);
+      
+      return {
+        content: "I'm here and ready to help with your studies! There might be a brief connection hiccup, but I'm committed to supporting your learning. Please feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nWhat would you like to work on?",
+        hasFollowUpButtons: false
+      };
     }
-
-    console.log('🔄 All AI endpoints failed, using contextual fallback');
-    return getContextualResponse(messageContent);
   };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
-
-    console.log('📤 Sending message:', inputMessage);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -126,37 +82,33 @@ const AiChat = () => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(currentMessage);
-      console.log('📨 AI response received:', aiResponse.substring(0, 100));
+      const aiResponse = await sendMessageToAI(currentMessage);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: aiResponse,
+        content: aiResponse.content,
         isAI: true,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, aiMessage]);
-      console.log('✅ Message exchange completed successfully');
-      
     } catch (error) {
-      console.error('💥 Error in handleSendMessage:', error);
+      console.error('Error in handleSendMessage:', error);
       
-      const errorMessage: Message = {
+      const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm here to help you study! There was a small hiccup, but I'm still your dedicated study assistant. Please try asking your question again - I'm ready to help with any subject!",
+        content: "I'm your AI study assistant and I'm here to help! While I work on the connection, I can still support your learning journey. Try asking your question again or let me know what subject you'd like to explore!",
         isAI: true,
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleQuickPrompt = async (promptText: string) => {
-    console.log('⚡ Quick prompt triggered:', promptText);
     setInputMessage(promptText);
     
     const userMessage: Message = {
@@ -170,24 +122,22 @@ const AiChat = () => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(promptText);
+      const aiResponse = await sendMessageToAI(promptText);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: aiResponse,
+        content: aiResponse.content,
         isAI: true,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, aiMessage]);
-      console.log('✅ Quick prompt completed successfully');
-      
     } catch (error) {
-      console.error('💥 Error in handleQuickPrompt:', error);
+      console.error('Error in handleQuickPrompt:', error);
       
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm here and ready to help with your studies! Please feel free to ask me any question about your learning, and I'll do my best to provide helpful guidance.",
+        content: "I'd love to help you with that! I'm having a small connection hiccup, but I'm still your dedicated study assistant. Please try your request again, and I'll do my best to provide helpful guidance!",
         isAI: true,
         timestamp: new Date()
       };

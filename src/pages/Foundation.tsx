@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Headphones, Upload, FileText, Download, Mic, Play, Pause, Volume2, Video, Loader2, AlertCircle } from 'lucide-react';
+import { Brain, Headphones, Upload, FileText, Download, Mic, Play, Pause, Volume2, Video, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { generateStudyContent } from '@/utils/aiHelper';
@@ -25,7 +26,6 @@ const Foundation = () => {
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -75,12 +75,7 @@ const Foundation = () => {
   const generateElevenLabsAudio = async (text: string): Promise<string> => {
     try {
       setIsGeneratingAudio(true);
-      setAudioError(null);
       console.log('Generating audio with ElevenLabs...');
-
-      // Truncate text if it's too long to avoid quota issues
-      const maxLength = 1000; // Limit to ~1000 characters to reduce credit usage
-      const truncatedText = text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
         method: 'POST',
@@ -90,8 +85,8 @@ const Foundation = () => {
           'xi-api-key': ELEVENLABS_API_KEY,
         },
         body: JSON.stringify({
-          text: truncatedText,
-          model_id: 'eleven_turbo_v2', // Use faster, cheaper model
+          text: text,
+          model_id: 'eleven_multilingual_v2',
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.8,
@@ -102,17 +97,7 @@ const Foundation = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        if (response.status === 401) {
-          if (errorData.detail?.status === 'quota_exceeded') {
-            throw new Error('ElevenLabs quota exceeded. Please check your account credits.');
-          } else {
-            throw new Error('ElevenLabs API authentication failed. Please check your API key.');
-          }
-        }
-        
-        throw new Error(`ElevenLabs API error: ${response.status} - ${errorData.detail?.message || 'Unknown error'}`);
+        throw new Error(`ElevenLabs API error: ${response.status}`);
       }
 
       const audioBlob = await response.blob();
@@ -122,8 +107,6 @@ const Foundation = () => {
       return audioUrl;
     } catch (error) {
       console.error('Error generating audio:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setAudioError(errorMessage);
       throw error;
     } finally {
       setIsGeneratingAudio(false);
@@ -163,8 +146,6 @@ const Foundation = () => {
     }
 
     setIsGenerating(true);
-    setAudioError(null);
-    
     try {
       const result = await generateStudyContent(
         topic || 'Document Analysis',
@@ -174,7 +155,7 @@ const Foundation = () => {
       
       setGeneratedContent(result);
       
-      // Generate actual audio using ElevenLabs for audio format
+      // Generate actual audio using ElevenLabs
       if (podcastFormat === 'audio') {
         try {
           const audioUrl = await generateElevenLabsAudio(result);
@@ -184,11 +165,11 @@ const Foundation = () => {
         } catch (audioError) {
           console.error('Audio generation failed:', audioError);
           toast.error('Script generated but audio generation failed. You can still read the script.');
-          // Don't clear the content, let user see the script
         }
       } else {
         // For video, we'll simulate for now (would need video generation API)
-        setGeneratedVideoUrl('simulated');
+        const simulatedVideoUrl = URL.createObjectURL(new Blob([result], { type: 'text/plain' }));
+        setGeneratedVideoUrl(simulatedVideoUrl);
         setGeneratedAudioUrl(null);
         toast.success('Study video script generated successfully!');
       }
@@ -199,20 +180,6 @@ const Foundation = () => {
       setGeneratedContent(`Unable to generate ${podcastFormat} script at this time. Please check your connection and try again.`);
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const retryAudioGeneration = async () => {
-    if (!generatedContent) return;
-    
-    try {
-      const audioUrl = await generateElevenLabsAudio(generatedContent);
-      setGeneratedAudioUrl(audioUrl);
-      setAudioError(null);
-      toast.success('Audio generated successfully!');
-    } catch (error) {
-      console.error('Retry audio generation failed:', error);
-      toast.error('Audio generation failed again. Please try with a shorter script.');
     }
   };
 
@@ -515,35 +482,6 @@ const Foundation = () => {
                         </div>
                       ) : generatedContent ? (
                         <div className="space-y-4">
-                          {/* Audio Error and Retry */}
-                          {audioError && podcastFormat === 'audio' && (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                              <div className="flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                                <div className="flex-1">
-                                  <h4 className="font-medium text-yellow-800 mb-1">Audio Generation Failed</h4>
-                                  <p className="text-sm text-yellow-700 mb-3">{audioError}</p>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={retryAudioGeneration}
-                                    disabled={isGeneratingAudio}
-                                    className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-                                  >
-                                    {isGeneratingAudio ? (
-                                      <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Retrying...
-                                      </>
-                                    ) : (
-                                      'Retry Audio Generation'
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
                           {/* Media Player */}
                           {generatedAudioUrl && podcastFormat === 'audio' && (
                             <div className="bg-gray-50 p-4 rounded-lg border">

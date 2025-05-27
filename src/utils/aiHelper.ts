@@ -14,21 +14,9 @@ export const getReliableAIResponse = async (
   
   const enhancedSystemPrompt = systemPrompt || `You are a helpful AI study assistant for students in Botswana. You are knowledgeable about BGCSE, JCE, and PSLE curricula. Always provide encouraging, clear, and educational responses. Format your responses with proper structure and helpful explanations.`;
 
-  // Enhanced fallback responses with better context awareness
+  // Fallback responses based on message content
   const getContextualFallback = (msg: string): string => {
     const lowerMsg = msg.toLowerCase();
-    
-    if (lowerMsg.includes('mindmap') || lowerMsg.includes('mind map')) {
-      return `# ${message.includes('topic') ? message.split('topic')[1]?.trim() || 'Study Topic' : 'Study Topic'} - Mind Map\n\n## Core Concepts\n- Main idea and central theme\n- Key supporting points\n- Related subtopics\n\n## Important Details\n- Essential facts and information\n- Examples and applications\n- Common misconceptions\n\n## Study Connections\n- Links to other subjects\n- Real-world applications\n- Practice opportunities\n\n## Memory Aids\n- Visual associations\n- Acronyms or mnemonics\n- Summary points`;
-    }
-    
-    if (lowerMsg.includes('podcast') || lowerMsg.includes('audio')) {
-      return `# Study Podcast Script\n\n## Introduction\nWelcome to your personalized study session! Today we'll explore key concepts that will help you master this important topic.\n\n## Main Content\nLet's break down the essential information you need to know. We'll go through each concept step by step, making sure you understand not just what to learn, but why it's important.\n\n## Key Takeaways\n- Focus on understanding rather than memorization\n- Practice applying concepts to different scenarios\n- Connect new learning to what you already know\n\n## Conclusion\nRemember, consistent study habits lead to success. Keep practicing and stay curious about learning!`;
-    }
-    
-    if (lowerMsg.includes('assessment') || lowerMsg.includes('quiz') || lowerMsg.includes('questions')) {
-      return `[\n  {\n    "question": "What is the main concept you're studying?",\n    "options": ["A) Basic principle", "B) Advanced theory", "C) Practical application", "D) All of the above"],\n    "correct": 3,\n    "explanation": "Understanding involves all these aspects working together."\n  },\n  {\n    "question": "How can you best apply this knowledge?",\n    "options": ["A) Memorize facts", "B) Practice problems", "C) Discuss with others", "D) Both B and C"],\n    "correct": 3,\n    "explanation": "Active practice and discussion reinforce learning effectively."\n  }\n]`;
-    }
     
     if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
       return "Hello! I'm your AI study assistant, and I'm excited to help you learn! Whether you need help with math, science, English, or any other subject from the Botswana curriculum, I'm here for you. What would you like to study today?";
@@ -57,15 +45,38 @@ export const getReliableAIResponse = async (
     return "I'm your dedicated AI study assistant, and I'm always ready to help you succeed in your learning journey! Whether you need help with homework, understanding concepts, preparing for exams, or just exploring new topics, I'm here to support you. What would you like to learn about today?";
   };
 
-  // Try multiple AI endpoints for maximum reliability
-  const aiEndpoints = ['ai-study-chat', 'ai-coach'];
-  let lastError = null;
+  // Primary attempt using ai-study-chat
+  try {
+    console.log('Attempting primary AI response');
+    
+    const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+      body: {
+        message: context ? `${context}\n\nUser question: ${message}` : message,
+        systemPrompt: enhancedSystemPrompt
+      }
+    });
 
-  for (const endpoint of aiEndpoints) {
+    if (error) {
+      console.warn('Primary AI method failed:', error);
+      throw error;
+    }
+
+    if (data?.content) {
+      console.log('Primary AI response successful');
+      return {
+        content: data.content,
+        hasFollowUpButtons: data.hasFollowUpButtons || false
+      };
+    } else {
+      throw new Error('No content received from primary AI');
+    }
+
+  } catch (primaryError) {
+    console.log('Primary AI failed, trying backup method');
+    
+    // Backup attempt using ai-coach
     try {
-      console.log(`Attempting AI response via ${endpoint}`);
-      
-      const { data, error } = await supabase.functions.invoke(endpoint, {
+      const { data, error } = await supabase.functions.invoke('ai-coach', {
         body: {
           message: context ? `${context}\n\nUser question: ${message}` : message,
           systemPrompt: enhancedSystemPrompt
@@ -73,38 +84,36 @@ export const getReliableAIResponse = async (
       });
 
       if (error) {
-        console.warn(`${endpoint} failed:`, error);
-        lastError = error;
-        continue;
+        console.warn('Backup AI method failed:', error);
+        throw error;
       }
 
       if (data?.content) {
-        console.log(`${endpoint} response successful`);
+        console.log('Backup AI response successful');
         return {
           content: data.content,
-          hasFollowUpButtons: data.hasFollowUpButtons || false
+          hasFollowUpButtons: false
         };
+      } else {
+        throw new Error('No content received from backup AI');
       }
-    } catch (error) {
-      console.warn(`${endpoint} error:`, error);
-      lastError = error;
-      continue;
+
+    } catch (backupError) {
+      console.log('Both AI methods failed, using contextual fallback');
+      
+      // Return contextual fallback response
+      return {
+        content: getContextualFallback(message),
+        hasFollowUpButtons: false
+      };
     }
   }
-
-  console.log('All AI endpoints failed, using contextual fallback');
-  
-  // Return contextual fallback response
-  return {
-    content: getContextualFallback(message),
-    hasFollowUpButtons: false
-  };
 };
 
-// Enhanced utility for generating study content with better reliability
+// Utility for generating study content with multiple fallbacks
 export const generateStudyContent = async (
   topic: string,
-  contentType: 'mindmap' | 'podcast' | 'explanation' | 'quiz' | 'assessment',
+  contentType: 'mindmap' | 'podcast' | 'explanation' | 'quiz',
   additionalContext?: string
 ): Promise<string> => {
   
@@ -143,27 +152,13 @@ export const generateStudyContent = async (
     - 5-7 questions of varying difficulty
     - Multiple choice and short answer questions
     - Clear answer explanations
-    - Tips for understanding the concepts`,
-    
-    assessment: `Generate exactly 5 assessment questions for the subject: "${topic}". ${additionalContext || ''}
-    
-    Return ONLY valid JSON in this exact format:
-    [
-      {
-        "question": "Question text here",
-        "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
-        "correct": 0,
-        "explanation": "Explanation for the correct answer"
-      }
-    ]
-    
-    Ensure all JSON is properly formatted and complete.`
+    - Tips for understanding the concepts`
   };
 
   try {
     const response = await getReliableAIResponse(
       contentPrompts[contentType],
-      'You are an expert educational content creator. Create engaging, accurate, and well-structured educational content. For assessment questions, always return valid JSON format.'
+      'You are an expert educational content creator. Create engaging, accurate, and well-structured educational content.'
     );
     
     return response.content;
@@ -171,7 +166,7 @@ export const generateStudyContent = async (
   } catch (error) {
     console.error('Error generating study content:', error);
     
-    // Enhanced fallback content based on type
+    // Fallback content based on type
     const fallbacks = {
       mindmap: `# ${topic} - Mind Map\n\n## Main Concepts\n- Key concept 1\n  - Supporting detail\n  - Example\n- Key concept 2\n  - Supporting detail\n  - Application\n\n## Important Points\n- Essential information about ${topic}\n- Practical applications\n- Common misconceptions to avoid\n\n## Study Tips\n- Review regularly\n- Practice with examples\n- Connect to real-world situations`,
       
@@ -179,34 +174,9 @@ export const generateStudyContent = async (
       
       explanation: `# Understanding ${topic}\n\n${topic} is an important concept that students need to master. Here's a clear breakdown:\n\n## What is ${topic}?\n${topic} refers to [basic definition and explanation].\n\n## Why is it important?\nUnderstanding ${topic} helps students because it forms the foundation for more advanced concepts.\n\n## Key points to remember:\n- Main concept 1\n- Main concept 2\n- Main concept 3\n\n## Practice suggestion:\nTry applying these concepts to real-world examples you encounter daily.`,
       
-      quiz: `# Practice Quiz: ${topic}\n\n## Question 1\nWhat is the main concept of ${topic}?\nA) Option 1\nB) Option 2\nC) Option 3\nD) Option 4\n\n## Question 2\nHow does ${topic} apply in real life?\n[Short answer space]\n\n## Question 3\nTrue or False: ${topic} is important for understanding advanced concepts.\n\n## Answer Key\n1. [Correct answer with explanation]\n2. [Sample answer and explanation]\n3. True - because ${topic} provides foundational understanding`,
-      
-      assessment: `[\n  {\n    "question": "What is the fundamental principle of ${topic}?",\n    "options": ["A) Basic understanding", "B) Advanced application", "C) Practical usage", "D) All of the above"],\n    "correct": 3,\n    "explanation": "A comprehensive understanding includes all these aspects."\n  },\n  {\n    "question": "How can you best study ${topic}?",\n    "options": ["A) Read only", "B) Practice problems", "C) Discuss concepts", "D) Both B and C"],\n    "correct": 3,\n    "explanation": "Active learning through practice and discussion is most effective."\n  },\n  {\n    "question": "What makes ${topic} important?",\n    "options": ["A) Academic requirement", "B) Real-world application", "C) Foundation for advanced topics", "D) All of the above"],\n    "correct": 3,\n    "explanation": "The importance of any topic encompasses all these areas."\n  },\n  {\n    "question": "Which study method works best for ${topic}?",\n    "options": ["A) Memorization", "B) Understanding concepts", "C) Repetitive practice", "D) B and C combined"],\n    "correct": 3,\n    "explanation": "Combining understanding with practice creates lasting knowledge."\n  },\n  {\n    "question": "How should you approach learning ${topic}?",\n    "options": ["A) Start with basics", "B) Jump to advanced", "C) Random approach", "D) Skip fundamentals"],\n    "correct": 0,\n    "explanation": "Building from basic concepts ensures solid understanding."\n  }\n]`
+      quiz: `# Practice Quiz: ${topic}\n\n## Question 1\nWhat is the main concept of ${topic}?\nA) Option 1\nB) Option 2\nC) Option 3\nD) Option 4\n\n## Question 2\nHow does ${topic} apply in real life?\n[Short answer space]\n\n## Question 3\nTrue or False: ${topic} is important for understanding advanced concepts.\n\n## Answer Key\n1. [Correct answer with explanation]\n2. [Sample answer and explanation]\n3. True - because ${topic} provides foundational understanding`
     };
     
     return fallbacks[contentType];
   }
-};
-
-// Enhanced chat utility specifically for study sessions
-export const getStudyChatResponse = async (
-  message: string,
-  sessionContext?: string
-): Promise<AIResponse> => {
-  const studySystemPrompt = `You are an expert AI study coach specializing in the Botswana education system (BGCSE, JCE, PSLE). 
-  
-  Your role is to:
-  - Provide clear, step-by-step explanations
-  - Encourage students and build confidence
-  - Adapt explanations to the student's level
-  - Use examples relevant to Botswana context
-  - Always be supportive and patient
-  
-  Current session context: ${sessionContext || 'General study session'}`;
-
-  return await getReliableAIResponse(
-    message,
-    studySystemPrompt,
-    sessionContext
-  );
 };
