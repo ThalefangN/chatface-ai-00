@@ -11,7 +11,7 @@ import { Send, Bot, User, BookOpen, Calculator, Lightbulb, Brain, HelpCircle } f
 import { useAuth } from '@/contexts/AuthContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { getReliableAIResponse } from '@/utils/aiHelper';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -44,25 +44,93 @@ const AiChat = () => {
 
   const sendMessageToAI = async (messageContent: string) => {
     try {
-      console.log('Sending message to AI:', messageContent.substring(0, 50) + '...');
+      console.log('🤖 Sending message to AI:', messageContent.substring(0, 50) + '...');
       
-      const response = await getReliableAIResponse(
-        messageContent,
-        'You are a helpful AI study assistant. Provide clear, educational responses with step-by-step explanations when needed. Focus on helping students understand concepts thoroughly.'
-      );
+      // Try ai-study-chat first
+      const { data: studyData, error: studyError } = await supabase.functions.invoke('ai-study-chat', {
+        body: {
+          message: messageContent,
+          systemPrompt: 'You are a helpful AI study assistant. Provide clear, educational responses with step-by-step explanations when needed. Focus on helping students understand concepts thoroughly.'
+        }
+      });
 
-      console.log('AI response received');
-      return {
-        content: response.content,
-        hasFollowUpButtons: response.hasFollowUpButtons || false
-      };
-    } catch (error) {
-      console.error('Error calling AI chat function:', error);
+      if (studyError) {
+        console.warn('❌ ai-study-chat failed:', studyError);
+        throw studyError;
+      }
+
+      if (studyData?.content) {
+        console.log('✅ ai-study-chat response received');
+        return {
+          content: studyData.content,
+          hasFollowUpButtons: studyData.hasFollowUpButtons || false
+        };
+      }
+
+      throw new Error('No content in ai-study-chat response');
       
-      return {
-        content: "I'm here and ready to help with your studies! There might be a brief connection hiccup, but I'm committed to supporting your learning. Please feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nWhat would you like to work on?",
-        hasFollowUpButtons: false
-      };
+    } catch (primaryError) {
+      console.warn('🔄 Trying ai-coach as fallback...');
+      
+      try {
+        const { data: coachData, error: coachError } = await supabase.functions.invoke('ai-coach', {
+          body: {
+            message: messageContent,
+            systemPrompt: 'You are a helpful AI study assistant. Provide clear, educational responses with step-by-step explanations when needed. Focus on helping students understand concepts thoroughly.'
+          }
+        });
+
+        if (coachError) {
+          console.warn('❌ ai-coach also failed:', coachError);
+          throw coachError;
+        }
+
+        if (coachData?.content) {
+          console.log('✅ ai-coach response received');
+          return {
+            content: coachData.content,
+            hasFollowUpButtons: coachData.hasFollowUpButtons || false
+          };
+        }
+
+        throw new Error('No content in ai-coach response');
+        
+      } catch (backupError) {
+        console.error('❌ Both AI services failed:', { primaryError, backupError });
+        
+        // Show specific error info to user via toast
+        const errorMsg = primaryError?.message || backupError?.message || 'Unknown error';
+        console.error('Detailed error for debugging:', errorMsg);
+        
+        // Provide contextual fallback
+        const lowerMessage = messageContent.toLowerCase();
+        
+        if (lowerMessage.includes('math') || lowerMessage.includes('calculate')) {
+          return {
+            content: "I'd love to help you with mathematics! While I work on reconnecting, here are some tips: break down complex problems into smaller steps, always show your working, and practice regularly. What specific math topic would you like to work on?",
+            hasFollowUpButtons: false
+          };
+        }
+        
+        if (lowerMessage.includes('science')) {
+          return {
+            content: "Science is fascinating! I'm here to help you understand scientific concepts. While my connection stabilizes, remember that observation and experimentation are key to learning science. What science topic interests you most?",
+            hasFollowUpButtons: false
+          };
+        }
+        
+        if (lowerMessage.includes('study') || lowerMessage.includes('exam')) {
+          return {
+            content: "Great question about studying! Effective study techniques include spaced repetition, active recall, and breaking information into chunks. While my connection improves, try creating mind maps or flashcards. What subject are you preparing for?",
+            hasFollowUpButtons: false
+          };
+        }
+        
+        return {
+          content: "I'm here and ready to help with your studies! There seems to be a temporary connection issue, but I'm committed to supporting your learning. Please feel free to ask me about:\n\n• Math problems and solutions\n• Study techniques and tips\n• Explaining difficult concepts\n• Creating practice questions\n• Subject-specific guidance\n\nWhat would you like to work on?",
+          hasFollowUpButtons: false
+        };
+      }
     }
   };
 
