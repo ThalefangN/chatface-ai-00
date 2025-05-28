@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
@@ -26,7 +25,6 @@ const Foundation = () => {
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -53,39 +51,6 @@ const Foundation = () => {
       } else {
         toast.error('Please upload text files only (.txt, .md)');
       }
-    }
-  };
-
-  const generateOpenAIAudio = async (text: string): Promise<string> => {
-    try {
-      setIsGeneratingAudio(true);
-      console.log('Generating audio with OpenAI TTS...');
-
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-        body: {
-          message: text,
-          systemPrompt: 'Generate TTS audio',
-          voice: selectedVoice,
-          generateAudio: true
-        }
-      });
-
-      if (error) {
-        console.error('Error generating audio:', error);
-        throw error;
-      }
-
-      if (data?.audioUrl) {
-        console.log('Audio generated successfully with OpenAI TTS');
-        return data.audioUrl;
-      } else {
-        throw new Error('No audio URL received');
-      }
-    } catch (error) {
-      console.error('Error generating audio:', error);
-      throw error;
-    } finally {
-      setIsGeneratingAudio(false);
     }
   };
 
@@ -122,31 +87,59 @@ const Foundation = () => {
     }
 
     setIsGenerating(true);
+    setGeneratedAudioUrl(null);
+    setGeneratedVideoUrl(null);
+    
     try {
+      console.log('Starting podcast generation...');
+      
+      // First generate the script
       const result = await generateStudyContent(
         topic || 'Document Analysis',
         'podcast',
         uploadedFile ? await uploadedFile.text() : context
       );
       
+      console.log('Script generated, length:', result.length);
       setGeneratedContent(result);
       
-      // Generate actual audio using OpenAI TTS
+      // Then generate audio if requested
       if (podcastFormat === 'audio') {
+        console.log('Generating audio with voice:', selectedVoice);
+        
         try {
-          const audioUrl = await generateOpenAIAudio(result);
-          setGeneratedAudioUrl(audioUrl);
-          setGeneratedVideoUrl(null);
-          toast.success('Study audio podcast generated successfully!');
+          const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+            body: {
+              message: result,
+              systemPrompt: 'Generate TTS audio',
+              voice: selectedVoice,
+              generateAudio: true
+            }
+          });
+
+          console.log('Audio generation response:', { data, error });
+
+          if (error) {
+            console.error('Audio generation error:', error);
+            throw new Error(`Audio generation failed: ${error.message}`);
+          }
+
+          if (data?.audioUrl) {
+            console.log('Audio generated successfully');
+            setGeneratedAudioUrl(data.audioUrl);
+            toast.success('Study audio podcast generated successfully!');
+          } else {
+            console.error('No audio URL in response:', data);
+            throw new Error('No audio URL received from server');
+          }
         } catch (audioError) {
           console.error('Audio generation failed:', audioError);
-          toast.error('Script generated but audio generation failed. You can still read the script.');
+          toast.error(`Script generated but audio generation failed: ${audioError.message}. You can still read the script.`);
         }
       } else {
         // For video, we'll simulate for now (would need video generation API)
         const simulatedVideoUrl = URL.createObjectURL(new Blob([result], { type: 'text/plain' }));
         setGeneratedVideoUrl(simulatedVideoUrl);
-        setGeneratedAudioUrl(null);
         toast.success('Study video script generated successfully!');
       }
       
@@ -433,13 +426,13 @@ const Foundation = () => {
 
                       <Button 
                         onClick={generateStudyPodcast}
-                        disabled={isGenerating || isGeneratingAudio || (!topic.trim() && !uploadedFile)}
+                        disabled={isGenerating || (!topic.trim() && !uploadedFile)}
                         className="w-full"
                       >
-                        {isGenerating || isGeneratingAudio ? (
+                        {isGenerating ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {isGeneratingAudio ? 'Generating Audio...' : `Creating ${podcastFormat}...`}
+                            Creating {podcastFormat}...
                           </>
                         ) : (
                           <>
@@ -465,13 +458,11 @@ const Foundation = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {isGenerating || isGeneratingAudio ? (
+                      {isGenerating ? (
                         <div className="flex items-center justify-center h-64">
                           <div className="text-center">
                             <Loader2 className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4" />
-                            <p className="text-gray-500">
-                              {isGeneratingAudio ? 'Converting to audio...' : `Creating your study ${podcastFormat}...`}
-                            </p>
+                            <p className="text-gray-500">Creating your study {podcastFormat}...</p>
                           </div>
                         </div>
                       ) : generatedContent ? (
