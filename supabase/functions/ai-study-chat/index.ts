@@ -118,8 +118,11 @@ async function generateOpenAIAudio(text: string, voice: string = 'alloy'): Promi
     
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not found in environment variables');
+      throw new Error('OpenAI API key not configured. Please add your OpenAI API key to the project secrets.');
     }
+
+    console.log('OpenAI API key found, proceeding with TTS generation...');
 
     // Clean text for TTS (remove markdown and limit length)
     let cleanText = cleanMarkdownFormatting(text);
@@ -129,25 +132,35 @@ async function generateOpenAIAudio(text: string, voice: string = 'alloy'): Promi
       cleanText = cleanText.substring(0, 4000) + '...';
     }
 
+    console.log(`Cleaned text length: ${cleanText.length} characters`);
+
+    const requestBody = {
+      model: 'tts-1',
+      voice: voice,
+      input: cleanText,
+      response_format: 'mp3',
+    };
+
+    console.log('Making request to OpenAI TTS API...');
+
     const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'tts-1',
-        voice: voice,
-        input: cleanText,
-        response_format: 'mp3',
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    console.log(`OpenAI TTS response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI TTS API error:', errorText);
-      throw new Error(`OpenAI TTS API error: ${response.status}`);
+      console.error('OpenAI TTS API error response:', errorText);
+      throw new Error(`OpenAI TTS API error: ${response.status} - ${errorText}`);
     }
+
+    console.log('OpenAI TTS response received, converting to base64...');
 
     // Convert audio to base64 for transmission
     const arrayBuffer = await response.arrayBuffer();
@@ -161,11 +174,11 @@ async function generateOpenAIAudio(text: string, voice: string = 'alloy'): Promi
     // Create a data URL for the audio
     const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
     
-    console.log('OpenAI TTS audio generated successfully');
+    console.log('OpenAI TTS audio generated successfully, base64 length:', base64Audio.length);
     return audioUrl;
     
   } catch (error) {
-    console.error('Error generating OpenAI TTS audio:', error);
+    console.error('Error in generateOpenAIAudio:', error);
     throw error;
   }
 }
@@ -292,11 +305,13 @@ serve(async (req) => {
     // Generate audio if requested
     if (generateAudio && voice && !isAssessmentRequest) {
       try {
+        console.log('Audio generation requested, starting TTS...');
         audioUrl = await generateOpenAIAudio(content, voice);
         console.log('Audio generated successfully');
       } catch (audioError) {
-        console.warn('Audio generation failed:', audioError);
-        // Continue without audio - don't fail the whole request
+        console.error('Audio generation failed:', audioError);
+        // Don't fail the whole request - just log the error and continue without audio
+        console.warn('Continuing without audio due to generation failure');
       }
     }
     
