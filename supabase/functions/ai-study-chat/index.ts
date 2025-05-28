@@ -111,6 +111,65 @@ function cleanJsonContent(content: string): string {
   }
 }
 
+// Function to generate audio using OpenAI TTS
+async function generateOpenAIAudio(text: string, voice: string = 'alloy'): Promise<string> {
+  try {
+    console.log(`Generating audio with OpenAI TTS using voice: ${voice}`);
+    
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    // Clean text for TTS (remove markdown and limit length)
+    let cleanText = cleanMarkdownFormatting(text);
+    
+    // Limit text length for TTS (OpenAI TTS has a 4096 character limit)
+    if (cleanText.length > 4000) {
+      cleanText = cleanText.substring(0, 4000) + '...';
+    }
+
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'tts-1',
+        voice: voice,
+        input: cleanText,
+        response_format: 'mp3',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI TTS API error:', errorText);
+      throw new Error(`OpenAI TTS API error: ${response.status}`);
+    }
+
+    // Convert audio to base64 for transmission
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Audio = btoa(binary);
+    
+    // Create a data URL for the audio
+    const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
+    
+    console.log('OpenAI TTS audio generated successfully');
+    return audioUrl;
+    
+  } catch (error) {
+    console.error('Error generating OpenAI TTS audio:', error);
+    throw error;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -118,9 +177,14 @@ serve(async (req) => {
   }
 
   try {
-    const { message, systemPrompt } = await req.json()
+    const { message, systemPrompt, voice, generateAudio } = await req.json()
 
-    console.log('Received AI study chat request:', { message: message?.substring(0, 100), systemPrompt })
+    console.log('Received AI study chat request:', { 
+      message: message?.substring(0, 100), 
+      systemPrompt, 
+      voice,
+      generateAudio 
+    })
 
     if (!message || typeof message !== 'string') {
       throw new Error('Message is required and must be a string')
@@ -158,7 +222,7 @@ serve(async (req) => {
           }
         ],
         temperature: 0.7,
-        max_tokens: 4000, // Increased token limit to prevent truncation
+        max_tokens: 4000,
       }),
     })
 
@@ -222,12 +286,26 @@ serve(async (req) => {
       // Clean markdown formatting from regular chat content
       content = cleanMarkdownFormatting(content)
     }
+
+    let audioUrl = null;
+    
+    // Generate audio if requested
+    if (generateAudio && voice && !isAssessmentRequest) {
+      try {
+        audioUrl = await generateOpenAIAudio(content, voice);
+        console.log('Audio generated successfully');
+      } catch (audioError) {
+        console.warn('Audio generation failed:', audioError);
+        // Continue without audio - don't fail the whole request
+      }
+    }
     
     console.log('Successfully processed AI response')
     
     return new Response(
       JSON.stringify({ 
         content,
+        audioUrl,
         hasFollowUpButtons: !isAssessmentRequest // Don't show follow-up buttons for assessment questions
       }),
       { 

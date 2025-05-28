@@ -22,6 +22,7 @@ const Foundation = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
   const [podcastFormat, setPodcastFormat] = useState<'audio' | 'video'>('audio');
+  const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState<string | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,8 +30,19 @@ const Foundation = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const ELEVENLABS_API_KEY = 'sk_41fe04dabe3cec32f4ae370fd8f94ccd2332e19e05fc4aa6';
-  const VOICE_ID = '9BWtsMINqrJLrRacOk9x'; // Aria voice
+  // OpenAI TTS voices
+  const openAIVoices = [
+    { id: 'alloy', name: 'Alloy - Neutral' },
+    { id: 'echo', name: 'Echo - Male' },
+    { id: 'fable', name: 'Fable - British Male' },
+    { id: 'onyx', name: 'Onyx - Deep Male' },
+    { id: 'nova', name: 'Nova - Female' },
+    { id: 'shimmer', name: 'Shimmer - Soft Female' },
+    { id: 'coral', name: 'Coral - Warm Female' },
+    { id: 'sage', name: 'Sage - Wise' },
+    { id: 'ballad', name: 'Ballad - Storytelling' },
+    { id: 'ash', name: 'Ash - Clear' }
+  ];
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -44,67 +56,31 @@ const Foundation = () => {
     }
   };
 
-  const generateWithAI = async (message: string): Promise<string> => {
+  const generateOpenAIAudio = async (text: string): Promise<string> => {
     try {
-      console.log('Generating content with AI');
-      
+      setIsGeneratingAudio(true);
+      console.log('Generating audio with OpenAI TTS...');
+
       const { data, error } = await supabase.functions.invoke('ai-study-chat', {
         body: {
-          message,
-          systemPrompt: 'You are a helpful AI study assistant. Provide clear, comprehensive content based on the user request. Format your response in a readable way with proper structure.'
+          message: text,
+          systemPrompt: 'Generate TTS audio',
+          voice: selectedVoice,
+          generateAudio: true
         }
       });
 
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('Error generating audio:', error);
         throw error;
       }
-      
-      if (data && data.content) {
-        console.log('Content generated successfully');
-        return data.content;
+
+      if (data?.audioUrl) {
+        console.log('Audio generated successfully with OpenAI TTS');
+        return data.audioUrl;
       } else {
-        throw new Error('No content received from AI');
+        throw new Error('No audio URL received');
       }
-    } catch (error) {
-      console.error('Error generating content:', error);
-      throw error;
-    }
-  };
-
-  const generateElevenLabsAudio = async (text: string): Promise<string> => {
-    try {
-      setIsGeneratingAudio(true);
-      console.log('Generating audio with ElevenLabs...');
-
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': ELEVENLABS_API_KEY,
-        },
-        body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.8,
-            style: 0.0,
-            use_speaker_boost: true
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.status}`);
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      console.log('Audio generated successfully');
-      return audioUrl;
     } catch (error) {
       console.error('Error generating audio:', error);
       throw error;
@@ -155,10 +131,10 @@ const Foundation = () => {
       
       setGeneratedContent(result);
       
-      // Generate actual audio using ElevenLabs
+      // Generate actual audio using OpenAI TTS
       if (podcastFormat === 'audio') {
         try {
-          const audioUrl = await generateElevenLabsAudio(result);
+          const audioUrl = await generateOpenAIAudio(result);
           setGeneratedAudioUrl(audioUrl);
           setGeneratedVideoUrl(null);
           toast.success('Study audio podcast generated successfully!');
@@ -393,6 +369,24 @@ const Foundation = () => {
                         </Select>
                       </div>
 
+                      {podcastFormat === 'audio' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="voice-select">AI Voice</Label>
+                          <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose voice" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {openAIVoices.map((voice) => (
+                                <SelectItem key={voice.id} value={voice.id}>
+                                  {voice.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
                       <div className="space-y-2">
                         <Label htmlFor="podcast-topic">Topic</Label>
                         <Input
@@ -488,7 +482,7 @@ const Foundation = () => {
                               <div className="flex items-center justify-between mb-3">
                                 <h4 className="font-medium text-gray-900 flex items-center gap-2">
                                   <Volume2 className="w-4 h-4" />
-                                  Audio Player (ElevenLabs AI)
+                                  Audio Player (OpenAI TTS - {selectedVoice})
                                 </h4>
                                 <Button
                                   variant="outline"
