@@ -100,7 +100,7 @@ const Foundation = () => {
         uploadedFile ? await uploadedFile.text() : context
       );
       
-      console.log('Script generated, length:', result.length);
+      console.log('Script generated successfully, length:', result.length);
       setGeneratedContent(result);
       
       // Then generate audio if requested
@@ -108,33 +108,42 @@ const Foundation = () => {
         console.log('Generating audio with voice:', selectedVoice);
         
         try {
+          // Clean the script for better TTS
+          const cleanedScript = result
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
+            .replace(/#{1,6}\s*/g, '') // Remove headers
+            .replace(/\[(.*?)\]/g, '') // Remove brackets
+            .substring(0, 3500); // Limit to OpenAI TTS character limit
+          
+          console.log('Cleaned script length:', cleanedScript.length);
+          
           const { data, error } = await supabase.functions.invoke('ai-study-chat', {
             body: {
-              message: result,
-              systemPrompt: 'Generate TTS audio',
+              message: cleanedScript,
+              systemPrompt: 'Convert this text to natural speech',
               voice: selectedVoice,
               generateAudio: true
             }
           });
 
-          console.log('Audio generation response:', { data, error });
+          console.log('TTS response received:', { data, error });
 
           if (error) {
-            console.error('Audio generation error:', error);
-            throw new Error(`Audio generation failed: ${error.message}`);
+            console.error('TTS generation error:', error);
+            throw new Error(`Audio generation failed: ${error.message || 'Unknown error'}`);
           }
 
           if (data?.audioUrl) {
-            console.log('Audio generated successfully');
+            console.log('Audio URL received successfully');
             setGeneratedAudioUrl(data.audioUrl);
             toast.success('Study audio podcast generated successfully!');
           } else {
             console.error('No audio URL in response:', data);
-            throw new Error('No audio URL received from server');
+            throw new Error('Audio generation completed but no audio file was returned');
           }
         } catch (audioError) {
           console.error('Audio generation failed:', audioError);
-          toast.error(`Script generated but audio generation failed: ${audioError.message}. You can still read the script.`);
+          toast.error(`Script generated successfully! However, audio generation failed: ${audioError.message}. You can still read the script below.`);
         }
       } else {
         // For video, we'll simulate for now (would need video generation API)
