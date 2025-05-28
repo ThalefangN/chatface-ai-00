@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface AIResponse {
   content: string;
   hasFollowUpButtons?: boolean;
+  audioUrl?: string;
 }
 
 export const getReliableAIResponse = async (
@@ -50,90 +51,92 @@ export const getReliableAIResponse = async (
       return "Audio learning through podcasts is a fantastic way to absorb information! I can create engaging study podcasts that break down complex topics into digestible audio content, perfect for learning on the go or reinforcing concepts through different learning styles. What subject would you like to turn into an audio learning experience?";
     }
     
-    return "I'm your dedicated AI study assistant, and I'm always ready to help you succeed in your learning journey! Whether you need help with homework, understanding concepts, preparing for exams, or exploring new topics, I'm here to support you every step of the way. I never give up and will always provide you with helpful responses. What would you like to learn about today?";
+    return "I'm your dedicated AI study assistant, and I'm always ready to help you succeed in your learning journey! Whether you need help with homework, understanding concepts, preparing for exams, or exploring new topics, I'm here to support you every step of the way. What would you like to learn about today?";
   };
 
-  // Primary attempt using ai-study-chat with retry logic
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // Primary attempt using ai-study-chat with shorter timeout
+  try {
+    console.log('Making AI request with message:', message.substring(0, 50) + '...');
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    
+    const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+      body: {
+        message: context ? `${context}\n\nUser question: ${message}` : message,
+        systemPrompt: enhancedSystemPrompt
+      },
+      options: {
+        signal: controller.signal
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (error) {
+      console.warn('Primary AI request failed:', error);
+      throw error;
+    }
+
+    if (data?.content) {
+      console.log('AI response received successfully');
+      return {
+        content: data.content,
+        hasFollowUpButtons: data.hasFollowUpButtons || false,
+        audioUrl: data.audioUrl
+      };
+    } else {
+      throw new Error('No content received from AI');
+    }
+
+  } catch (primaryError) {
+    console.log('Primary AI failed, trying backup method:', primaryError);
+    
+    // Backup attempt using ai-coach function
     try {
-      console.log(`Attempting AI response (attempt ${attempt}/3)`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+      const { data, error } = await supabase.functions.invoke('ai-coach', {
         body: {
           message: context ? `${context}\n\nUser question: ${message}` : message,
           systemPrompt: enhancedSystemPrompt
+        },
+        options: {
+          signal: controller.signal
         }
       });
 
+      clearTimeout(timeoutId);
+
       if (error) {
-        console.warn(`AI attempt ${attempt} failed:`, error);
-        if (attempt === 3) throw error;
-        continue;
+        console.warn('Backup AI method failed:', error);
+        throw error;
       }
 
       if (data?.content) {
-        console.log(`AI response successful on attempt ${attempt}`);
+        console.log('Backup AI response successful');
         return {
           content: data.content,
-          hasFollowUpButtons: data.hasFollowUpButtons || false
-        };
-      } else {
-        throw new Error('No content received from AI');
-      }
-
-    } catch (primaryError) {
-      console.log(`Primary AI attempt ${attempt} failed:`, primaryError);
-      if (attempt < 3) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Progressive delay
-        continue;
-      }
-      
-      // After 3 failed attempts, try backup method
-      console.log('All primary attempts failed, trying backup method');
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('ai-coach', {
-          body: {
-            message: context ? `${context}\n\nUser question: ${message}` : message,
-            systemPrompt: enhancedSystemPrompt
-          }
-        });
-
-        if (error) {
-          console.warn('Backup AI method failed:', error);
-          throw error;
-        }
-
-        if (data?.content) {
-          console.log('Backup AI response successful');
-          return {
-            content: data.content,
-            hasFollowUpButtons: false
-          };
-        } else {
-          throw new Error('No content received from backup AI');
-        }
-
-      } catch (backupError) {
-        console.log('Both AI methods failed, using enhanced contextual fallback');
-        
-        // Return enhanced contextual fallback response
-        return {
-          content: getContextualFallback(message),
           hasFollowUpButtons: false
         };
+      } else {
+        throw new Error('No content received from backup AI');
       }
+
+    } catch (backupError) {
+      console.log('Both AI methods failed, using contextual fallback');
+      
+      // Return enhanced contextual fallback response
+      return {
+        content: getContextualFallback(message),
+        hasFollowUpButtons: false
+      };
     }
   }
-
-  // This should never be reached, but just in case
-  return {
-    content: getContextualFallback(message),
-    hasFollowUpButtons: false
-  };
 };
 
-// Enhanced utility for generating study content with multiple fallbacks and better error handling
+// Enhanced utility for generating study content with better timeout handling
 export const generateStudyContent = async (
   topic: string,
   contentType: 'mindmap' | 'podcast' | 'explanation' | 'quiz',
