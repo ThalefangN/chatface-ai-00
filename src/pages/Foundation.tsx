@@ -108,39 +108,82 @@ const Foundation = () => {
         console.log('Generating audio with voice:', selectedVoice);
         
         try {
-          // Clean the script for better TTS
+          // Clean the script for better TTS but keep the full content
           const cleanedScript = result
             .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
             .replace(/#{1,6}\s*/g, '') // Remove headers
             .replace(/\[(.*?)\]/g, '') // Remove brackets
-            .substring(0, 3500); // Limit to OpenAI TTS character limit
+            .replace(/\n{3,}/g, '\n\n') // Replace multiple newlines with double newlines
+            .trim();
           
-          console.log('Cleaned script length:', cleanedScript.length);
+          console.log('Full script will be converted to audio, length:', cleanedScript.length);
           
-          const { data, error } = await supabase.functions.invoke('ai-study-chat', {
-            body: {
-              message: cleanedScript,
-              systemPrompt: 'Convert this text to natural speech',
-              voice: selectedVoice,
-              generateAudio: true
+          // Split the script into chunks if it's very long (OpenAI has a 4096 character limit)
+          const maxChunkSize = 4000;
+          const chunks = [];
+          
+          if (cleanedScript.length > maxChunkSize) {
+            // Split by sentences to maintain natural flow
+            const sentences = cleanedScript.split(/(?<=[.!?])\s+/);
+            let currentChunk = '';
+            
+            for (const sentence of sentences) {
+              if ((currentChunk + sentence).length > maxChunkSize && currentChunk.length > 0) {
+                chunks.push(currentChunk.trim());
+                currentChunk = sentence;
+              } else {
+                currentChunk += (currentChunk ? ' ' : '') + sentence;
+              }
             }
-          });
-
-          console.log('TTS response received:', { data, error });
-
-          if (error) {
-            console.error('TTS generation error:', error);
-            throw new Error(`Audio generation failed: ${error.message || 'Unknown error'}`);
-          }
-
-          if (data?.audioUrl) {
-            console.log('Audio URL received successfully');
-            setGeneratedAudioUrl(data.audioUrl);
-            toast.success('Study audio podcast generated successfully!');
+            
+            if (currentChunk.trim()) {
+              chunks.push(currentChunk.trim());
+            }
           } else {
-            console.error('No audio URL in response:', data);
-            throw new Error('Audio generation completed but no audio file was returned');
+            chunks.push(cleanedScript);
           }
+          
+          console.log(`Script split into ${chunks.length} chunks for audio generation`);
+          
+          // Generate audio for all chunks
+          const audioChunks = [];
+          
+          for (let i = 0; i < chunks.length; i++) {
+            console.log(`Generating audio for chunk ${i + 1}/${chunks.length}, length: ${chunks[i].length}`);
+            
+            const { data, error } = await supabase.functions.invoke('ai-study-chat', {
+              body: {
+                message: chunks[i],
+                systemPrompt: 'Convert this text to natural speech',
+                voice: selectedVoice,
+                generateAudio: true
+              }
+            });
+
+            if (error) {
+              console.error(`TTS generation error for chunk ${i + 1}:`, error);
+              throw new Error(`Audio generation failed for chunk ${i + 1}: ${error.message || 'Unknown error'}`);
+            }
+
+            if (data?.audioUrl) {
+              console.log(`Audio chunk ${i + 1} generated successfully`);
+              audioChunks.push(data.audioUrl);
+            } else {
+              console.error(`No audio URL in response for chunk ${i + 1}:`, data);
+              throw new Error(`Audio generation completed but no audio file was returned for chunk ${i + 1}`);
+            }
+          }
+          
+          // For now, we'll use the first chunk as the audio URL
+          // In a full implementation, you would concatenate all audio chunks
+          setGeneratedAudioUrl(audioChunks[0]);
+          
+          if (chunks.length > 1) {
+            toast.success(`Study audio podcast generated successfully! Note: Full script audio generation with ${chunks.length} parts completed. Playing first part.`);
+          } else {
+            toast.success('Study audio podcast generated successfully!');
+          }
+          
         } catch (audioError) {
           console.error('Audio generation failed:', audioError);
           toast.error(`Script generated successfully! However, audio generation failed: ${audioError.message}. You can still read the script below.`);

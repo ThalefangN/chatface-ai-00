@@ -9,6 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_online_status: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          is_online: boolean
+          last_seen: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_profiles: {
+        Row: {
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_course_objectives: {
         Row: {
           course_id: string
@@ -325,6 +382,74 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      contact_messages: {
+        Row: {
+          company: string | null
+          created_at: string
+          deleted: boolean
+          email: string
+          id: string
+          is_from_admin: boolean
+          message: string
+          message_type: string
+          name: string
+          phone: string | null
+          reply_to_message_id: string | null
+          session_id: string | null
+          status: string
+          subject: string
+          thread_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          deleted?: boolean
+          email: string
+          id?: string
+          is_from_admin?: boolean
+          message: string
+          message_type?: string
+          name: string
+          phone?: string | null
+          reply_to_message_id?: string | null
+          session_id?: string | null
+          status?: string
+          subject: string
+          thread_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          deleted?: boolean
+          email?: string
+          id?: string
+          is_from_admin?: boolean
+          message?: string
+          message_type?: string
+          name?: string
+          phone?: string | null
+          reply_to_message_id?: string | null
+          session_id?: string | null
+          status?: string
+          subject?: string
+          thread_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "contact_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       course_content: {
         Row: {
@@ -652,6 +777,81 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          client_name: string
+          completion_date: string | null
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          is_featured: boolean
+          project_type: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          completion_date?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean
+          project_type: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          completion_date?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean
+          project_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          created_at: string
+          description: string
+          features: string[]
+          id: string
+          image_url: string | null
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          features?: string[]
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          features?: string[]
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       session_messages: {
         Row: {
           content: string
@@ -718,6 +918,45 @@ export type Database = {
         }
         Relationships: []
       }
+      testimonials: {
+        Row: {
+          client_company: string | null
+          client_name: string
+          client_position: string | null
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          rating: number | null
+          updated_at: string
+        }
+        Insert: {
+          client_company?: string | null
+          client_name: string
+          client_position?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          rating?: number | null
+          updated_at?: string
+        }
+        Update: {
+          client_company?: string | null
+          client_name?: string
+          client_position?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          rating?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_alerts: {
         Row: {
           created_at: string
@@ -751,6 +990,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_messaging_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          session_token: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          session_token: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          session_token?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -759,6 +1025,10 @@ export type Database = {
       cleanup_expired_otps: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_user_messaging_session: {
+        Args: { user_uuid: string }
+        Returns: string
       }
     }
     Enums: {
